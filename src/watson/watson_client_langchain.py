@@ -2,7 +2,7 @@ from langchain_ibm import WatsonxLLM
 
 import os
 
-watsonx_api_key = "ZGSeCv9jm4AW0jhCbIWQUl7WeBU4ZYIYL0iCwSVoDISS"
+watsonx_api_key = os.getenv("WATSON_API_KEY")
 
 parameters = {
     "decoding_method": "sample",

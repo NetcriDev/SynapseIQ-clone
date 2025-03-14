@@ -33,7 +33,7 @@ credentials = Credentials(
     #api_key = "ZGSeCv9jm4AW0jhCbIWQUl7WeBU4ZYIYL0iCwSVoDISS"
     api_key = "ySoS-QcyX7G8XZTQqVd2Bw0SRNZWCOjgo5RI8s87YTP3"
 )
-project_id = "2696de87-406d-40ce-8fcc-07693ac2740b"
+project_id = os.getenv("PROJECT_ID")
 
 client = APIClient(credentials)
 
