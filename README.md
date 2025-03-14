@@ -4,9 +4,9 @@ Repository layout
 
 root<br>
 ├── src<br>
-│   ├── watson<br>
-│   │   └── chat<br>
-│   └── subBranch2<br>
+│   \t├── watson<br>
+│   \t│   └── chat<br>
+│   \t└── subBranch2<br>
 │       └── nothing yet<br>
 └── conf<br>
     └── ibm<br>
