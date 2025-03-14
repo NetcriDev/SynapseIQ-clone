@@ -1,11 +1,11 @@
 from ibm_watsonx_ai import APIClient
 from ibm_watsonx_ai import Credentials
 from ibm_watsonx_ai.foundation_models import ModelInference
-import sys
+import sys, os
 
 credentials = Credentials(
     url = "https://us-south.ml.cloud.ibm.com",
-    api_key = "ZGSeCv9jm4AW0jhCbIWQUl7WeBU4ZYIYL0iCwSVoDISS"
+    api_key = os.getenv("WATSON_API_KEY")
 )
 
 client = APIClient(credentials)
