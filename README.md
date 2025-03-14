@@ -4,7 +4,7 @@ Repository layout
 
 root<br>
 ├── src<br>
-│   \t├── watson<br>
+│   "\t"├── watson<br>
 │   \t│   └── chat<br>
 │   \t└── subBranch2<br>
 │       └── nothing yet<br>
