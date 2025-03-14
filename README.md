@@ -4,12 +4,12 @@ Repository layout
 
 root<br>
 ├── src<br>
-│   "\t"├── watson<br>
-│   \t│   └── chat<br>
-│   \t└── subBranch2<br>
-│       └── nothing yet<br>
+│   &nbsp;&nbsp;├── watson<br>
+│   &nbsp;&nbsp;│   &nbsp;&nbsp;└── chat<br>
+│   &nbsp;&nbsp;└── subBranch2<br>
+│       &nbsp;&nbsp;&nbsp;&nbsp;└── nothing yet<br>
 └── conf<br>
-    └── ibm<br>
+    &nbsp;&nbsp;└── ibm<br>
 
 You can connect to the current VM instance with the following command;
 
