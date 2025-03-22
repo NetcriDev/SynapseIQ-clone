@@ -6,6 +6,7 @@
   - [Main Branches](#main-branches)
   - [Branches of Work (Secondary Branches)](#branches-of-work-secondary-branches)
 - [Configuration](#configuration)
+- [Design Pattern](#design-pattern)
 
 # Introduction
 Repository layout (under construction)
@@ -136,8 +137,6 @@ git checkout -b release/v1.0.0 dev
 
 ```
 
-
-
 # Configuration
 ```
 ssh -i rel8tedkey01_rsa.prv" root@52.116.202.144
@@ -154,4 +153,53 @@ For API keys, SSH keys, and any other general questions, please contact
 eperler@rel8ed.to
 ```
 
+# Design Pattern
+The following design patterns are used to organize the workflow:
 
+`Strategy`: Helps us handle different ways of connecting to file sources (such as FTP, email, API, websites, etc.). Each connector follows the same structure, so we can switch the source without changing all the code.
+
+`Factory`: Allows us to decide, based on the file type (PDF, Excel, XML, image…), which class should process it. Instead of writing many “if” statements in the code, we use a factory that automatically returns the correct processor.
+
+`Repository`: Takes care of saving and retrieving data (metadata, processed files, JSON results, etc.) without the rest of the system needing to worry about where or how it’s stored. It allows us to store and query data without knowing whether it goes to a database, the cloud, or a local file.
+
+
+```
+src/
+│
+├── connectors/                  # Strategy: for each data source (Email, FTP, API, etc.)
+│   ├── base.py
+│   ├── ftp_connector.py
+│   ├── email_connector.py
+│   ├── sharepoint_connector.py
+│   └── ...
+│
+├── parsers/                  # Factory: for processing by file type
+│   ├── base.py
+│   ├── pdf_parser.py
+│   ├── excel_parser.py
+│   ├── xml_parser.py
+│   └── factory.py
+│
+├── repository/                  # Repository: storage, verification, retrieval
+│   ├── base.py
+│   ├── cloudant_repository.py
+│   ├── milvus_repository.py
+│   └── athena_repository.py
+│
+├── metadata/                    # Extracting metadata from files such as file type, size, hash, ...
+│   ├── extractor.py             # ... and file renaming strategy to create file IDs
+│   ├── renamer.py
+│   └── hashing.py
+│
+├── services/                    # Orchestration of the entire flow
+│   └── ingestion_pipeline.py
+│
+├── models/                      # Data models
+│   └── metadata_model.py
+│
+├── utils/                       # General utilitarian functions
+│   └── logger.py
+│
+└── main.py                      # Entry point
+
+```
