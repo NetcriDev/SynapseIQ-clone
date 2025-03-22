@@ -1,7 +1,19 @@
-# SynapseIQ
+## Table of Contents
 
+- [Introduction](#introduction)
+- [File-System](#file-system)
+- [Branching-Strategy/Policies](#branching-strategypolicies)
+  - [Main Branches](#main-branches)
+  - [Branches of Work (Secondary Branches)](#branches-of-work-secondary-branches)
+- [Configuration](#configuration)
+
+# Introduction
 Repository layout (under construction)
 
+# File-System
+To ensure a structured approach, the following file organization schema will be implemented. This structure separates concerns into distinct directories, making it easier to manage different components of the application. The src/ directory will contain the core application logic, including API endpoints, business logic services, JSON validation schemas, and data connectors. A dedicated ml/ folder will store machine learning models, training scripts, and inference logic. Additionally, an notebooks/ directory will be included to store notebooks for exploratory data analysis and code for proof-of-concept implementations. Deployment configurations such as Dockerfiles and CI/CD pipelines will reside in the deploy/ and ci_cd/ directories, respectively. Furthermore, logs, documentation, and test cases will be systematically organized into their respective folders, ensuring better debugging, monitoring, and maintainability.
+
+```bash
 project_root/
 ├── requirements.txt                    # Lists Python dependencies required for the project.
 ├── .github/                            # Repository workflows and CI/CD pipeline configurations.
@@ -52,7 +64,81 @@ project_root/
 │   ├── example_settings.py             # General application settings.
 │   ├── example_env.py                  # Loads variables from .env.
 
-You can connect to the current VM instance with the following command;
+```
+
+# Branching-Strategy/Policies 
+For the "SympnapseIQ" project, a Branching Strategy based on “Traditional Git Flow”  will be used, which defines five main branches:
+
+* `main`: Contains the production version.
+* `release/*`:  For preparing versions before merging them into main.
+* `dev`: Used for development and preparing new versions.
+* `feature/*`: For developing new features.
+* `hotfix/*`: For fixing production issues.
+ 
+
+Traditional Git Flow is based on two permanent branches: `main` (which contains the production code) and `develop` (the main development branch). From develop, `feature/*` branches are created for new functionalities, which, once completed and reviewed via Pull Requests, are merged back into develop. When the code in develop is ready for release, a `release/*` branch is created for final testing and minor adjustments before being merged into `main`, generating a tag (v X.Y.Z) for versioning. Afterward, `release/*` is merged back into develop to keep everything in sync. For critical production issues, `hotfix/*` branches are created from main. Once the fix is implemented, they are merged into both main and develop.
+
+## Main Branches
+
+The following branches exist permanently in the repository and follow the following policies:
+1. `main` (Production)
+   - Contains the most stable version of the code and is used for production deployments.
+   - Merges are only made from `release/*` or `hotfix/*` (never directly from development).
+   - **Protected**: No one can push directly to this branch.
+
+2. `dev` (Development)
+   - This is the branch where new features are integrated before being released.
+   - It is updated with changes from `feature/*` through reviewed Pull Requests (PRs).
+   - It may be in an unstable state, but should compile correctly and pass basic tests.
+
+
+## Branches of Work (Secondary Branches)
+
+3. `feature/*` – New Features
+Used for developing new features.
+
+   - Created from `dev` and merged back into `dev` when ready.
+   - Naming convention: `feature/functionality_name`
+
+```bash
+git checkout -b feature/functionality_name dev
+# When the functionality is ready:
+git add .
+git commit -m "Implemented JSON structure validation"
+# Upload the branch to the remote repository
+git push origin feature/functionality_name
+# <!> Then generate a Pull Request to dev and wait for the team's review.
+```
+4.	hotfix/*  (Production fixes): 
+    - Created from “main” to fix urgent bugs.
+    - Merged into both main and dev after fix.
+    - The nomenclature follows: hotfix/hotfix_name
+
+```bash
+# The new branch will be created from the main branch
+git checkout -b hotfix/bug-correction-validation main
+# The error is corrected, committed and uploaded
+git commit -m "Fixes duplicate JSON validation bug"
+git push origin hotfix/bug-correction-validation
+# <!> A pull request is created for main.
+# <!> Once approved, it's merged and also merged into dev to keep both up to date.
+
+```
+5.	release/*  (Release preparation): Used before releasing major versions.
+    - They are used to prepare versions before deployment.
+    - They are created from dev and allow for: Final adjustments. Minor bug fixes. Documentation.
+    - The nomenclature follows: release/vX.Y.Z
+```bash
+git checkout -b release/v1.0.0 dev
+# <!> Testing, final adjustments are performed, and when it's ready,
+# it's merged into main (deployed to production).
+#It's merged into dev to keep everything synchronized.
+
+```
+
+
+
+# Configuration
 ```
 ssh -i rel8tedkey01_rsa.prv" root@52.116.202.144
 ```
@@ -67,3 +153,5 @@ For API keys, SSH keys, and any other general questions, please contact
 ```
 eperler@rel8ed.to
 ```
+
+
