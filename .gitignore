@@ -40,10 +40,8 @@ venv/
 
 # --- Archivos de datos procesados ---
 
-*.csv                # Comma-separated values files (structured data)
 *.xls                # Excel files (older format)
 *.xlsx               # Excel files (modern format)
-*.json               # JSON data files
 *.xml                # XML data files
 *.pdf                # PDF documents
 *.parquet            # Parquet binary columnar storage
