@@ -1,0 +1,102 @@
+# --- Python ---
+
+__pycache__/         # Compiled bytecode files (automatic Python cache folders)
+*.py[cod]            # Compiled Python files: .pyc, .pyo, .pyd
+*.pyo                # Obsolete Python optimized bytecode files
+*.pyd                # Python dynamic module for Windows
+*.so                 # Shared object files (used in C/C++/Python bindings on Linux)
+*.egg                # Python Egg package files
+*.egg-info/          # Metadata folder created when packaging/distributing Python code
+dist/                # Distribution directory for Python packages (created with setup.py)
+build/               # Temporary build directory for packaging
+*.log                # Log files
+*.tmp                # Temporary files
+*.bak                # Backup files (often created by editors or scripts)
+
+# --- Virtual environments ---
+
+.env/                
+.venv/               
+env/                 
+venv/                
+
+# --- IDEs and editors ---
+
+.vscode/             # Visual Studio Code settings folder
+.idea/               # JetBrains IDEs (PyCharm, IntelliJ, etc.) project settings
+*.swp                # Swap files (created by Vim or other editors)
+
+# --- Jupyter notebooks ---
+
+.ipynb_checkpoints/  # Automatically generated checkpoint folders for Jupyter notebooks
+
+# --- Local configuration files ---
+
+.env                 # Environment variable file (usually contains secrets)
+*.env                # Any file with .env extension (environment configs)
+*.ini                # INI configuration files
+*.cfg                # Generic config files
+*.toml               # TOML config files (used in tools like poetry or pyproject.toml)
+
+# --- Archivos de datos procesados ---
+
+*.csv                # Comma-separated values files (structured data)
+*.xls                # Excel files (older format)
+*.xlsx               # Excel files (modern format)
+*.json               # JSON data files
+*.xml                # XML data files
+*.txt                # Plain text files
+*.pdf                # PDF documents
+*.parquet            # Parquet binary columnar storage
+*.feather            # Feather file format (similar to Parquet)
+*.pickle             # Serialized Python objects using pickle
+*.pkl                # Common extension for pickle files
+*.db                 # Generic database files
+*.sqlite             # SQLite database files
+*.h5                 # HDF5 data files
+*.hdf5               # Alternative extension for HDF5
+*.sav                # SPSS or model save files
+*.joblib             # Serialized Python objects using joblib
+
+# If you want to keep some sample files:
+!data/example.csv     # EXCEPTION: Keep this specific sample CSV
+!data/sample.json     # EXCEPTION: Keep this specific sample JSON
+
+# --- Datasets folder ---
+
+data/                # General dataset folder
+datasets/            # Another common name for dataset storage
+inputs/              # Input data folder
+outputs/             # Output data/results folder
+
+# --- ML/AI Specific Files ---
+
+checkpoints/         # Model checkpoint directory
+runs/                # Directory created by tools like TensorBoard or wandb
+logs/                # Log output folders
+*.pt                 # PyTorch model weights
+*.pth                # PyTorch checkpoint file
+*.ckpt               # Generic checkpoint file
+*.onnx               # ONNX model export file
+
+# --- Downloaded libraries or cached models ---
+
+.cache/              # Generic cache folder
+__pycache__/         # Repeated to ensure it's ignored everywhere
+.pytest_cache/       # Cache folder created by pytest
+.huggingface/        # Hugging Face model/tokenizer cache
+transformers_cache/  # Transformers-specific cache
+datasets_cache/      # Cache for Hugging Face datasets
+nltk_data/           # nltk downloaded corpora
+.spacy/              # spaCy model downloads
+wandb/               # Weights & Biases run history/cache
+
+# --- Deployment files ---
+
+*.tar.gz             # Source tarball created by setuptools
+*.whl                # Wheel distribution files for Python packages
+
+# --- Others ---
+
+.DS_Store            # macOS Finder metadata
+Thumbs.db            # Windows Explorer thumbnail cache

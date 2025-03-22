@@ -1,0 +1,5 @@
+pandas==2.2.3
+beautifulsoup4==4.13.3
+pdfplumber==0.11.5
+selenium==4.29.0
+requests==2.32.3
