@@ -1,0 +1,58 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Accident Report Schema",
+    "type": "object",
+    "properties": {
+      "report_id": {
+        "type": "string",
+        "description": "Identificador único del informe de accidente"
+      },
+      "date": {
+        "type": "string",
+        "format": "date",
+        "description": "Fecha del accidente en formato YYYY-MM-DD"
+      },
+      "location": {
+        "type": "object",
+        "properties": {
+          "city": { "type": "string" },
+          "state": { "type": "string" },
+          "coordinates": {
+            "type": "object",
+            "properties": {
+              "latitude": { "type": "number" },
+              "longitude": { "type": "number" }
+            },
+            "required": ["latitude", "longitude"]
+          }
+        },
+        "required": ["city", "state", "coordinates"]
+      },
+      "vehicles_involved": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "plate_number": { "type": "string" },
+            "make": { "type": "string" },
+            "model": { "type": "string" },
+            "year": { "type": "integer" }
+          },
+          "required": ["plate_number", "make", "model", "year"]
+        }
+      },
+      "injuries_reported": {
+        "type": "boolean",
+        "description": "Indica si hubo personas heridas en el accidente"
+      },
+      "officer_in_charge": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "badge_number": { "type": "string" }
+        },
+        "required": ["name", "badge_number"]
+      }
+    },
+    "required": ["report_id", "date", "location", "vehicles_involved", "injuries_reported", "officer_in_charge"]
+  }
