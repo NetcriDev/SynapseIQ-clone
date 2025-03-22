@@ -45,7 +45,6 @@ venv/
 *.xlsx               # Excel files (modern format)
 *.json               # JSON data files
 *.xml                # XML data files
-*.txt                # Plain text files
 *.pdf                # PDF documents
 *.parquet            # Parquet binary columnar storage
 *.feather            # Feather file format (similar to Parquet)
