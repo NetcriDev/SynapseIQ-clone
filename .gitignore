@@ -96,5 +96,7 @@ wandb/               # Weights & Biases run history/cache
 # --- Others ---
 
 .DS_Store            # macOS Finder metadata
+**/.DS_Store         # macOS Finder metadata
 Thumbs.db            # Windows Explorer thumbnail cache
 *.prv                # Private keys
+**/*.prv                # Private keys
