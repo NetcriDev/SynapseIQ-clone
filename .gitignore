@@ -78,7 +78,7 @@ logs/                # Log output folders
 
 # --- Downloaded libraries or cached models ---
 
-.cache/              # Generic cache folder
+.cache/              # --- Generic cache folder ---
 __pycache__/         # Repeated to ensure it's ignored everywhere
 .pytest_cache/       # Cache folder created by pytest
 .huggingface/        # Hugging Face model/tokenizer cache
@@ -93,8 +93,10 @@ wandb/               # Weights & Biases run history/cache
 .DS_Store            # macOS Finder metadata
 **/.DS_Store         # macOS Finder metadata
 Thumbs.db            # Windows Explorer thumbnail cache
-*.prv                # Private keys
-**/.prv              # Private keys
+# Private keys
+*.prv 
+# Private keys               
+**/.prv              
 
 # --- Deployment files ---
 
