@@ -88,11 +88,6 @@ nltk_data/           # nltk downloaded corpora
 .spacy/              # spaCy model downloads
 wandb/               # Weights & Biases run history/cache
 
-# --- Deployment files ---
-
-*.tar.gz             # Source tarball created by setuptools
-*.whl                # Wheel distribution files for Python packages
-
 # --- Others ---
 
 .DS_Store            # macOS Finder metadata
@@ -100,3 +95,8 @@ wandb/               # Weights & Biases run history/cache
 Thumbs.db            # Windows Explorer thumbnail cache
 *.prv                # Private keys
 **/.prv              # Private keys
+
+# --- Deployment files ---
+
+*.tar.gz             # Source tarball created by setuptools
+*.whl                # Wheel distribution files for Python packages
