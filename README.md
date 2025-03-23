@@ -110,7 +110,7 @@ git commit -m "Implemented JSON structure validation"
 git push origin feature/functionality_name
 # <!> Then generate a Pull Request to dev and wait for the team's review.
 ```
-4.	hotfix/*  (Production fixes): 
+4.	`hotfix/*`  (Production fixes): 
     - Created from “main” to fix urgent bugs.
     - Merged into both main and dev after fix.
     - The nomenclature follows: hotfix/hotfix_name
@@ -125,7 +125,7 @@ git push origin hotfix/bug-correction-validation
 # <!> Once approved, it's merged and also merged into dev to keep both up to date.
 
 ```
-5.	release/*  (Release preparation): Used before releasing major versions.
+5.	`release/*`  (Release preparation): Used before releasing major versions.
     - They are used to prepare versions before deployment.
     - They are created from dev and allow for: Final adjustments. Minor bug fixes. Documentation.
     - The nomenclature follows: release/vX.Y.Z
