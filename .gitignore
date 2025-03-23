@@ -85,7 +85,5 @@ wandb/
 
 # --- Other files and sensitive private keys ---
 .DS_Store
-**/.DS_Store
 Thumbs.db
 *.prv
-**/.prv
