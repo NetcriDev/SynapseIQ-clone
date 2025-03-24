@@ -1,2 +1,2 @@
-def repository():
+def MilvusRepository():
     pass

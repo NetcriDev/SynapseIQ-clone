@@ -1,15 +1,33 @@
 ## Table of Contents
 
 - [Introduction](#introduction)
+- [Configuration](#configuration)
 - [File-System](#file-system)
 - [Branching-Strategy/Policies](#branching-strategypolicies)
   - [Main Branches](#main-branches)
   - [Branches of Work (Secondary Branches)](#branches-of-work-secondary-branches)
-- [Configuration](#configuration)
-- [Design Pattern](#design-pattern)
+- [Design Pattern and File System](#design-pattern-and-file-system)
+  - [Design Pattern](#design-pattern)
+  - [Design Pattern: File System](#design-pattern-file-system)
 
 # Introduction
 Repository layout (under construction)
+
+# Configuration
+```
+ssh -i rel8tedkey01_rsa.prv" root@52.116.202.144
+```
+
+Use the following command to execute python scripts
+```
+pyhton3.11
+```
+
+For API keys, SSH keys, and any other general questions, please contact
+
+```
+eperler@rel8ed.to
+```
 
 # File-System
 To ensure a structured approach, the following file organization schema will be implemented. This structure separates concerns into distinct directories, making it easier to manage different components of the application. The src/ directory will contain the core application logic, including API endpoints, business logic services, JSON validation schemas, and data connectors. A dedicated ml/ folder will store machine learning models, training scripts, and inference logic. Additionally, an notebooks/ directory will be included to store notebooks for exploratory data analysis and code for proof-of-concept implementations. Deployment configurations such as Dockerfiles and CI/CD pipelines will reside in the deploy/ and ci_cd/ directories, respectively. Furthermore, logs, documentation, and test cases will be systematically organized into their respective folders, ensuring better debugging, monitoring, and maintainability.
@@ -137,31 +155,138 @@ git checkout -b release/v1.0.0 dev
 
 ```
 
-# Configuration
-```
-ssh -i rel8tedkey01_rsa.prv" root@52.116.202.144
-```
-
-Use the following command to execute python scripts
-```
-pyhton3.11
-```
-
-For API keys, SSH keys, and any other general questions, please contact
-
-```
-eperler@rel8ed.to
-```
-
-# Design Pattern
+# Design Pattern and File System
+## Design Pattern
 The following design patterns are used to organize the workflow:
 
 `Strategy`: Helps us handle different ways of connecting to file sources (such as FTP, email, API, websites, etc.). Each connector follows the same structure, so we can switch the source without changing all the code.
 
+```python
+from abc import ABC, abstractmethod
+class BaseConnector(ABC):
+    @abstractmethod
+    def fetch_files(self) -> list[tuple[bytes, str]]:
+        "Must return a list of tuples (file_content, file_name)"
+        pass
+```
+```python
+from .base import BaseConnector
+
+class AzureConnector(BaseConnector):
+    def fetch_files(self):
+        # logic for connecting and downloading from Azure Storage Blob
+        return [(b"<binary>", "report.pdf")] # Example of return, Must return a list of tuples (file_content, file_name)
+
+```
+
 `Factory`: Allows us to decide, based on the file type (PDF, Excel, XML, image…), which class should process it. Instead of writing many “if” statements in the code, we use a factory that automatically returns the correct processor.
+
+```python
+# file: base.py
+from abc import ABC, abstractmethod
+from typing import Any
+
+class BaseParser(ABC):
+    @abstractmethod
+    def parser(self, file_bytes: bytes, filename: str) -> dict[str, Any]:
+        """Processes the file and returns a structured JSON."""
+        pass
+```
+
+```python
+# file: pdf_parser.py
+from .base import BaseParser
+
+class PdfParser(BaseParser):
+    def parser(self, file_bytes: bytes, filename: str) -> dict:
+        # Code that executes the parser
+        return {
+            "report_id": "ACC12345",
+            "datetime": "2025-02-26",
+            "location": {
+                "street": "Lakeview Dr",
+                "city": "Angeles",
+                "state": "CA",
+                "zip": "90001",
+                "coordinates": {"latitude": 34.0522, "longitude": -118.2437}
+                },
+                "vehicles_involved": [
+                    {"plate_number": "XYZ123", "make": "Toyota", "model": "Corolla", "year": 2018}
+                    ],
+                    "injuries_reported": True,
+                    "injury_severity": "Major",
+                    "official_documentation": {
+                        "police_report_id": "PR-98765",
+                        "insurance_claim_status": "Pending"
+                        },
+                        "officer_in_charge": {"name": "Smith Adam", "badge_number": "3435345"}
+                        }
+
+```
+
+```python
+# file: factory.py
+from .pdf_processor import PDFProcessor
+from .excel_processor import ExcelProcessor
+from .base import BaseProcessor
+
+def get_processor(file_extension: str) -> BaseProcessor:
+    match file_extension.lower():
+        case ".pdf":
+            return PDFProcessor()
+        case ".xls" | ".xlsx":
+            return ExcelProcessor()
+        case _:
+            raise ValueError(f"No processor found for: {file_extension}")
+
+```
 
 `Repository`: Takes care of saving and retrieving data (metadata, processed files, JSON results, etc.) without the rest of the system needing to worry about where or how it’s stored. It allows us to store and query data without knowing whether it goes to a database, the cloud, or a local file.
 
+```python
+from abc import ABC, abstractmethod
+from typing import Any, Optional
+
+class BaseRepository(ABC):
+    @abstractmethod
+    def create(self, data: dict[str, Any]) -> None:
+        """Creates a new record in the database."""
+        pass
+
+    @abstractmethod
+    def read(self, identifier: str) -> Optional[dict[str, Any]]:
+        """Reads and returns a record given its unique identifier."""
+        pass
+
+    @abstractmethod
+    def update(self, identifier: str, updates: dict[str, Any]) -> None:
+        """Updates an existing record."""
+        pass
+
+    @abstractmethod
+    def delete(self, identifier: str) -> None:
+        """Deletes a record given its identifier."""
+        pass
+
+    @abstractmethod
+    def exists(self, file_hash: str) -> bool:
+        """Returns True if the file has already been hashed."""
+        pass
+
+    @abstractmethod
+    def save_metadata(self, metadata: dict[str, Any]) -> None:
+        """Stores metadata associated with a file."""
+        pass
+
+    @abstractmethod
+    def save_json(self, structured_json: dict[str, Any]) -> None:
+        """Saves the processed structured JSON from the file."""
+        pass
+
+```
+
+
+## Design Pattern: File System
 
 ```
 src/

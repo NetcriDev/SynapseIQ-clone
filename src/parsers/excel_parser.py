@@ -1,7 +1,10 @@
 from .base import BaseParser
+import pandas as pd
+from io import BytesIO
 
-class XmlParser(BaseParser):
+class ExcelParser(BaseParser):
     def parser(self, file_bytes: bytes, filename: str) -> dict:
+        df = pd.read_excel(BytesIO(file_bytes))
         # Code that executes the parser
         return {
             "report_id": "ACC12345",
