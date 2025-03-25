@@ -15,7 +15,7 @@ Repository layout (under construction)
 
 # Configuration
 ```
-ssh -i rel8tedkey01_rsa.prv" root@52.116.202.144
+ssh -i rel8tedkey01_rsa.prv root@52.116.202.144
 ```
 
 Use the following command to execute python scripts
