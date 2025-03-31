@@ -124,7 +124,7 @@ def insert_full_crash_data(df_expanded):
                 "Driver" if license else "Occupant",
                 driver if driver else None,
                 int(age) if pd.notnull(age) and str(age).isdigit() else None,
-                insurance,
+                severity,
                 "Passenger record from CSV"
             ))
 

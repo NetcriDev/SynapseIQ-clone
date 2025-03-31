@@ -1,86 +1,196 @@
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
+from fastapi import FastAPI, Query, HTTPException
 from typing import List, Optional
+from datetime import datetime, time
+from src.models.models_api import Passenger, PassengerUpdatePhones, Vehicle, IncidentReport
+from config.config import get_connection
+from src.utils.util_pagination import paginate
+from src.utils.parse_date import parse_date
 import psycopg2
-import os
+import psycopg2.extras
 
 app = FastAPI()
 
-# Configuración de la base de datos
-db_config = {
-    "dbname": "crash_records",
-    "user": "synapseiq",
-    "password": "SynapseIQ$2025",
-    "host": "localhost",
-    "port": "5432"
-}
+# Endpoint: Search by report_number and fetch vehicles + passengers
+@app.get("/incident/by-report", response_model=IncidentReport)
+def get_incident_by_report_number(report_number: str):
+    conn = get_connection()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
-# Modelos Pydantic
-class IncidentReport(BaseModel):
-    id: int
-    report_number: str
-    accident_datetime: Optional[str]
-    city: Optional[str]
-    state: Optional[str]
-    crash_severity: Optional[str]
-    json: Optional[dict]
+    cur.execute("SELECT * FROM incident_reports WHERE report_number = %s", (report_number,))
+    incident = cur.fetchone()
+    if not incident:
+        raise HTTPException(status_code=404, detail="Incident not found")
 
-class Vehicle(BaseModel):
-    id: int
-    incident_report_id: int
-    driver_name: Optional[str]
-    driver_license: Optional[str]
-    insurance_company: Optional[str]
+    cur.execute("SELECT * FROM vehicles WHERE incident_report_id = %s", (incident['id'],))
+    vehicles = cur.fetchall()
+    for v in vehicles:
+        cur.execute("SELECT * FROM passengers WHERE vehicle_id = %s", (v['id'],))
+        v['passengers'] = cur.fetchall()
 
-class Passenger(BaseModel):
-    id: int
-    vehicle_id: int
-    role: Optional[str]
-    name: Optional[str]
-    age: Optional[int]
+    incident['vehicles'] = vehicles
+    conn.close()
+    return incident
 
-# Utilidad para conectar y consultar
+# Endpoint: Filtrado múltiple de incident_reports
+@app.get("/incident/search", response_model=List[IncidentReport])
+def search_incidents(
+    generation_from: Optional[str] = None,
+    generation_to: Optional[str] = None,
+    accident_from: Optional[str] = None,
+    accident_to: Optional[str] = None,
+    zip: Optional[str] = None,
+    state: Optional[str] = None,
+    city: Optional[str] = None,
+    crash_severity: Optional[str] = None,
+    page: int = 1,
+    page_size: int = 15
+):
+    conn = get_connection()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
-def get_connection():
-    return psycopg2.connect(**db_config)
+    filters = []
+    params = []
 
-# Rutas
-@app.get("/incidents", response_model=List[IncidentReport])
-def get_incidents():
-    try:
-        conn = get_connection()
-        cur = conn.cursor()
-        cur.execute("SELECT id, report_number, accident_datetime, city, state, crash_severity, json FROM incident_reports LIMIT 100")
-        rows = cur.fetchall()
-        conn.close()
-        return [IncidentReport(
-            id=r[0], report_number=r[1], accident_datetime=str(r[2]) if r[2] else None,
-            city=r[3], state=r[4], crash_severity=r[5], json=r[6]) for r in rows]
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    if generation_from:
+        filters.append("generation_date >= %s")
+        params.append(parse_date(generation_from))
+    if generation_to:
+        end_of_day = datetime.combine(parse_date(generation_to), time(23, 59, 59))
+        filters.append("generation_date <= %s")
+        params.append(end_of_day)
+    if accident_from:
+        filters.append("accident_datetime >= %s")
+        params.append(parse_date(accident_from))
+    if accident_to:
+        end_of_day = datetime.combine(parse_date(accident_to), time(23, 59, 59))
+        filters.append("accident_datetime <= %s")
+        params.append(end_of_day)
+    if zip:
+        filters.append("zip ILIKE %s")
+        params.append(f"%{zip}%")
+    if state:
+        filters.append("state ILIKE %s")
+        params.append(f"%{state}%")
+    if city:
+        filters.append("city ILIKE %s")
+        params.append(f"%{city}%")
+    if crash_severity:
+        filters.append("crash_severity ILIKE %s")
+        params.append(f"%{crash_severity}%")
 
-@app.get("/vehicles", response_model=List[Vehicle])
-def get_vehicles():
-    try:
-        conn = get_connection()
-        cur = conn.cursor()
-        cur.execute("SELECT id, incident_report_id, driver_name, driver_license, insurance_company FROM vehicles LIMIT 100")
-        rows = cur.fetchall()
-        conn.close()
-        return [Vehicle(
-            id=r[0], incident_report_id=r[1], driver_name=r[2], driver_license=r[3], insurance_company=r[4]) for r in rows]
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    query = "SELECT * FROM incident_reports"
+    if filters:
+        query += " WHERE " + " AND ".join(filters)
+    query += " ORDER BY generation_date DESC"
 
-@app.get("/passengers", response_model=List[Passenger])
-def get_passengers():
-    try:
-        conn = get_connection()
-        cur = conn.cursor()
-        cur.execute("SELECT id, vehicle_id, role, name, age FROM passengers LIMIT 100")
-        rows = cur.fetchall()
-        conn.close()
-        return [Passenger(
-            id=r[0], vehicle_id=r[1], role=r[2], name=r[3], age=r[4]) for r in rows]
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    cur.execute(query, tuple(params))
+    incidents = cur.fetchall()
+
+    for incident in incidents:
+        cur.execute("SELECT * FROM vehicles WHERE incident_report_id = %s", (incident['id'],))
+        vehicles = cur.fetchall()
+        for v in vehicles:
+            cur.execute("SELECT * FROM passengers WHERE vehicle_id = %s", (v['id'],))
+            v['passengers'] = cur.fetchall()
+        incident['vehicles'] = vehicles
+
+    conn.close()
+    return incidents
+
+# Endpoint: Buscar pasajeros por nombre, edad o license
+@app.get("/passengers/search", response_model=List[Passenger])
+def search_passengers(
+    name: Optional[str] = None,
+    age: Optional[int] = None,
+    license_number: Optional[str] = None,
+    page: int = 1,
+    page_size: int = 10
+):
+    conn = get_connection()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+    filters = []
+    params = []
+    if name:
+        filters.append("name ILIKE %s")
+        params.append(f"%{name}%")
+    if age is not None:
+        filters.append("age = %s")
+        params.append(age)
+    if license_number:
+        filters.append("license_number ILIKE %s")
+        params.append(f"%{license_number}%")
+
+    query = "SELECT * FROM passengers"
+    if filters:
+        query += " WHERE " + " AND ".join(filters)
+    query += " ORDER BY id DESC"
+
+    cur.execute(query, tuple(params))
+    passengers = cur.fetchall()
+    conn.close()
+    return passengers
+
+# Endpoint: Editar teléfonos de un pasajero
+@app.put("/passenger/{passenger_id}/phones")
+def update_passenger_phones(passenger_id: int, phones: PassengerUpdatePhones):
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("""
+        UPDATE passengers SET phone1 = %s, phone2 = %s WHERE id = %s
+    """, (phones.phone1, phones.phone2, passenger_id))
+    if cur.rowcount == 0:
+        conn.rollback()
+        raise HTTPException(status_code=404, detail="Passenger not found")
+    conn.commit()
+    conn.close()
+    return {"message": "Phone numbers updated successfully"}
+
+# Endpoint: Buscar vehículos con filtros y unir incidentes y pasajeros
+@app.get("/vehicles/search", response_model=List[Vehicle])
+def search_vehicles(
+    license_plate_number: Optional[str] = None,
+    license_plate_state: Optional[str] = None,
+    driver_name: Optional[str] = None,
+    driver_license: Optional[str] = None,
+    owner_name: Optional[str] = None,
+    page: int = 1,
+    page_size: int = 10
+):
+    conn = get_connection()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+    filters = []
+    params = []
+    if license_plate_number:
+        filters.append("license_plate_number ILIKE %s")
+        params.append(f"%{license_plate_number}%")
+    if license_plate_state:
+        filters.append("license_plate_state = %s")
+        params.append(license_plate_state)
+    if driver_name:
+        filters.append("driver_name ILIKE %s")
+        params.append(f"%{driver_name}%")
+    if driver_license:
+        filters.append("driver_license ILIKE %s")
+        params.append(f"%{driver_license}%")
+    if owner_name:
+        filters.append("owner_name ILIKE %s")
+        params.append(f"%{owner_name}%")
+
+    query = "SELECT * FROM vehicles"
+    if filters:
+        query += " WHERE " + " AND ".join(filters)
+    query += " ORDER BY id DESC"
+
+    cur.execute(query, tuple(params))
+    vehicles = cur.fetchall()
+
+    for v in vehicles:
+        cur.execute("SELECT * FROM passengers WHERE vehicle_id = %s", (v['id'],))
+        v['passengers'] = cur.fetchall()
+        cur.execute("SELECT * FROM incident_reports WHERE id = %s", (v['incident_report_id'],))
+        v['incident'] = cur.fetchone()
+
+    conn.close()
+    return vehicles
