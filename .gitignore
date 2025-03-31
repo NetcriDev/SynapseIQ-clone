@@ -81,6 +81,7 @@ wandb/
 
 # --- Python packaging and distribution files ---
 *.tar.gz
+*.tgz
 *.whl
 
 # --- Other files and sensitive private keys ---

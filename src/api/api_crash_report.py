@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Query, HTTPException
+from fastapi import FastAPI, Query, HTTPException, Response
 from typing import List, Optional
 from datetime import datetime, time
 from src.models.models_api import Passenger, PassengerUpdatePhones, Vehicle, IncidentReport
@@ -7,12 +7,24 @@ from src.utils.util_pagination import paginate
 from src.utils.parse_date import parse_date
 import psycopg2
 import psycopg2.extras
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 app = FastAPI()
 
+# Configuration CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # o especifica ["https://tudexampleDOminio.com"]
+    allow_credentials=True,
+    allow_methods=["*"],  # o lista específica ["GET", "POST"]
+    allow_headers=["*"],  # o lista específica ["Authorization", "Content-Type"]
+)
+
 # Endpoint: Search by report_number and fetch vehicles + passengers
 @app.get("/incident/by-report", response_model=IncidentReport)
-def get_incident_by_report_number(report_number: str):
+def get_incident_by_report_number(report_number: str,response: Response):
+    response.headers["Access-Control-Allow-Origin"] = "*"
     conn = get_connection()
     cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
@@ -43,7 +55,8 @@ def search_incidents(
     city: Optional[str] = None,
     crash_severity: Optional[str] = None,
     page: int = 1,
-    page_size: int = 15
+    page_size: int = 15,
+    response: Response = None
 ):
     conn = get_connection()
     cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
@@ -95,6 +108,8 @@ def search_incidents(
         incident['vehicles'] = vehicles
 
     conn.close()
+    if response:
+        response.headers["Access-Control-Allow-Origin"] = "*"
     return incidents
 
 # Endpoint: Buscar pasajeros por nombre, edad o license
@@ -104,7 +119,8 @@ def search_passengers(
     age: Optional[int] = None,
     license_number: Optional[str] = None,
     page: int = 1,
-    page_size: int = 10
+    page_size: int = 10,
+    response: Response = None
 ):
     conn = get_connection()
     cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
@@ -129,11 +145,13 @@ def search_passengers(
     cur.execute(query, tuple(params))
     passengers = cur.fetchall()
     conn.close()
+    if response:
+        response.headers["Access-Control-Allow-Origin"] = "*"
     return passengers
 
 # Endpoint: Editar teléfonos de un pasajero
 @app.put("/passenger/{passenger_id}/phones")
-def update_passenger_phones(passenger_id: int, phones: PassengerUpdatePhones):
+def update_passenger_phones(passenger_id: int, phones: PassengerUpdatePhones, response: Response = None):
     conn = get_connection()
     cur = conn.cursor()
     cur.execute("""
@@ -144,6 +162,8 @@ def update_passenger_phones(passenger_id: int, phones: PassengerUpdatePhones):
         raise HTTPException(status_code=404, detail="Passenger not found")
     conn.commit()
     conn.close()
+    if response:
+        response.headers["Access-Control-Allow-Origin"] = "*"
     return {"message": "Phone numbers updated successfully"}
 
 # Endpoint: Buscar vehículos con filtros y unir incidentes y pasajeros
@@ -155,7 +175,8 @@ def search_vehicles(
     driver_license: Optional[str] = None,
     owner_name: Optional[str] = None,
     page: int = 1,
-    page_size: int = 10
+    page_size: int = 10,
+    response: Response=None
 ):
     conn = get_connection()
     cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
@@ -193,4 +214,6 @@ def search_vehicles(
         v['incident'] = cur.fetchone()
 
     conn.close()
+    if response:
+        response.headers["Access-Control-Allow-Origin"] = "*"
     return vehicles
