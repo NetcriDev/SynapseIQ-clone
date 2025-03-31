@@ -2,6 +2,7 @@
 
 - [Introduction](#introduction)
 - [Configuration](#configuration)
+- [Api execution](#api-execution)
 - [File-System](#file-system)
 - [Branching-Strategy/Policies](#branching-strategypolicies)
   - [Main Branches](#main-branches)
@@ -27,6 +28,13 @@ For API keys, SSH keys, and any other general questions, please contact
 
 ```
 eperler@rel8ed.to
+```
+# Api execution
+Run the API from the directory:
+
+```
+cd /home/SynapseIQ
+uvicorn src.api.api_crash_report:app --reload
 ```
 
 # File-System
