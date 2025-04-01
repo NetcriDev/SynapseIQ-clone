@@ -11,7 +11,7 @@ import psycopg2
 import json
 from datetime import datetime
 
-def insert_full_crash_data(df_expanded):
+def insert_full_crash_data(df_expanded: pd.DataFrame, file_path: str):
     conn = psycopg2.connect(
         dbname="crash_records",
         user="synapseiq",
@@ -43,9 +43,9 @@ def insert_full_crash_data(df_expanded):
         # Insert incident if not exists
         cur.execute("""
             INSERT INTO incident_reports (
-                report_number, source_url, accident_datetime, city, state, crash_severity, notes, json
+                report_number, source_url, accident_datetime, city, state, crash_severity, notes, json, original_document_location
             )
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
             ON CONFLICT (report_number) DO NOTHING
         """, (
             report_number,
@@ -55,7 +55,8 @@ def insert_full_crash_data(df_expanded):
             state,
             severity,
             "Imported from df_expanded with JSON",
-            row_json
+            row_json,
+            file_path
         ))
 
         # Get incident ID
@@ -133,7 +134,7 @@ def insert_full_crash_data(df_expanded):
     conn.close()
 
 
-def run_kansas_crash_scraper(path_dir, insert_full_crash_data):
+def run_kansas_crash_scraper(path_dir):
     username = 'rrel8ed'
     password = 'zFfUPRWH6q'
     country = 'US'
@@ -340,7 +341,7 @@ def run_kansas_crash_scraper(path_dir, insert_full_crash_data):
         df[col] = df.apply(lambda row: row[col] + [""] * (max_len[row.name] - len(row[col])), axis=1)
 
     df_expanded = df.explode(cols_to_explode, ignore_index=True)
-    insert_full_crash_data(df_expanded)
+    insert_full_crash_data(df_expanded, output_pdf)
 
     file_name='Data_Crashes_Kansas_24H_'+desired_date.strftime('%Y%m%d')+'.csv'
     output_path = os.path.join(path_dir, file_name)
@@ -350,5 +351,5 @@ def run_kansas_crash_scraper(path_dir, insert_full_crash_data):
 
 #output_dir = "/Users/cristianb/Documents/Python/rel8ed/SynapseIQ_staging/storage"
 #output_dir = "/home/data"
-#run_kansas_crash_scraper(output_dir, insert_full_crash_data)
+#run_kansas_crash_scraper(output_dir)
 
