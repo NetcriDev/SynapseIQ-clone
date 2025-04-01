@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hope Neuro Data</title>
+</head>
+
+<body>
+
+    <div class="header">
+        <div class="logo-container"></div>
+        <div class="logo-container-2"></div>
+        
+    </div>
+    <main>
+        <div class="container">
+            <div class="table-container">
+                <strong><p> Select your filters:</p></strong>
+                <div class="filters">
+                    <select id="filterCol7">
+                        <option value="">--- State ---</option>
+                    </select>
+                    <select id="filterCol8">
+                        <option value="">------- City -------</option>
+                    </select>
+                    <input type="date" id="filterDate">
+                </div>
+                <br> 
+                <table id="dataTable">
+                    <thead>
+                        <tr>
+                            <th>Report N°</th>
+                            <th>Crash Date</th>
+                            <th>Driver Name</th>
+                            <th>Age</th>
+                            <th>Gender</th>
+                            <th>Address</th>
+                            <th>State</th>
+                            <th>City</th>
+                            <th>Insurance Details</th>
+                            <th>Report PDF</th>
+                            <th>Distance from Clinic</th>
+                            <th>Phone N°</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                    </tbody>
+                </table>
+            </div>
+            <div class="free-space" id="freeSpace" style="display: none;">
+                <button onclick="hidePDF()" style="float: right; background: red; color: white; border: none; padding: 5px 10px; cursor: pointer;">X</button>
+                <p><strong>ID:</strong> <span id="pdfId"></span></p>
+                <iframe id="pdfViewer" src="" width="100%" height="500px" style="border: none;"></iframe>
+            </div>
+            
+            
+        </div>
+    </main>
+</body>
+
+<style>
+    * {
+        box-sizing: border-box;
+        font-family: Arial, sans-serif;
+        font-size: 14px;
+    }
+
+    p{
+        margin: 0;
+        padding-bottom: 10px;
+    }
+
+    main {
+            display: flex;
+        }
+
+    body {
+        margin: 0;
+        padding: 20px;
+        padding-top: 0%;
+        background-color: #57e0e02f;
+    }
+
+    .container {
+        display: flex;
+        gap: 20px;
+        width: 100%;  /* Certifique-se de que o container ocupe a largura total */
+    }
+
+    .table-container {
+        flex-grow: 1;
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+        /* transition: width 0.3s ease;  */
+        height: 600px;
+        min-width: 0; /* Isso permitirá que a largura da div encolha */
+        width: 100%;
+        overflow-y:auto
+    }
+
+
+    .free-space {
+        width: 30%;
+        background: #ddd;
+        padding: 20px;
+        border-radius: 8px;
+        text-align: center;
+        /* transition: width 0.3s ease, opacity 0.3s ease; */
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        display: none; /* Inicialmente escondido */
+    }
+
+
+    .free-space iframe {
+        width: 100%;   /* Garante que o iframe ocupe 100% da largura da div */
+        height: 90%;  /* Garante que o iframe ocupe 100% da altura da div */
+        border: none;
+    }
+
+    .filters {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 10px;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: separate; /* Permite bordas arredondadas */
+        border-spacing: 0; /* Remove o espaçamento entre as células */
+        border-radius: 10px; /* Borda arredondada para a tabela */
+        overflow: hidden; /* Garante que o conteúdo não ultrapasse as bordas arredondadas */
+    }
+
+    th, td {
+        border: 1px solid #ddd; /* Borda nas células */
+        padding: 8px;
+        text-align: center;
+    }
+
+    th {
+        background-color: #f0f0f0;
+        /* background-color:  #ddd; */
+    }
+    /* Arredondar as bordas das células também */
+    table tr:first-child th:first-child {
+        border-top-left-radius: 10px;
+    }
+
+    table tr:first-child th:last-child {
+        border-top-right-radius: 10px;
+    }
+
+    table tr:last-child td:first-child {
+        border-bottom-left-radius: 10px;
+    }
+
+    table tr:last-child td:last-child {
+        border-bottom-right-radius: 10px;
+    }
+
+    /* ------------------- Right Top Menu ------------------- */
+
+    .menu {
+        display: flex;
+        gap: 20px;
+        justify-content: flex-end;
+        align-items: flex-end;
+        width: 100%;
+    }
+
+    .header {
+        width: 100%;
+        box-sizing: border-box;
+        font-family: 'Poppins', sans-serif;
+        display: flex;
+        padding: 10px 20px;
+        /* border-bottom: 1px solid #ddd; */
+        margin-bottom: 10px;
+        justify-content: space-between; /* Coloca os logos nas extremidades */
+        align-items: center; /* Alinha os logos verticalmente */
+    }
+
+    a[slot="primary-items"]::after {
+        content: '|';
+        position: absolute;
+        right: -0.25em; /* == -4px */
+        color: hwb(0 69% 31%);
+    }
+
+    .logo-container {
+        width: 150px;
+        height: 50px;
+        background-size: contain;
+        background-repeat: no-repeat;
+        background-image: url("./images/rel8ed-logo.png");
+    }
+
+    .logo-container-2 {
+        width: 250px;
+        height: 50px;
+        background-size: contain;
+        background-repeat: no-repeat;
+        background-image: url("./images/Hope-Neuro_Logo.png");
+        flex-grow: 0;
+    }
+    
+
+</style>
+
+<script>
+    const API_URL = "https://990c-52-116-202-144.ngrok-free.app/incident/search";
+    let data = []; // Variável global para armazenar os incidentes
+
+    // Função para buscar os dados da API e armazená-los globalmente
+    async function buscarIncidentes() {
+        try {
+            const resposta = await fetch(API_URL, {
+                headers: { "ngrok-skip-browser-warning": "true" }
+            });
+
+            if (!resposta.ok) {
+                throw new Error(`Erro: ${resposta.status}`);
+            }
+
+            const dados = await resposta.json();
+            data = transformarDados(dados); // Salva os dados na variável global
+            renderTable(); // Agora chamamos a renderização após os dados estarem carregados
+        } catch (erro) {
+            console.error("Erro ao buscar incidentes:", erro);
+            document.getElementById("resultados").innerHTML = `<p style="color:red;">Erro ao carregar dados.</p>`;
+        }
+    }
+
+    // Função para transformar os dados da API no formato correto para a tabela
+    function transformarDados(dados) {
+        let incidentesFormatados = [];
+
+        dados.forEach(incidente => {
+            incidente.vehicles.forEach(veiculo => {
+                const motorista = veiculo.passengers?.find(p => p.role === "Driver") || {};
+
+                let driverName = motorista.name || veiculo.driver_name || "Não informado";
+                let insuranceDetails = veiculo.insurance_company || "Desconhecido";
+                let driverLicense = veiculo.driver_license ? ` (License: ${veiculo.driver_license})` : "";
+                
+                // Exclui linhas onde Driver Name é "Unknown" ou Insurance Details é "N/A"
+                if (driverName === "Unknown" || insuranceDetails === "N/A") {
+                    return; // Pula essa iteração e não adiciona ao array
+                }
+                
+                incidentesFormatados.push({
+                    id: incidente.report_number,
+                    col2: incidente.accident_datetime.split("T")[0], // Data do acidente
+                    col3: motorista.name || veiculo.driver_name || "N/A", // Nome do motorista
+                    col4: motorista.age || "N/A", // Idade
+                    col5: motorista.gender || "N/A", // Gênero
+                    col6: veiculo.owner_address || "", // Endereço do proprietário
+                    col7: incidente.state, // Estado
+                    col8: incidente.city || "", // Cidade
+                    col9: insuranceDetails + driverLicense || "N/A", // Seguradora + Licença
+                    col10: incidente.source_url || "", // Link do relatório
+                    col11: "", // Pode ser ajustado conforme necessidade
+                    col12: motorista.phone1 || "N/A" // Telefone
+                });
+            });
+        });
+
+        // Ordena os incidentes por data em ordem decrescente
+        incidentesFormatados.sort((a, b) => new Date(b.col2) - new Date(a.col2));
+
+        return incidentesFormatados;
+    }
+
+    // Função para renderizar a tabela com os dados filtrados
+    function renderTable() {
+        const tableBody = document.getElementById("tableBody");
+        const filterCol7 = document.getElementById("filterCol7");
+        const filterCol8 = document.getElementById("filterCol8");
+        const filterDate = document.getElementById("filterDate");
+
+        tableBody.innerHTML = "";
+
+        data
+            .filter(item =>
+                (!filterCol7.value || item.col7 === filterCol7.value) &&
+                (!filterCol8.value || item.col8 === filterCol8.value) &&
+                (!filterDate.value || item.col2 === filterDate.value)
+            )
+            .forEach(item => {
+                // const linkIcon = item.col10 
+                //     ? `<a href="#" onclick="window.open('${item.col10}', '_blank')" title="Ver relatório">🔗</a>` 
+                //     : "";
+                const linkIcon = item.col10 
+                    ? `<a href="#" onclick="viewPDF('${item.col10}', '${item.id}')" title="Ver relatório">🔗</a>` 
+                    : "";
+
+                const row = `<tr>
+                    <td>${item.id}</td>
+                    <td>${item.col2}</td>
+                    <td>${item.col3}</td>
+                    <td>${item.col4}</td>
+                    <td>${item.col5}</td>
+                    <td>${item.col6}</td>
+                    <td>${item.col7}</td>
+                    <td>${item.col8}</td>
+                    <td>${item.col9}</td>
+                    <td>${linkIcon}</td>
+                    <td>${item.col11}</td>
+                    <td>${item.col12}</td>
+                </tr>`;
+                tableBody.innerHTML += row;
+            });
+    }
+
+    // Função para buscar dados da API e popular filtros
+    async function carregarFiltros() {
+        try {
+            const resposta = await fetch(API_URL, {
+                headers: {
+                    "ngrok-skip-browser-warning": "true"
+                }
+            });
+
+            if (!resposta.ok) {
+                throw new Error(`Erro: ${resposta.status}`);
+            }
+
+            const dados = await resposta.json();
+
+            // Extrair estados e cidades dos dados
+            const estados = new Set();
+            const cidades = new Set();
+
+            dados.forEach(incidente => {
+                estados.add(incidente.state);
+                cidades.add(incidente.city);
+            });
+
+            // Popular filtro de estado
+            const filterCol7 = document.getElementById("filterCol7");
+            estados.forEach(estado => {
+                const option = document.createElement("option");
+                option.value = estado;
+                option.textContent = estado;
+                filterCol7.appendChild(option);
+            });
+
+            // Popular filtro de cidade
+            const filterCol8 = document.getElementById("filterCol8");
+            cidades.forEach(cidade => {
+                const option = document.createElement("option");
+                option.value = cidade;
+                option.textContent = cidade;
+                filterCol8.appendChild(option);
+            });
+
+        } catch (erro) {
+            console.error("Erro ao carregar filtros:", erro);
+            document.getElementById("resultados").innerHTML = `<p style="color:red;">Erro ao carregar filtros.</p>`;
+        }
+    }
+
+    // Exibir o PDF na "free-space"
+    function viewPDF(url, id) {
+        document.getElementById("pdfViewer").src = url;
+        document.getElementById("pdfId").textContent = id;
+
+        const freeSpace = document.getElementById("freeSpace");
+        const tableContainer = document.querySelector(".table-container");
+
+        freeSpace.style.display = "block"; 
+        freeSpace.style.width = "30%";  
+        tableContainer.style.width = "70%"; 
+    }
+
+    function hidePDF() {
+        const freeSpace = document.getElementById("freeSpace");
+        const tableContainer = document.querySelector(".table-container");
+
+        freeSpace.style.display = "none";
+        tableContainer.style.width = "100%";  
+    }
+
+    filterCol7.addEventListener("change", renderTable);
+    filterCol8.addEventListener("change", renderTable);
+    filterDate.addEventListener("change", renderTable);
+    document.addEventListener("DOMContentLoaded", buscarIncidentes);
+
+    // Chama a função de carregamento de filtros e incidentes ao carregar a página
+    document.addEventListener("DOMContentLoaded", () => {
+        carregarFiltros();
+        buscarIncidentes();
+    });
+
+    renderTable();
+
+</script>
+
+</html>
