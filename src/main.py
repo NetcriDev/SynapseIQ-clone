@@ -7,7 +7,7 @@ output_data = "/Users/cristianb/Documents/Python/rel8ed/SynapseIQ_staging/storag
 
 sched = BlockingScheduler()
 
-@sched.scheduled_job('interval', minutes=1)
+@sched.scheduled_job('interval', minutes=20)
 def kansas():
     run_kansas_crash_scraper(output_data, insert_full_crash_data)
     print("Task each 20 minutes")

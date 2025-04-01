@@ -23,7 +23,7 @@ app.add_middleware(
 
 # Endpoint: Search by report_number and fetch vehicles + passengers
 @app.get("/incident/by-report", response_model=IncidentReport)
-def get_incident_by_report_number(report_number: str,response: Response):
+def get_incident_by_report_number(report_number: str,response: Response= None):
     response.headers["Access-Control-Allow-Origin"] = "*"
     conn = get_connection()
     cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
@@ -41,6 +41,7 @@ def get_incident_by_report_number(report_number: str,response: Response):
 
     incident['vehicles'] = vehicles
     conn.close()
+    
     return incident
 
 # Endpoint: Filtrado múltiple de incident_reports
