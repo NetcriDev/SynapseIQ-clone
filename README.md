@@ -3,6 +3,7 @@
 - [Introduction](#introduction)
 - [Configuration](#configuration)
 - [Api execution](#api-execution)
+- [Scraping execution](#scraping-execution)
 - [File-System](#file-system)
 - [Branching-Strategy/Policies](#branching-strategypolicies)
   - [Main Branches](#main-branches)
@@ -34,9 +35,15 @@ Run the API from the directory:
 
 ```
 cd /home/SynapseIQ
-uvicorn src.api.api_crash_report:app --reload
+nohup uvicorn src.api.api_crash_report:app --reload --host 0.0.0.0 --port 8000 >> /home/SynapseIQ/logs/uvicorn.log 2>&1 &
 ```
 
+# Scraping execution
+
+```
+cd /home/SynapseIQ
+nohup python main.py >> /home/SynapseIQ/logs/scraping.log 2>&1 &
+```
 # File-System
 To ensure a structured approach, the following file organization schema will be implemented. This structure separates concerns into distinct directories, making it easier to manage different components of the application. The src/ directory will contain the core application logic, including API endpoints, business logic services, JSON validation schemas, and data connectors. A dedicated ml/ folder will store machine learning models, training scripts, and inference logic. Additionally, an notebooks/ directory will be included to store notebooks for exploratory data analysis and code for proof-of-concept implementations. Deployment configurations such as Dockerfiles and CI/CD pipelines will reside in the deploy/ and ci_cd/ directories, respectively. Furthermore, logs, documentation, and test cases will be systematically organized into their respective folders, ensuring better debugging, monitoring, and maintainability.
 

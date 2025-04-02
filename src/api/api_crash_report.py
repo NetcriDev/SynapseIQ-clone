@@ -44,6 +44,34 @@ def get_incident_by_report_number(report_number: str,response: Response= None):
     
     return incident
 
+from fastapi.responses import FileResponse
+import os
+
+@app.get("/incident/pdf/{report_number}")
+def get_incident_pdf(report_number: str, response: Response = None):
+    conn = get_connection()
+    cur = conn.cursor()
+
+    cur.execute("SELECT original_document_location FROM incident_reports WHERE report_number = %s", (report_number,))
+    result = cur.fetchone()
+    conn.close()
+
+    if not result:
+        raise HTTPException(status_code=404, detail="Report not found")
+
+    pdf_path = result[0]
+
+    if not os.path.isfile(pdf_path):
+        raise HTTPException(status_code=404, detail="PDF file not found on disk")
+
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    return FileResponse(
+        path=pdf_path,
+        media_type="application/pdf",
+        filename=os.path.basename(pdf_path)
+    )
+
+
 # Endpoint: Filtrado múltiple de incident_reports
 @app.get("/incident/search", response_model=List[IncidentReport])
 def search_incidents(
