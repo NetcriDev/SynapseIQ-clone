@@ -45,8 +45,8 @@ def insert_dataframe_into_db(df: pd.DataFrame, file_path: str):
             cur.execute("""
                 INSERT INTO incident_reports (
                     report_number, source_url, accident_datetime, city, state, street,
-                    notes, json, original_document_location
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    notes, json, original_document_location, crash_severity
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 RETURNING id
             """, (
                 report_number,
@@ -57,7 +57,9 @@ def insert_dataframe_into_db(df: pd.DataFrame, file_path: str):
                 street,
                 "Inserted from WSP Daily DataFrame",
                 row_json,
-                original_document_location
+                original_document_location,
+                "Injury"
+
             ))
             incident_id = cur.fetchone()[0]
 
