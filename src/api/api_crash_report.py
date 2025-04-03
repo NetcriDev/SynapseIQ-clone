@@ -56,7 +56,7 @@ def get_incident_pdf(report_number: str, response: Response = None):
     result = cur.fetchone()
     conn.close()
 
-    if not result:
+    if result is None or str(result).strip() == '' or str(result).lower().strip() == 'null':
         raise HTTPException(status_code=404, detail="Report not found")
 
     pdf_path = result[0]
@@ -69,6 +69,34 @@ def get_incident_pdf(report_number: str, response: Response = None):
         path=pdf_path,
         media_type="application/pdf",
         filename=os.path.basename(pdf_path)
+    )
+
+
+@app.get("/incident/pdf/view/{report_number}")
+def view_incident_pdf(report_number: str, response: Response = None):
+    conn = get_connection()
+    cur = conn.cursor()
+
+    # Obtener la ruta del archivo PDF desde la base de datos
+    cur.execute("SELECT original_document_location FROM incident_reports WHERE report_number = %s", (report_number,))
+    result = cur.fetchone()
+    conn.close()
+
+    if result is None or str(result).strip() == '' or str(result).lower().strip() == 'null':
+        raise HTTPException(status_code=404, detail="Report not found")
+
+    pdf_path = result[0]
+
+    if not os.path.isfile(pdf_path):
+        raise HTTPException(status_code=404, detail="PDF file not found on disk")
+
+    #'inline' para que se visualice en el navegador
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    return FileResponse(
+        path=pdf_path,
+        media_type="application/pdf",
+        filename=os.path.basename(pdf_path),
+        headers={"Content-Disposition": f'inline; filename="{os.path.basename(pdf_path)}"'}
     )
 
 
