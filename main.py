@@ -21,7 +21,7 @@ def WinstonSalem():
     run_wsp_crash_scraper(output_dir=output_data)
     print("Task each 24 minutes")
 
-@sched.scheduled_job('interval', minutes=2)
+@sched.scheduled_job('interval', minutes=28)
 def WinstonSalem():
     run_msp_crash_scraper(output_data, dir_home)
     print("Task each 28 minutes")
