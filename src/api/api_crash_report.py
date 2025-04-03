@@ -56,7 +56,7 @@ def get_incident_pdf(report_number: str, response: Response = None):
     result = cur.fetchone()
     conn.close()
 
-    if result is None or str(result).strip() == '' or str(result).lower().strip() == 'null':
+    if result is None or result=="None" or str(result).strip() == '' or str(result).lower().strip() == 'null':
         raise HTTPException(status_code=404, detail="Report not found")
 
     pdf_path = result[0]

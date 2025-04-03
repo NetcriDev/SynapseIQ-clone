@@ -1,9 +1,12 @@
 from apscheduler.schedulers.blocking import BlockingScheduler
 from src.connectors.Kansas_requests import run_kansas_crash_scraper
 from src.connectors.WSP_requests import run_wsp_crash_scraper
+from src.connectors.MSP_requests import run_msp_crash_scraper
 
 #output_data = "/Users/cristianb/Documents/Python/rel8ed/SynapseIQ_staging/storage"
+#dir_home = "/Users/cristianb/Documents/Python/rel8ed/SynapseIQ_staging"
 output_data = "/home/data"
+dir_home="home/data/SynapseIQ"
 
 
 sched = BlockingScheduler()
@@ -11,15 +14,19 @@ sched = BlockingScheduler()
 @sched.scheduled_job('interval', minutes=18)
 def kansas():
     run_kansas_crash_scraper(path_dir=output_data)
-    print("Task each 20 minutes")
+    print("Task each 18 minutes")
 
 @sched.scheduled_job('interval', minutes=24)
 def WinstonSalem():
     run_wsp_crash_scraper(output_dir=output_data)
-    print("Task each 20 minutes")
+    print("Task each 24 minutes")
+
+@sched.scheduled_job('interval', minutes=2)
+def WinstonSalem():
+    run_msp_crash_scraper(output_data, dir_home)
+    print("Task each 28 minutes")
 
 sched.start()
-
 
 
 #from connectors.email_connector import EmailConnector

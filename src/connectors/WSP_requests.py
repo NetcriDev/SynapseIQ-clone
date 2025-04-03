@@ -31,6 +31,7 @@ def insert_dataframe_into_db(df: pd.DataFrame, file_path: str):
         vin = str(row.get('VIN', '')).strip()
         insurance = str(row.get('Insurance', '')).strip()
         policy = str(row.get('Policy', '')).strip()
+        generation_date = datetime.now()
 
         row_json = json.dumps(row.dropna().to_dict())
 
@@ -45,8 +46,9 @@ def insert_dataframe_into_db(df: pd.DataFrame, file_path: str):
             cur.execute("""
                 INSERT INTO incident_reports (
                     report_number, source_url, accident_datetime, city, state, street,
-                    notes, json, original_document_location, crash_severity
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    notes, json, original_document_location, generation_date,
+                    original_format
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 RETURNING id
             """, (
                 report_number,
@@ -58,8 +60,8 @@ def insert_dataframe_into_db(df: pd.DataFrame, file_path: str):
                 "Inserted from WSP Daily DataFrame",
                 row_json,
                 original_document_location,
-                "Injury"
-
+                generation_date,
+                "pdf"
             ))
             incident_id = cur.fetchone()[0]
 

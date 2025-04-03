@@ -31,6 +31,7 @@ def insert_full_crash_data(df_expanded: pd.DataFrame, file_path: str):
         city = row.get("City", "").strip()
         severity = row.get("Type", "").strip()
         age = row.get("Age", None)
+        generation_date = datetime.now()
 
         accident_dt_str = f"{row['Date']} {row['Time']}"
         try:
@@ -43,9 +44,10 @@ def insert_full_crash_data(df_expanded: pd.DataFrame, file_path: str):
         # Insert incident if not exists
         cur.execute("""
             INSERT INTO incident_reports (
-                report_number, source_url, accident_datetime, city, state, crash_severity, notes, json, original_document_location
+                report_number, source_url, accident_datetime, city, state, crash_severity, 
+                notes, json, original_document_location, generation_date, original_format
             )
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             ON CONFLICT (report_number) DO NOTHING
         """, (
             report_number,
@@ -56,7 +58,9 @@ def insert_full_crash_data(df_expanded: pd.DataFrame, file_path: str):
             severity,
             "Imported from df_expanded with JSON",
             row_json,
-            file_path
+            file_path,
+            generation_date,
+            "pdf"
         ))
 
         # Get incident ID
