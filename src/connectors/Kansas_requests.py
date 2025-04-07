@@ -1,26 +1,25 @@
+import re
+import os
+import sys
 import requests
+import psycopg2
+import json
+import pdfplumber
 import pandas as pd
 from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
-import pdfplumber
-import re
-import os
 from weasyprint import HTML
 from weasyprint.urls import URLFetchingError
-import psycopg2
-import json
-from datetime import datetime
+from src.utils.logger_config import setup_logger
+from config.config import get_connection
+
+main_script_path = sys.path[0]
+logger = setup_logger("Kansas_execution", main_script_path)
 
 def insert_full_crash_data(df_expanded: pd.DataFrame, file_path: str):
-    conn = psycopg2.connect(
-        dbname="crash_records",
-        user="synapseiq",
-        password="SynapseIQ$2025",
-        host="localhost",
-        port="5432"
-    )
+    conn = get_connection()
     cur = conn.cursor()
-
+    logger.info("Start insert into DB: Kansas")
     for _, row in df_expanded.iterrows():
         report_number = str(row["ID"]).strip()
         url = row.get("URL", "").strip()
@@ -31,21 +30,24 @@ def insert_full_crash_data(df_expanded: pd.DataFrame, file_path: str):
         city = row.get("City", "").strip()
         severity = row.get("Type", "").strip()
         age = row.get("Age", None)
+        generation_date = datetime.now()
 
         accident_dt_str = f"{row['Date']} {row['Time']}"
         try:
             accident_dt = datetime.strptime(accident_dt_str, "%m/%d/%Y %H:%M")
         except ValueError:
             accident_dt = None
+            logger.error("Error in parse datetime")
 
         row_json = json.dumps(row.to_dict())
 
         # Insert incident if not exists
         cur.execute("""
             INSERT INTO incident_reports (
-                report_number, source_url, accident_datetime, city, state, crash_severity, notes, json, original_document_location
+                report_number, source_url, accident_datetime, city, state, crash_severity, 
+                notes, json, original_document_location, generation_date, original_format
             )
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             ON CONFLICT (report_number) DO NOTHING
         """, (
             report_number,
@@ -56,7 +58,9 @@ def insert_full_crash_data(df_expanded: pd.DataFrame, file_path: str):
             severity,
             "Imported from df_expanded with JSON",
             row_json,
-            file_path
+            file_path,
+            generation_date,
+            "pdf"
         ))
 
         # Get incident ID
@@ -132,6 +136,7 @@ def insert_full_crash_data(df_expanded: pd.DataFrame, file_path: str):
     conn.commit()
     cur.close()
     conn.close()
+    logger.info("Data inserted successfully!: Kansas")
 
 
 def run_kansas_crash_scraper(path_dir):
@@ -296,26 +301,26 @@ def run_kansas_crash_scraper(path_dir):
             final_citys.append(citys)
             final_ages.append(Age)
 
-            print("Date:", Date)
-            print("Time:", Time)
-            print("Type:", accident_type)
-            print("Drivers:", driver_names)
-            print("Insurance:", insurance_company_list)
-            print("License:", license_list)
-            print("City:", States)
-            print("State:", citys)
-            print("Age:", Age)
-            print("--------------------")
+            #print("Date:", Date)
+            #print("Time:", Time)
+            #print("Type:", accident_type)
+            #print("Drivers:", driver_names)
+            #print("Insurance:", insurance_company_list)
+            #print("License:", license_list)
+            #print("City:", States)
+            #print("State:", citys)
+            #print("Age:", Age)
+            #print("--------------------")
 
             url = 'https://www.kansas.gov/khp-crashlogs/search/viewDetail/2025-'+crash_number[i]
-            output_pdf = path_dir + "/"+ crash_number[i]+".pdf"
+            output_pdf = os.path.join(path_dir, crash_number[i] + ".pdf")
 
             try:
                 HTML(url).write_pdf(output_pdf)
-                print(f"PDF generado correctamente en: {output_pdf}")
-                print(f"Pagina salva como {output_pdf}")
+                logger.info(f"PDF generated correctly in: {output_pdf}")
+                logger.info(f"Page saved as {output_pdf}")
             except Exception as e:
-                print(f"Error al generar el PDF: {e}")
+                logger.error(f"Error generating PDF: {e}")
 
         df_temp = pd.DataFrame({
         "ID": crash_number,
@@ -346,9 +351,12 @@ def run_kansas_crash_scraper(path_dir):
     file_name='Data_Crashes_Kansas_24H_'+desired_date.strftime('%Y%m%d')+'.csv'
     output_path = os.path.join(path_dir, file_name)
     df_expanded.to_csv(output_path,index=False)
-    print("File loaded!")
+    logger.info("File csv loaded!")
 
 
+# Add src/ folder to sys.path to import scraper and parser modules
+#base_dir = os.path.dirname(os.path.abspath(__file__))
+#sys.path.insert(0, base_dir)
 #output_dir = "/Users/cristianb/Documents/Python/rel8ed/SynapseIQ_staging/storage"
 #output_dir = "/home/data"
 #run_kansas_crash_scraper(output_dir)

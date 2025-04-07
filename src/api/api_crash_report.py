@@ -21,6 +21,8 @@ app.add_middleware(
     allow_headers=["*"],  # o lista específica ["Authorization", "Content-Type"]
 )
 
+
+
 # Endpoint: Search by report_number and fetch vehicles + passengers
 @app.get("/incident/by-report", response_model=IncidentReport)
 def get_incident_by_report_number(report_number: str,response: Response= None):
@@ -56,7 +58,7 @@ def get_incident_pdf(report_number: str, response: Response = None):
     result = cur.fetchone()
     conn.close()
 
-    if result is None or str(result).strip() == '' or str(result).lower().strip() == 'null':
+    if result is None or result=="None" or str(result).strip() == '' or str(result).lower().strip() == 'null':
         raise HTTPException(status_code=404, detail="Report not found")
 
     pdf_path = result[0]
@@ -92,6 +94,14 @@ def view_incident_pdf(report_number: str, response: Response = None):
 
     #'inline' para que se visualice en el navegador
     response.headers["Access-Control-Allow-Origin"] = "*"
+
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self'; "
+        "font-src 'self' https://assets.ngrok.com; "
+        "style-src 'self' 'unsafe-inline'; "
+        "script-src 'self';"
+    )
+
     return FileResponse(
         path=pdf_path,
         media_type="application/pdf",
@@ -167,6 +177,12 @@ def search_incidents(
     conn.close()
     if response:
         response.headers["Access-Control-Allow-Origin"] = "*"
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'self'; "
+            "font-src 'self' https://assets.ngrok.com; "
+            "style-src 'self' 'unsafe-inline'; "
+            "script-src 'self';"
+            )
     return incidents
 
 # Endpoint: Buscar pasajeros por nombre, edad o license
