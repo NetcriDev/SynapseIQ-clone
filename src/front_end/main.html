@@ -19,13 +19,23 @@
                 <strong><p> Select your filters:</p></strong>
                 <div class="filters">
                     <select id="filterCol7">
-                        <option value="">--- State ---</option>
+                        <option value="">-- State --</option>
                     </select>
                     <select id="filterCol8">
-                        <option value="">------- City -------</option>
+                        <option value="">-- City --</option>
                     </select>
+                    <style>
+                        select {
+                            text-align: center;
+                            text-align-last: center;
+                        }
+                    </style>
                     <input type="date" id="filterDate">
+                    <div class="Button_CSV">
+                        <button id="export-excel">Export Data</button>
+                    </div>
                 </div>
+                
                 <br> 
                 <table id="dataTable">
                     <thead>
@@ -94,8 +104,7 @@
         padding: 20px;
         border-radius: 8px;
         box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
-        /* transition: width 0.3s ease;  */
-        height: 600px;
+        max-height: 85vh;
         min-width: 0; /* Isso permitirá que a largura da div encolha */
         width: 100%;
         overflow-y:auto
@@ -108,7 +117,6 @@
         padding: 20px;
         border-radius: 8px;
         text-align: center;
-        /* transition: width 0.3s ease, opacity 0.3s ease; */
         box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
         display: none; /* Inicialmente escondido */
     }
@@ -124,6 +132,24 @@
         display: flex;
         gap: 10px;
         margin-bottom: 10px;
+    }
+
+    select{
+        padding: 5px;
+        border-radius: 5px;
+        border: 1px solid #ddd;
+        background-color: #f9f9f9;
+        cursor: pointer;
+        border-radius: 12px;
+    }
+
+    input{
+        padding: 5px;
+        border-radius: 5px;
+        border: 1px solid #ddd;
+        background-color: #f9f9f9;
+        cursor: pointer;
+        border-radius: 12px;
     }
 
     table {
@@ -191,11 +217,11 @@
     }
 
     .logo-container {
-        width: 150px;
+        width: 250px;
         height: 50px;
         background-size: contain;
         background-repeat: no-repeat;
-        background-image: url("./images/rel8ed-logo.png");
+        background-image: url("./images/rel8ed_logo_v2.png");
     }
 
     .logo-container-2 {
@@ -207,6 +233,22 @@
         flex-grow: 0;
     }
     
+    button {
+        font-size: 14px;
+        font-weight: bold;
+        border: 2px solid #57e0e02f;
+        background-color: #57e0e02f;
+        padding: 5px;
+        border-radius: 5px;
+        cursor: pointer;
+        border-radius: 12px;
+        /* width: 120%; */
+    }
+
+    button:hover{
+        background-color: #57e0e02f;
+        color: rgba(141, 134, 134, 0.281);
+    }
 
 </style>
 
@@ -242,35 +284,48 @@
             incidente.vehicles.forEach(veiculo => {
                 const motorista = veiculo.passengers?.find(p => p.role === "Driver") || {};
 
-                let driverName = motorista.name || veiculo.driver_name || "Não informado";
-                let insuranceDetails = veiculo.insurance_company || "Desconhecido";
+                let driverName = motorista.name || veiculo.driver_name || "--";
+                let insuranceDetails = veiculo.insurance_company || "--";
                 let driverLicense = veiculo.driver_license ? ` (License: ${veiculo.driver_license})` : "";
                 
-                // Exclui linhas onde Driver Name é "Unknown" ou Insurance Details é "N/A"
-                if (driverName === "Unknown" || insuranceDetails === "N/A") {
+                // Exclui linhas
+                if (driverName === "Unknown" || driverName === "--" || driverName === "UNKNOWN" || insuranceDetails === "N/A") {  // motorist.age<18
                     return; // Pula essa iteração e não adiciona ao array
                 }
                 
                 incidentesFormatados.push({
                     id: incidente.report_number,
                     col2: incidente.accident_datetime.split("T")[0], // Data do acidente
-                    col3: motorista.name || veiculo.driver_name || "N/A", // Nome do motorista
-                    col4: motorista.age || "N/A", // Idade
-                    col5: motorista.gender || "N/A", // Gênero
-                    col6: veiculo.owner_address || "", // Endereço do proprietário
-                    col7: incidente.state, // Estado
-                    col8: incidente.city || "", // Cidade
-                    col9: insuranceDetails + driverLicense || "N/A", // Seguradora + Licença
-                    col10: incidente.source_url || "", // Link do relatório
-                    col11: "", // Pode ser ajustado conforme necessidade
-                    col12: motorista.phone1 || "N/A" // Telefone
+                    col3: motorista.name || veiculo.driver_name || "--", // Nome do motorista
+                    col4: motorista.age || "--", // Idade
+                    col5: motorista.gender || "--", // Gênero
+                    col6: veiculo.owner_address || "--", // Endereço do proprietário
+                    col7: incidente.state || "--", // Estado
+                    col8: incidente.city || "--", // Cidade
+                    col9: insuranceDetails + driverLicense || "--", // Seguradora + Licença
+                    col10: incidente.source_url || "--", // Link do relatório
+                    col11: "--", // Pode ser ajustado conforme necessidade
+                    col12: motorista.phone1 || "--" // Telefone
                 });
+                
+                
+                // exlui linha da tabela quandi igual "--"
+                // incidentesFormatados = incidentesFormatados.filter(item => item.col4 !== "--");
+
+                // retira a string "Insurance" do conteudo da coluna Insuranse Details
+                incidentesFormatados.forEach(item => {
+                    if (item.col9.includes("Insurance")) {
+                        item.col9 = item.col9.replace("Insurance", "").trim();
+                    }
+                });
+
+                
             });
         });
 
         // Ordena os incidentes por data em ordem decrescente
         incidentesFormatados.sort((a, b) => new Date(b.col2) - new Date(a.col2));
-
+        dataTable = incidentesFormatados
         return incidentesFormatados;
     }
 
@@ -329,38 +384,85 @@
             }
 
             const dados = await resposta.json();
+            todosOsDados = dados; // Armazena os dados
 
-            // Extrair estados e cidades dos dados
-            const estados = new Set();
-            const cidades = new Set();
+            atualizarFiltros(dados); // Popula inicialmente todos os filtros
 
-            dados.forEach(incidente => {
-                estados.add(incidente.state);
-                cidades.add(incidente.city);
-            });
-
-            // Popular filtro de estado
-            const filterCol7 = document.getElementById("filterCol7");
-            estados.forEach(estado => {
-                const option = document.createElement("option");
-                option.value = estado;
-                option.textContent = estado;
-                filterCol7.appendChild(option);
-            });
-
-            // Popular filtro de cidade
-            const filterCol8 = document.getElementById("filterCol8");
-            cidades.forEach(cidade => {
-                const option = document.createElement("option");
-                option.value = cidade;
-                option.textContent = cidade;
-                filterCol8.appendChild(option);
-            });
-
+            // Adiciona eventos aos selects
+            document.getElementById("filterCol7").addEventListener("change", filtrarPorEstado);
+            document.getElementById("filterCol8").addEventListener("change", filtrarPorCidade);
+            
         } catch (erro) {
             console.error("Erro ao carregar filtros:", erro);
             document.getElementById("resultados").innerHTML = `<p style="color:red;">Erro ao carregar filtros.</p>`;
         }
+        
+        
+    }
+
+    function atualizarFiltros(dadosFiltrados) {
+        const estados = new Set();
+        const cidades = new Set();
+
+        dadosFiltrados.forEach(incidente => {
+            if (incidente.state && incidente.state.trim() !== "") {
+                estados.add(incidente.state.trim());
+            }
+            if (incidente.city && incidente.city.trim() !== "") {
+                cidades.add(incidente.city.trim());
+            }
+        });
+
+         // Converte para arrays e ordena alfabeticamente
+        const estadosOrdenados = Array.from(estados).sort((a, b) => a.localeCompare(b));
+        const cidadesOrdenadas = Array.from(cidades).sort((a, b) => a.localeCompare(b));
+
+        const filterCol7 = document.getElementById("filterCol7");
+        const filterCol8 = document.getElementById("filterCol8");
+
+        // Limpa os selects
+        filterCol7.innerHTML = '<option value="">-- State --</option>';
+        filterCol8.innerHTML = '<option value="">-- City --</option>';
+
+        estadosOrdenados.forEach(estado => {
+            const option = document.createElement("option");
+            option.value = estado;
+            option.textContent = estado;
+            filterCol7.appendChild(option);
+        });
+
+        cidadesOrdenadas.forEach(cidade => {
+            const option = document.createElement("option");
+            option.value = cidade;
+            option.textContent = cidade;
+            filterCol8.appendChild(option);
+        });
+    }
+
+    function filtrarPorEstado() {
+        const estadoSelecionado = document.getElementById("filterCol7").value;
+
+        const dadosFiltrados = estadoSelecionado
+            ? todosOsDados.filter(inc => inc.state === estadoSelecionado)
+            : todosOsDados;
+
+        atualizarFiltros(dadosFiltrados);
+
+        // Mantém o estado selecionado após repopular
+        document.getElementById("filterCol7").value = estadoSelecionado;
+    }
+
+    function filtrarPorCidade() {
+        const cidadeSelecionada = document.getElementById("filterCol8").value;
+
+        const dadosFiltrados = cidadeSelecionada
+            ? todosOsDados.filter(inc => inc.city === cidadeSelecionada)
+            : todosOsDados;
+
+        atualizarFiltros(dadosFiltrados);
+
+        // Mantém a cidade selecionada após repopular
+        document.getElementById("filterCol8").value = cidadeSelecionada;
     }
 
     // Exibir o PDF na "free-space"
@@ -374,20 +476,114 @@
         freeSpace.style.display = "block"; 
         freeSpace.style.width = "30%";  
         tableContainer.style.width = "70%"; 
+
+        // Adiciona transições para suavizar a abertura
+        freeSpace.style.transition = "width 0.3s ease, opacity 0.3s ease";
+        tableContainer.style.transition = "width 0.3s ease";
+
+        // Define a opacidade para tornar a div visível
+        freeSpace.style.opacity = "1";
     }
 
     function hidePDF() {
         const freeSpace = document.getElementById("freeSpace");
         const tableContainer = document.querySelector(".table-container");
 
-        freeSpace.style.display = "none";
-        tableContainer.style.width = "100%";  
+        // Adiciona transições para suavizar o fechamento
+        freeSpace.style.transition = "width 0.3s ease, opacity 0.3s ease";
+        tableContainer.style.transition = "width 0.3s ease";
+
+        // Define a largura e opacidade para o fechamento suave
+        freeSpace.style.width = "0";
+        freeSpace.style.opacity = "0";
+
+        // Aguarda a transição antes de esconder completamente a div
+        setTimeout(() => {
+            freeSpace.style.display = "none";
+            tableContainer.style.width = "100%";
+        }, 300); // Tempo correspondente à duração da transição
     }
+
+    function downloadCSV() {
+        // Obtém os valores dos filtros atuais
+        const filterCol7 = document.getElementById("filterCol7").value;
+        const filterCol8 = document.getElementById("filterCol8").value;
+        const filterDate = document.getElementById("filterDate").value;
+
+        // Aplica os mesmos filtros que a renderTable() usa
+        const filteredData = dataTable.filter(item =>
+            (!filterCol7 || item.col7 === filterCol7) &&
+            (!filterCol8 || item.col8 === filterCol8) &&
+            (!filterDate || item.col2 === filterDate)
+        );
+
+        // Verifica se há dados filtrados para exportar
+        if (!filteredData || filteredData.length === 0) {
+            alert("Nenhum dado filtrado disponível para exportar");
+            return;
+        }
+
+        // Cabeçalhos do CSV
+        const headers = [
+            "Report Number",
+            "Date",
+            "Driver Name",
+            "Age",
+            "Gender",
+            "Owner Address",
+            "State",
+            "City",
+            "Insurance Details",
+            "Report URL",
+            "Additional Info",
+            "Phone"
+        ];
+
+        // Mapeia os dados filtrados para as linhas do CSV
+        const csvRows = filteredData.map(item => {
+            return [
+                `"${item.id}"`,
+                `"${item.col2}"`,
+                `"${item.col3}"`,
+                `"${item.col4}"`,
+                `"${item.col5}"`,
+                `"${item.col6}"`,
+                `"${item.col7}"`,
+                `"${item.col8}"`,
+                `"${item.col9}"`,
+                `"${item.col10}"`,
+                `"${item.col11}"`,
+                `"${item.col12}"`
+            ].join(',');
+        });
+
+        // Junta cabeçalhos e dados
+        const csvContent = [
+            headers.join(','),
+            ...csvRows
+        ].join('\n');
+
+        // Cria o blob e o link para download
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.setAttribute('href', url);
+        link.setAttribute('download', 'filtered_incident_report.csv');
+        link.style.visibility = 'hidden';
+        
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+
 
     filterCol7.addEventListener("change", renderTable);
     filterCol8.addEventListener("change", renderTable);
     filterDate.addEventListener("change", renderTable);
     document.addEventListener("DOMContentLoaded", buscarIncidentes);
+    // Adiciona o evento ao botão de exportação
+    document.getElementById("export-excel").addEventListener("click", downloadCSV);
 
     // Chama a função de carregamento de filtros e incidentes ao carregar a página
     document.addEventListener("DOMContentLoaded", () => {
