@@ -30,7 +30,7 @@ def get_date_ranges(n_days=4):
 def setup_driver(download_dir):
     options = Options()
     options.add_argument('--start-maximized')
-    #options.add_argument('--headless=new') ######### dont show interfaz
+    options.add_argument('--headless=new') ######### ojo dont show interfaz
     prefs = {
         "download.default_directory": download_dir,
         "download.prompt_for_download": False,
