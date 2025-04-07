@@ -13,7 +13,6 @@ from selenium.webdriver.support import expected_conditions as EC
 from src.utils.logger_config import setup_logger
 
 main_script_path = sys.path[0]
-
 logger = setup_logger("Texas_execution", main_script_path)
 
 def get_project_paths():
@@ -75,7 +74,7 @@ def rename_downloaded_file(download_dir, old_name, begin_date, end_date, abbrevi
     begin_fmt = begin_date.replace("/", "_")
     end_fmt = end_date.replace("/", "_")
     current_time = datetime.now().strftime("%H%M%S")
-    new_name = f"texascrashes_{begin_fmt}_to_{end_fmt}_at_{current_time}.csv"
+    new_name = f"texascrashes_{begin_fmt}_to_{end_fmt}.csv"
     new_path = os.path.join(download_dir, new_name)
     old_path = os.path.join(download_dir, old_name)
     if os.path.exists(new_path):

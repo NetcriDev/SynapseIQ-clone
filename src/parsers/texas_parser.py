@@ -234,7 +234,7 @@ def read_and_save_recent_csv(raw_path: str = None, processed_path: str = None, m
                     begin_date = (today - timedelta(days=4)).strftime("%m/%d/%Y").replace("/", "_")
                     end_date = (today - timedelta(days=1)).strftime("%m/%d/%Y").replace("/", "_")
                     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                    output_name = f"texasprocessed_crashes_{begin_date}_to_{end_date}_at_{timestamp}.csv"
+                    output_name = f"texasprocessed_crashes_{begin_date}_to_{end_date}.csv"
                     output_path = os.path.join(processed_folder, output_name)
                     df.to_csv(output_path, index=False)
                     print(df.columns)
