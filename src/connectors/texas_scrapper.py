@@ -12,9 +12,9 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from src.utils.logger_config import setup_logger
 
-main_script_path = os.path.dirname(os.path.abspath(sys.argv[0]))
+main_script_path = sys.path[0]
 
-logger = setup_logger("MSP_execution", main_script_path)
+logger = setup_logger("Texas_execution", main_script_path)
 
 def get_project_paths():
     project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))

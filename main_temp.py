@@ -6,8 +6,9 @@ from datetime import datetime, timedelta
 import sys
 import os
 
-# Add src/ folder to sys.path to import scraper and parser modules
-sys.path.append(os.path.dirname(__file__))
+# Añade la carpeta de A al path de Python
+base_dir = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, base_dir)
 
 outputdata_dir = "/Users/cristianb/Documents/Python/rel8ed/SynapseIQ_staging/storage"
 home_dir = "/Users/cristianb/Documents/Python/rel8ed/SynapseIQ_staging"
