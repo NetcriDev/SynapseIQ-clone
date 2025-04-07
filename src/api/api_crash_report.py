@@ -63,6 +63,10 @@ def get_incident_pdf(report_number: str, response: Response = None):
 
     pdf_path = result[0]
 
+    # validamos que pdf_path sea un valor correcto
+    if not pdf_path or str(pdf_path).strip().lower() == 'null':
+        raise HTTPException(status_code=404, detail="Invalid PDF path")
+
     if not os.path.isfile(pdf_path):
         raise HTTPException(status_code=404, detail="PDF file not found on disk")
 
@@ -88,6 +92,10 @@ def view_incident_pdf(report_number: str, response: Response = None):
         raise HTTPException(status_code=404, detail="Report not found")
 
     pdf_path = result[0]
+
+    # validamos que pdf_path sea un valor correcto
+    if not pdf_path or str(pdf_path).strip().lower() == 'null':
+        raise HTTPException(status_code=404, detail="Invalid PDF path")
 
     if not os.path.isfile(pdf_path):
         raise HTTPException(status_code=404, detail="PDF file not found on disk")
