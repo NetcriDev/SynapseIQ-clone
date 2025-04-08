@@ -18,12 +18,15 @@
             <div class="table-container">
                 <strong><p> Select your filters:</p></strong>
                 <div class="filters">
-                    <select id="filterCol7">
-                        <option value="">-- State --</option>
+                    <!-- <select id="filterCol7">
+                        <option value="">-- All States --</option>
                     </select>
                     <select id="filterCol8">
-                        <option value="">-- City --</option>
-                    </select>
+                        <option value="">-- All Cities --</option>
+                    </select> -->
+                    <select id="filterSourceFolder">
+                        <option value="">-- All Locations --</option>
+                      </select>                      
                     <style>
                         select {
                             text-align: center;
@@ -280,13 +283,14 @@
         let incidentesFormatados = [];
 
         dados.forEach(incidente => {
+            const folder = incidente.original_document_location?.split("/")[3] || "--";
+
             incidente.vehicles.forEach(veiculo => {
                 const motorista = veiculo.passengers?.find(p => p.role === "Driver") || {};
                 const driverName = motorista.name || veiculo.driver_name || "--";
-                const insuranceDetails = veiculo.insurance_company || "--";
+                const insuranceDetails = veiculo.insurance_company ? ` <br> Insurance Company: ${veiculo.insurance_company}` : "Insurance Company: N/A";
                 const driverLicense = veiculo.driver_license ? ` <br> License: ${veiculo.driver_license}` : "";
                 const policyNumber = veiculo.policy_number ? ` <br> Policy: ${veiculo.policy_number}` : "";
-                const vinNumber = veiculo.vin ? ` <br> vin: ${veiculo.vin}` : "";
 
                 if (["Unknown", "--", "UNKNOWN"].includes(driverName) || insuranceDetails === "N/A") return;
 
@@ -299,10 +303,11 @@
                     col6: veiculo.owner_address || "--",
                     col7: incidente.state || "--",
                     col8: incidente.city || "--",
-                    col9: (insuranceDetails + driverLicense + policyNumber + vinNumber).replace("Insurance", "").trim() || "--",
+                    col9: (insuranceDetails + driverLicense + policyNumber) || "--",
                     col10: `https://990c-52-116-202-144.ngrok-free.app/incident/pdf/view/${incidente.pdf_id || incidente.report_number}`,
                     col11: "--",
-                    col12: motorista.phone1 || "--"
+                    col12: motorista.phone1 || "--",
+                    sourceFolder: folder
                 });
             });
         });
@@ -311,19 +316,19 @@
         return incidentesFormatados;
     }
 
+
     function renderTable() {
         const tableBody = document.getElementById("tableBody");
-        const filterCol7 = document.getElementById("filterCol7").value;
-        const filterCol8 = document.getElementById("filterCol8").value;
+        const filterFolder = document.getElementById("filterSourceFolder").value;
         const filterDate = document.getElementById("filterDate").value;
 
         tableBody.innerHTML = "";
 
         data
             .filter(item =>
-                (!filterCol7 || item.col7 === filterCol7) &&
-                (!filterCol8 || item.col8 === filterCol8) &&
-                (!filterDate || item.col2 === filterDate)
+                (!filterFolder || item.sourceFolder === filterFolder) &&
+                (!filterDate || item.col2 === filterDate) &&
+                (item.col4 === "--" || (parseInt(item.col4) >= 18))
             )
             .forEach(item => {
                 const linkIcon = item.col10
@@ -357,16 +362,25 @@
             if (!resposta.ok) throw new Error(`Erro: ${resposta.status}`);
 
             const dados = await resposta.json();
-            todosOsDados = dados;
+            const incidentesTransformados = transformarDados(dados);
 
-            atualizarFiltros(dados);
-            document.getElementById("filterCol7").addEventListener("change", filtrarPorEstado);
-            document.getElementById("filterCol8").addEventListener("change", filtrarPorCidade);
+            const folders = [...new Set(incidentesTransformados.map(i => i.sourceFolder))].sort();
+
+            const filterSourceFolder = document.getElementById("filterSourceFolder");
+            filterSourceFolder.innerHTML = '<option value="">-- All Locations --</option>';
+
+            folders.forEach(folder => {
+                const option = new Option(folder, folder);
+                filterSourceFolder.appendChild(option);
+            });
+
+            document.getElementById("filterSourceFolder").addEventListener("change", renderTable);
         } catch (erro) {
             console.error("Erro ao carregar filtros:", erro);
             document.getElementById("resultados").innerHTML = `<p style="color:red;">Erro ao carregar filtros.</p>`;
         }
     }
+
 
     function atualizarFiltros(dadosFiltrados) {
         const estados = new Set();
@@ -380,8 +394,8 @@
         const filterCol7 = document.getElementById("filterCol7");
         const filterCol8 = document.getElementById("filterCol8");
 
-        filterCol7.innerHTML = '<option value="">-- State --</option>';
-        filterCol8.innerHTML = '<option value="">-- City --</option>';
+        filterCol7.innerHTML = '<option value="">-- All States --</option>';
+        filterCol8.innerHTML = '<option value="">-- All Cities --</option>';
 
         [...estados].sort().forEach(estado => {
             const option = new Option(estado, estado);

@@ -236,7 +236,7 @@ def read_and_save_recent_csv(raw_path: str = None, processed_path: str = None, m
                     df.to_csv(output_path, index=False)
                     logger.info(df.columns)
                     print_dataframe_info(df)
-                    insert_crash_data_to_db(df, output_path)
+                    #insert_crash_data_to_db(df, output_path)
                 except Exception as e:
                     logger.error(e)
                 logger.info(f"Saved to: {output_path}")
