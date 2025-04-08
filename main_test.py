@@ -61,4 +61,3 @@ def Texas():
     except Exception as e:
         logger.error("Error script: Texas -----|")
 Texas()
-

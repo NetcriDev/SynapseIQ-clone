@@ -31,6 +31,11 @@ def setup_driver(download_dir):
     options = Options()
     options.add_argument('--start-maximized')
     options.add_argument('--headless=new') ######### ojo dont show interfaz
+    options.add_argument("--no-sandbox")           # Necesario en algunos servidores
+    options.add_argument("--disable-dev-shm-usage")# Evita problemas de memoria compartida
+    options.add_argument("--disable-gpu")          # Opcional, para evitar errores GPU
+
+
     prefs = {
         "download.default_directory": download_dir,
         "download.prompt_for_download": False,

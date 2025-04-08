@@ -19,7 +19,9 @@ sys.path.insert(0, base_dir)
 outputdata_dir = "/home/data"
 home_dir="home/data/SynapseIQ"
 
-logger= setup_logger("Scheduled_execution", home_dir)
+main_script_path = sys.path[0]
+logger= setup_logger("Scheduled_execution", main_script_path)
+logger.info("start main")
 # now
 now = datetime.now()
 
