@@ -61,7 +61,8 @@
             <div class="free-space" id="freeSpace" style="display: none;">
                 <button onclick="hidePDF()" style="float: right; background: red; color: white; border: none; padding: 5px 10px; cursor: pointer;">X</button>
                 <p><strong>ID:</strong> <span id="pdfId"></span></p>
-                <iframe id="pdfViewer" src="" width="100%" height="500px" style="border: none;"></iframe>
+                <!-- <iframe id="pdfViewer" src="" width="100%" height="500px" style="border: none;"></iframe> -->
+                <object id="pdfViewer" type="application/pdf" width="100%" height="100%" data=""></object>
             </div>
             
             
@@ -141,6 +142,7 @@
         background-color: #f9f9f9;
         cursor: pointer;
         border-radius: 12px;
+        text-transform: uppercase; /* Coloca o texto em maiúsculas */
     }
 
     input{
@@ -158,6 +160,7 @@
         border-spacing: 0; /* Remove o espaçamento entre as células */
         border-radius: 10px; /* Borda arredondada para a tabela */
         overflow: hidden; /* Garante que o conteúdo não ultrapasse as bordas arredondadas */
+        text-transform: uppercase; /* Coloca o texto em maiúsculas */
     }
 
     th, td {
@@ -254,102 +257,77 @@
 
 <script>
     const API_URL = "https://990c-52-116-202-144.ngrok-free.app/incident/search";
-    let data = []; // Variável global para armazenar os incidentes
+    let data = [];
 
-    // Função para buscar os dados da API e armazená-los globalmente
     async function buscarIncidentes() {
         try {
             const resposta = await fetch(API_URL, {
                 headers: { "ngrok-skip-browser-warning": "true" }
             });
 
-            if (!resposta.ok) {
-                throw new Error(`Erro: ${resposta.status}`);
-            }
+            if (!resposta.ok) throw new Error(`Erro: ${resposta.status}`);
 
             const dados = await resposta.json();
-            data = transformarDados(dados); // Salva os dados na variável global
-            renderTable(); // Agora chamamos a renderização após os dados estarem carregados
+            data = transformarDados(dados);
+            renderTable();
         } catch (erro) {
             console.error("Erro ao buscar incidentes:", erro);
             document.getElementById("resultados").innerHTML = `<p style="color:red;">Erro ao carregar dados.</p>`;
         }
     }
 
-    // Função para transformar os dados da API no formato correto para a tabela
     function transformarDados(dados) {
         let incidentesFormatados = [];
 
         dados.forEach(incidente => {
             incidente.vehicles.forEach(veiculo => {
                 const motorista = veiculo.passengers?.find(p => p.role === "Driver") || {};
+                const driverName = motorista.name || veiculo.driver_name || "--";
+                const insuranceDetails = veiculo.insurance_company || "--";
+                const driverLicense = veiculo.driver_license ? ` <br> License: ${veiculo.driver_license}` : "";
+                const policyNumber = veiculo.policy_number ? ` <br> Policy: ${veiculo.policy_number}` : "";
+                const vinNumber = veiculo.vin ? ` <br> vin: ${veiculo.vin}` : "";
 
-                let driverName = motorista.name || veiculo.driver_name || "--";
-                let insuranceDetails = veiculo.insurance_company || "--";
-                let driverLicense = veiculo.driver_license ? ` (License: ${veiculo.driver_license})` : "";
-                
-                // Exclui linhas
-                if (driverName === "Unknown" || driverName === "--" || driverName === "UNKNOWN" || insuranceDetails === "N/A") {  // motorist.age<18
-                    return; // Pula essa iteração e não adiciona ao array
-                }
-                
+                if (["Unknown", "--", "UNKNOWN"].includes(driverName) || insuranceDetails === "N/A") return;
+
                 incidentesFormatados.push({
                     id: incidente.report_number,
-                    col2: incidente.accident_datetime.split("T")[0], // Data do acidente
-                    col3: motorista.name || veiculo.driver_name || "--", // Nome do motorista
-                    col4: motorista.age || "--", // Idade
-                    col5: motorista.gender || "--", // Gênero
-                    col6: veiculo.owner_address || "--", // Endereço do proprietário
-                    col7: incidente.state || "--", // Estado
-                    col8: incidente.city || "--", // Cidade
-                    col9: insuranceDetails + driverLicense || "--", // Seguradora + Licença
-                    col10: incidente.source_url || "--", // Link do relatório
-                    col11: "--", // Pode ser ajustado conforme necessidade
-                    col12: motorista.phone1 || "--" // Telefone
+                    col2: incidente.accident_datetime.split("T")[0],
+                    col3: driverName,
+                    col4: motorista.age || "--",
+                    col5: motorista.gender || "--",
+                    col6: veiculo.owner_address || "--",
+                    col7: incidente.state || "--",
+                    col8: incidente.city || "--",
+                    col9: (insuranceDetails + driverLicense + policyNumber + vinNumber).replace("Insurance", "").trim() || "--",
+                    col10: `https://990c-52-116-202-144.ngrok-free.app/incident/pdf/view/${incidente.pdf_id || incidente.report_number}`,
+                    col11: "--",
+                    col12: motorista.phone1 || "--"
                 });
-                
-                
-                // exlui linha da tabela quandi igual "--"
-                // incidentesFormatados = incidentesFormatados.filter(item => item.col4 !== "--");
-
-                // retira a string "Insurance" do conteudo da coluna Insuranse Details
-                incidentesFormatados.forEach(item => {
-                    if (item.col9.includes("Insurance")) {
-                        item.col9 = item.col9.replace("Insurance", "").trim();
-                    }
-                });
-
-                
             });
         });
 
-        // Ordena os incidentes por data em ordem decrescente
         incidentesFormatados.sort((a, b) => new Date(b.col2) - new Date(a.col2));
-        dataTable = incidentesFormatados
         return incidentesFormatados;
     }
 
-    // Função para renderizar a tabela com os dados filtrados
     function renderTable() {
         const tableBody = document.getElementById("tableBody");
-        const filterCol7 = document.getElementById("filterCol7");
-        const filterCol8 = document.getElementById("filterCol8");
-        const filterDate = document.getElementById("filterDate");
+        const filterCol7 = document.getElementById("filterCol7").value;
+        const filterCol8 = document.getElementById("filterCol8").value;
+        const filterDate = document.getElementById("filterDate").value;
 
         tableBody.innerHTML = "";
 
         data
             .filter(item =>
-                (!filterCol7.value || item.col7 === filterCol7.value) &&
-                (!filterCol8.value || item.col8 === filterCol8.value) &&
-                (!filterDate.value || item.col2 === filterDate.value)
+                (!filterCol7 || item.col7 === filterCol7) &&
+                (!filterCol8 || item.col8 === filterCol8) &&
+                (!filterDate || item.col2 === filterDate)
             )
             .forEach(item => {
-                // const linkIcon = item.col10 
-                //     ? `<a href="#" onclick="window.open('${item.col10}', '_blank')" title="Ver relatório">🔗</a>` 
-                //     : "";
-                const linkIcon = item.col10 
-                    ? `<a href="#" onclick="viewPDF('${item.col10}', '${item.id}')" title="Ver relatório">🔗</a>` 
+                const linkIcon = item.col10
+                    ? `<a href="#" onclick="viewPDF('${item.col10}', '${item.id}')" title="Ver relatório">🔗</a>`
                     : "";
 
                 const row = `<tr>
@@ -370,34 +348,24 @@
             });
     }
 
-    // Função para buscar dados da API e popular filtros
     async function carregarFiltros() {
         try {
             const resposta = await fetch(API_URL, {
-                headers: {
-                    "ngrok-skip-browser-warning": "true"
-                }
+                headers: { "ngrok-skip-browser-warning": "true" }
             });
 
-            if (!resposta.ok) {
-                throw new Error(`Erro: ${resposta.status}`);
-            }
+            if (!resposta.ok) throw new Error(`Erro: ${resposta.status}`);
 
             const dados = await resposta.json();
-            todosOsDados = dados; // Armazena os dados
+            todosOsDados = dados;
 
-            atualizarFiltros(dados); // Popula inicialmente todos os filtros
-
-            // Adiciona eventos aos selects
+            atualizarFiltros(dados);
             document.getElementById("filterCol7").addEventListener("change", filtrarPorEstado);
             document.getElementById("filterCol8").addEventListener("change", filtrarPorCidade);
-            
         } catch (erro) {
             console.error("Erro ao carregar filtros:", erro);
             document.getElementById("resultados").innerHTML = `<p style="color:red;">Erro ao carregar filtros.</p>`;
         }
-        
-        
     }
 
     function atualizarFiltros(dadosFiltrados) {
@@ -405,83 +373,57 @@
         const cidades = new Set();
 
         dadosFiltrados.forEach(incidente => {
-            if (incidente.state && incidente.state.trim() !== "") {
-                estados.add(incidente.state.trim());
-            }
-            if (incidente.city && incidente.city.trim() !== "") {
-                cidades.add(incidente.city.trim());
-            }
+            if (incidente.state) estados.add(incidente.state.trim());
+            if (incidente.city) cidades.add(incidente.city.trim());
         });
-
-         // Converte para arrays e ordena alfabeticamente
-        const estadosOrdenados = Array.from(estados).sort((a, b) => a.localeCompare(b));
-        const cidadesOrdenadas = Array.from(cidades).sort((a, b) => a.localeCompare(b));
 
         const filterCol7 = document.getElementById("filterCol7");
         const filterCol8 = document.getElementById("filterCol8");
 
-        // Limpa os selects
         filterCol7.innerHTML = '<option value="">-- State --</option>';
         filterCol8.innerHTML = '<option value="">-- City --</option>';
 
-        estadosOrdenados.forEach(estado => {
-            const option = document.createElement("option");
-            option.value = estado;
-            option.textContent = estado;
+        [...estados].sort().forEach(estado => {
+            const option = new Option(estado, estado);
             filterCol7.appendChild(option);
         });
 
-        cidadesOrdenadas.forEach(cidade => {
-            const option = document.createElement("option");
-            option.value = cidade;
-            option.textContent = cidade;
+        [...cidades].sort().forEach(cidade => {
+            const option = new Option(cidade, cidade);
             filterCol8.appendChild(option);
         });
     }
 
     function filtrarPorEstado() {
-        const estadoSelecionado = document.getElementById("filterCol7").value;
-
-        const dadosFiltrados = estadoSelecionado
-            ? todosOsDados.filter(inc => inc.state === estadoSelecionado)
+        const estado = document.getElementById("filterCol7").value;
+        const dadosFiltrados = estado
+            ? todosOsDados.filter(inc => inc.state === estado)
             : todosOsDados;
-
         atualizarFiltros(dadosFiltrados);
-
-        // Mantém o estado selecionado após repopular
-        document.getElementById("filterCol7").value = estadoSelecionado;
+        document.getElementById("filterCol7").value = estado;
     }
 
     function filtrarPorCidade() {
-        const cidadeSelecionada = document.getElementById("filterCol8").value;
-
-        const dadosFiltrados = cidadeSelecionada
-            ? todosOsDados.filter(inc => inc.city === cidadeSelecionada)
+        const cidade = document.getElementById("filterCol8").value;
+        const dadosFiltrados = cidade
+            ? todosOsDados.filter(inc => inc.city === cidade)
             : todosOsDados;
-
         atualizarFiltros(dadosFiltrados);
-
-        // Mantém a cidade selecionada após repopular
-        document.getElementById("filterCol8").value = cidadeSelecionada;
+        document.getElementById("filterCol8").value = cidade;
     }
 
-    // Exibir o PDF na "free-space"
     function viewPDF(url, id) {
-        document.getElementById("pdfViewer").src = url;
+        document.getElementById("pdfViewer").data = url;
         document.getElementById("pdfId").textContent = id;
 
         const freeSpace = document.getElementById("freeSpace");
         const tableContainer = document.querySelector(".table-container");
 
-        freeSpace.style.display = "block"; 
-        freeSpace.style.width = "30%";  
-        tableContainer.style.width = "70%"; 
-
-        // Adiciona transições para suavizar a abertura
+        freeSpace.style.display = "block";
+        freeSpace.style.width = "30%";
+        tableContainer.style.width = "70%";
         freeSpace.style.transition = "width 0.3s ease, opacity 0.3s ease";
         tableContainer.style.transition = "width 0.3s ease";
-
-        // Define a opacidade para tornar a div visível
         freeSpace.style.opacity = "1";
     }
 
@@ -489,110 +431,68 @@
         const freeSpace = document.getElementById("freeSpace");
         const tableContainer = document.querySelector(".table-container");
 
-        // Adiciona transições para suavizar o fechamento
         freeSpace.style.transition = "width 0.3s ease, opacity 0.3s ease";
         tableContainer.style.transition = "width 0.3s ease";
 
-        // Define a largura e opacidade para o fechamento suave
         freeSpace.style.width = "0";
         freeSpace.style.opacity = "0";
 
-        // Aguarda a transição antes de esconder completamente a div
         setTimeout(() => {
             freeSpace.style.display = "none";
             tableContainer.style.width = "100%";
-        }, 300); // Tempo correspondente à duração da transição
+        }, 300);
     }
 
     function downloadCSV() {
-        // Obtém os valores dos filtros atuais
         const filterCol7 = document.getElementById("filterCol7").value;
         const filterCol8 = document.getElementById("filterCol8").value;
         const filterDate = document.getElementById("filterDate").value;
 
-        // Aplica os mesmos filtros que a renderTable() usa
-        const filteredData = dataTable.filter(item =>
+        const filteredData = data.filter(item =>
             (!filterCol7 || item.col7 === filterCol7) &&
             (!filterCol8 || item.col8 === filterCol8) &&
             (!filterDate || item.col2 === filterDate)
         );
 
-        // Verifica se há dados filtrados para exportar
-        if (!filteredData || filteredData.length === 0) {
+        if (!filteredData.length) {
             alert("Nenhum dado filtrado disponível para exportar");
             return;
         }
 
-        // Cabeçalhos do CSV
         const headers = [
-            "Report Number",
-            "Date",
-            "Driver Name",
-            "Age",
-            "Gender",
-            "Owner Address",
-            "State",
-            "City",
-            "Insurance Details",
-            "Report URL",
-            "Additional Info",
-            "Phone"
+            "Report Number", "Date", "Driver Name", "Age", "Gender",
+            "Owner Address", "State", "City", "Insurance Details",
+            "Report URL", "Additional Info", "Phone"
         ];
 
-        // Mapeia os dados filtrados para as linhas do CSV
-        const csvRows = filteredData.map(item => {
-            return [
-                `"${item.id}"`,
-                `"${item.col2}"`,
-                `"${item.col3}"`,
-                `"${item.col4}"`,
-                `"${item.col5}"`,
-                `"${item.col6}"`,
-                `"${item.col7}"`,
-                `"${item.col8}"`,
-                `"${item.col9}"`,
-                `"${item.col10}"`,
-                `"${item.col11}"`,
-                `"${item.col12}"`
-            ].join(',');
-        });
+        const csvRows = filteredData.map(item => [
+            item.id, item.col2, item.col3, item.col4, item.col5, item.col6,
+            item.col7, item.col8, item.col9, item.col10, item.col11, item.col12
+        ].map(value => `"${value}"`).join(','));
 
-        // Junta cabeçalhos e dados
-        const csvContent = [
-            headers.join(','),
-            ...csvRows
-        ].join('\n');
+        const csvContent = [headers.join(','), ...csvRows].join('\n');
 
-        // Cria o blob e o link para download
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.setAttribute('href', url);
         link.setAttribute('download', 'filtered_incident_report.csv');
         link.style.visibility = 'hidden';
-        
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
     }
 
-
-
-    filterCol7.addEventListener("change", renderTable);
-    filterCol8.addEventListener("change", renderTable);
-    filterDate.addEventListener("change", renderTable);
-    document.addEventListener("DOMContentLoaded", buscarIncidentes);
-    // Adiciona o evento ao botão de exportação
-    document.getElementById("export-excel").addEventListener("click", downloadCSV);
-
-    // Chama a função de carregamento de filtros e incidentes ao carregar a página
+    // Eventos iniciais
     document.addEventListener("DOMContentLoaded", () => {
         carregarFiltros();
         buscarIncidentes();
+        document.getElementById("export-excel").addEventListener("click", downloadCSV);
+        document.getElementById("filterCol7").addEventListener("change", renderTable);
+        document.getElementById("filterCol8").addEventListener("change", renderTable);
+        document.getElementById("filterDate").addEventListener("change", renderTable);
     });
-
-    renderTable();
-
 </script>
+
 
 </html>
