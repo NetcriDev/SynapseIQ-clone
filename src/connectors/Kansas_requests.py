@@ -11,12 +11,31 @@ from datetime import datetime, timedelta
 from weasyprint import HTML
 from weasyprint.urls import URLFetchingError
 from src.utils.logger_config import setup_logger
+from src.utils.info_dataframe import print_dataframe_info
 from config.config import get_connection
 
 main_script_path = sys.path[0]
 logger = setup_logger("Kansas_execution", main_script_path)
 
 def insert_full_crash_data(df_expanded: pd.DataFrame, file_path: str):
+    """
+    Insert crash report data from a DataFrame into the database.
+
+    This function iterates over each row in the provided DataFrame and inserts
+    crash incident data into the `incident_reports` table. It also checks and inserts
+    related vehicle and passenger data into the `vehicles` and `passengers` tables
+    if they do not already exist.
+
+    Args:
+        df_expanded (pd.DataFrame): 
+            A DataFrame containing the expanded crash data. Each row should represent
+            a crash record with fields like ID, URL, Driver, License, Insurance, 
+            State, City, Type (severity), Date, Time, and Age.
+        file_path (str): 
+            The file path (carpet storage/kansas) where the original document (PDF) is stored. 
+            This is saved along with each incident report.
+
+    """
     conn = get_connection()
     cur = conn.cursor()
     logger.info("Start insert into DB: Kansas")
@@ -31,6 +50,7 @@ def insert_full_crash_data(df_expanded: pd.DataFrame, file_path: str):
         severity = row.get("Type", "").strip()
         age = row.get("Age", None)
         generation_date = datetime.now()
+        gender=row.get("Gender", "").strip()
 
         accident_dt_str = f"{row['Date']} {row['Time']}"
         try:
@@ -41,30 +61,45 @@ def insert_full_crash_data(df_expanded: pd.DataFrame, file_path: str):
 
         row_json = json.dumps(row.to_dict())
 
-        # Insert incident if not exists
-        cur.execute("""
-            INSERT INTO incident_reports (
-                report_number, source_url, accident_datetime, city, state, crash_severity, 
-                notes, json, original_document_location, generation_date, original_format
-            )
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            ON CONFLICT (report_number) DO NOTHING
-        """, (
-            report_number,
-            url,
-            accident_dt,
-            city,
-            state,
-            severity,
-            "Imported from df_expanded with JSON",
-            row_json,
-            file_path,
-            generation_date,
-            "pdf"
-        ))
+        # Check if the incident already exists
+        if accident_dt:
+            cur.execute("""
+                SELECT id FROM incident_reports 
+                WHERE report_number = %s AND accident_datetime = %s
+            """, (report_number, accident_dt))
+        else:
+            cur.execute("""
+                SELECT id FROM incident_reports 
+                WHERE report_number = %s
+            """, (report_number,))
+
+        existing_incident = cur.fetchone()
+
+        if not existing_incident:
+            # Insert incident only if it does not already exist
+            cur.execute("""
+                INSERT INTO incident_reports (
+                    report_number, internal_report_number, source_url, accident_datetime, city, state, crash_severity, 
+                    technical_notes, json, original_document_location, generation_date, original_format
+                )
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """, (
+                report_number,
+                "ks"+str(report_number),
+                url,
+                accident_dt,
+                city,
+                state,
+                severity,
+                "Imported from df_expanded with JSON",
+                row_json,
+                os.path.join(file_path,str(report_number)+".pdf"),
+                generation_date,
+                "pdf"
+            ))
 
         # Get incident ID
-        cur.execute("SELECT id FROM incident_reports WHERE report_number = %s", (report_number,))
+        cur.execute("SELECT id FROM incident_reports WHERE report_number = %s AND accident_datetime = %s", (report_number, accident_dt))
         res = cur.fetchone()
         if not res:
             continue
@@ -89,7 +124,7 @@ def insert_full_crash_data(df_expanded: pd.DataFrame, file_path: str):
                         driver_license,
                         driver_state,
                         insurance_company,
-                        notes
+                        technical_notes
                     )
                     VALUES (%s, %s, %s, %s, %s, %s)
                     RETURNING id
@@ -122,14 +157,16 @@ def insert_full_crash_data(df_expanded: pd.DataFrame, file_path: str):
                     name,
                     age,
                     injury_severity,
-                    notes
-                ) VALUES (%s, %s, %s, %s, %s, %s)
+                    gender,
+                    technical_notes
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s)
             """, (
                 vehicle_id,
                 "Driver" if license else "Occupant",
                 driver if driver else None,
                 int(age) if pd.notnull(age) and str(age).isdigit() else None,
                 severity,
+                "male" if gender.upper() == "M" else "female" if gender.upper() == "F" else "",
                 "Passenger record from CSV"
             ))
 
@@ -139,7 +176,19 @@ def insert_full_crash_data(df_expanded: pd.DataFrame, file_path: str):
     logger.info("Data inserted successfully!: Kansas")
 
 
-def run_kansas_crash_scraper(path_dir):
+def run_kansas_crash_scraper(path_dir: str):
+    """
+    Scrapes crash data from the Kansas crash reporting system.
+
+    Parameters
+    ----------
+    path_dir : str
+        Path to the directory where downloaded files, storage folder (storage) or results should be stored.
+
+    Returns
+    -------
+    None
+    """
     username = 'rrel8ed'
     password = 'zFfUPRWH6q'
     country = 'US'
@@ -153,7 +202,11 @@ def run_kansas_crash_scraper(path_dir):
 
     df_final = pd.DataFrame()
 
-    for days in range(1,2):
+    # ----------------------------------------- 1st page request ---------------------------------------------------------------------
+
+    for days in range(1,3):  # 24h ojo
+
+        # Creating lists for scrapping table content
         date_list=[]
         time_list=[]
         crash_type=[]
@@ -171,8 +224,12 @@ def run_kansas_crash_scraper(path_dir):
         final_states=[]
         final_citys=[]
         final_ages=[]
+        final_genders=[]
 
+
+        # setting relative date
         desired_date = datetime.now() - timedelta(days)
+        # Format example: 11/06/2024 (NOV)
         format = desired_date.strftime('%m/%d/%Y')
 
         headers = {
@@ -181,6 +238,7 @@ def run_kansas_crash_scraper(path_dir):
             'Cache-Control': 'max-age=0',
             'Connection': 'keep-alive',
             'Content-Type': 'application/x-www-form-urlencoded',
+            # 'Cookie': 'JSESSIONID=0BFB69E6C1ED4EEA3978EA280E77A5D6.aptcs04-inst1; ksgov=!0QNNB60YJ5E7c+GOfB8IWYBnkPHbwbmqBMH5akvvsf8OiaxgYWKotSvKG3TRxvrJKqz2gppLxAiQNjbbqQXTIJtRWjjz8/V22PxP323ABFZH; org.springframework.web.servlet.i18n.CookieLocaleResolver.LOCALE=en; _ga=GA1.1.1843948162.1739295866; _ga_WKD2LX56WX=GS1.1.1739464869.2.0.1739464869.0.0.0; _ga_V4YJRE8BKZ=GS1.1.1739464877.6.1.1739465034.0.0.0',
             'Origin': 'https://www.kansas.gov',
             'Referer': 'https://www.kansas.gov/khp-crashlogs/search.do',
             'Sec-Fetch-Dest': 'document',
@@ -200,47 +258,81 @@ def run_kansas_crash_scraper(path_dir):
             'county': '',
             'submit': 'Search',
         }
+        try:
+            response = requests.post(
+                'https://www.kansas.gov/khp-crashlogs/search.do',
+                headers=headers,
+                data=data,
+                proxies=proxies
+                )
+        except Exception as e:
+            logger.error(e)
 
-        response = requests.post(
-            'https://www.kansas.gov/khp-crashlogs/search.do',
-            headers=headers,
-            data=data,
-            proxies=proxies
-        )
-
+        # --------------------------------------------------- find main div ans scrap links and id -----------------------------------------------------------
         soup = BeautifulSoup(response.content, 'html.parser')
         main_content = soup.find("div", class_="col-12").find_all("div", class_="row")
 
         for x in range(len(main_content)):
             crash_link.append("https://www.kansas.gov/" + main_content[x].find("a").get("href"))
+        # print(crash_link)
+        # now we have a list of all links to crash reports
 
         for y in range(len(crash_link)):
             crash_number.append(crash_link[y].split("-")[-1])
+        # print(crash_number)
+
+        # --------------------------------------------------- search request -----------------------------------------------------------
 
         for i in range(len(crash_number)):
+            # new request for next page
+            headers = {
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+                'Accept-Language': 'en-US,en;q=0.9,pt;q=0.8',
+                'Cache-Control': 'max-age=0',
+                'Connection': 'keep-alive',
+                'Content-Type': 'application/x-www-form-urlencoded',
+                # 'Cookie': 'JSESSIONID=A811DC7EE04E50F32FFE7DC315028B51.aptcs04-inst1; ksgov=!UOQWS66nXWryJDiOfB8IWYBnkPHbwameCZWnoDXc7ue0ZqaIxI/7+Nw8lZUAPZXCxXcgLFCvoI7DrWgeh8bRDSf0l2j+CYIRMYdD3zcA+JOG; _ga=GA1.1.1679144528.1739406024; _ga_XVN1E5L507=GS1.1.1739484868.1.1.1739484884.0.0.0; org.springframework.web.servlet.i18n.CookieLocaleResolver.LOCALE=en; _ga_V4YJRE8BKZ=GS1.1.1739484540.2.1.1739484905.0.0.0',
+                'Origin': 'https://www.kansas.gov',
+                'Referer': 'https://www.kansas.gov/khp-crashlogs/search/index',
+                'Sec-Fetch-Dest': 'document',
+                'Sec-Fetch-Mode': 'navigate',
+                'Sec-Fetch-Site': 'same-origin',
+                'Sec-Fetch-User': '?1',
+                'Upgrade-Insecure-Requests': '1',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36',
+                'sec-ch-ua': '"Not A(Brand";v="8", "Chromium";v="132", "Google Chrome";v="132"',
+                'sec-ch-ua-mobile': '?0',
+                'sec-ch-ua-platform': '"Windows"',
+            }
             response = requests.get(
-                'https://www.kansas.gov/khp-crashlogs/search/viewDetail/2025-'+crash_number[i],
+                'https://www.kansas.gov/khp-crashlogs/search/viewDetail/2025-'''+crash_number[i]+'',
                 headers=headers,
                 proxies=proxies
-            )
+                )
 
+            # update html content and acquire data
             soup = BeautifulSoup(response.content, 'html.parser')
 
+        # Extrair data e hora
             match = re.search(r"Date:\s*(.*)", soup.get_text())
             Date = match.group(1).strip() if match else "N/A"
 
             match = re.search(r"Time:\s*(.*)", soup.get_text())
             Time = match.group(1).strip() if match else "N/A"
 
+            # Extrair tipo de acidente
             match = re.search(r"Type:\s*(.*)", soup.get_text())
             accident_type = match.group(1).strip() if match else "N/A"
 
+            # Extrair nome dos motoristas
             driver_names = []
             citys = []
             States=[]
             Age=[]
+            Gender=[]
             for driver_section in soup.find_all("div", class_="page-header1"):
                 if "Driver of Vehicle" in driver_section.get_text():
+                    # Nome
                     name_tag = driver_section.find_next("p")
                     if name_tag and "Name:" in name_tag.get_text():
                         name = name_tag.get_text().split(":", 1)[1].strip()
@@ -269,38 +361,60 @@ def run_kansas_crash_scraper(path_dir):
                     else:
                         Age.append("N/A")
 
+                    gender_tag = driver_section.find_next("p").find_next("p").find_next("p").find_next("p").find_next("p").find_next("p").find_next("p")
+                    if gender_tag and "Sex:" in gender_tag.get_text():
+                        gender = gender_tag.get_text().split(":", 1)[1].strip()
+                        gender = gender[0]
+                        Gender.append(gender)
+                    else:
+                        Gender.append("N/A")
+                    
+
             insurance_company_list=[]
+        # Encontrar todas as seções de veículos
             for insurance_section in soup.find_all("div", class_="col-12"):
                 if "Vehicle" in insurance_section.get_text():
+                    # Procurar todos os <p> dentro dessa seção
                     for p in insurance_section.find_all("p"):
+                        # Verificar se o parágrafo contém "Insurance Company:"
                         if "Insurance Company:" in p.get_text():
                             insurance = p.get_text().split(":", 1)[1].strip()
                             insurance_company_list.append(insurance if insurance else "N/A")
-                            break
+                            break  # Parar a busca dentro dessa seção após encontrar o valor
             if insurance_company_list:
                 insurance_company_list.pop(0)
+                
 
             license_list=[]
+            # Encontrar todas as seções de veículos
             for license_section in soup.find_all("div", class_="col-12"):
                 if "Vehicle" in license_section.get_text():
+                    # Procurar todos os <p> dentro dessa seção
                     for p in license_section.find_all("p"):
+                        # Verificar se o parágrafo contém "Insurance Company:"
                         if "License:" in p.get_text():
                             license = p.get_text().split(":", 1)[1].strip()
                             license_list.append(license if license else "N/A")
-                            break
+                            break  # Parar a busca dentro dessa seção após encontrar o valor
             if license_list:
                 license_list.pop(0)
 
+            # append content
             date_list.append(Date)
             time_list.append(Time)
+
+            # driver_list.append(driver_names)
             crash_type.append(accident_type)
+
             final_driver_list.append(driver_names)
             final_license_list.append(license_list)
             final_insurance_company_list.append(insurance_company_list)
             final_states.append(States)
             final_citys.append(citys)
             final_ages.append(Age)
+            final_genders.append(Gender)
 
+            # Exibir os resultados
             #print("Date:", Date)
             #print("Time:", Time)
             #print("Type:", accident_type)
@@ -312,9 +426,15 @@ def run_kansas_crash_scraper(path_dir):
             #print("Age:", Age)
             #print("--------------------")
 
-            url = 'https://www.kansas.gov/khp-crashlogs/search/viewDetail/2025-'+crash_number[i]
-            output_pdf = os.path.join(path_dir, crash_number[i] + ".pdf")
+            url = 'https://www.kansas.gov/khp-crashlogs/search/viewDetail/2025-'''+crash_number[i]+''
+            # Define the full path for the 'kansas' folder
+            kansas_dir = os.path.join(path_dir, "kansas")
+            # Create the 'kansas' folder if it doesn't exist
+            os.makedirs(kansas_dir, exist_ok=True)
+            #output_pdf = crash_number[i]+".pdf" ojo
+            output_pdf = os.path.join(kansas_dir,crash_number[i] + ".pdf")
 
+            # Converte a página para PDF
             try:
                 HTML(url).write_pdf(output_pdf)
                 logger.info(f"PDF generated correctly in: {output_pdf}")
@@ -322,6 +442,7 @@ def run_kansas_crash_scraper(path_dir):
             except Exception as e:
                 logger.error(f"Error generating PDF: {e}")
 
+        # DF for the current day in "days"
         df_temp = pd.DataFrame({
         "ID": crash_number,
         "Date": date_list,
@@ -329,6 +450,7 @@ def run_kansas_crash_scraper(path_dir):
         "Type": crash_type,
         "Driver": final_driver_list,
         "Age": final_ages,
+        "Gender": final_genders,
         "License": final_license_list,
         "Insurance": final_insurance_company_list,
         "State": final_states,
@@ -338,21 +460,35 @@ def run_kansas_crash_scraper(path_dir):
 
         df_final = pd.concat([df_final, df_temp], ignore_index=True)
 
+
+    # -------------------------------------- DF managing -------------------------------------------------------
     df=df_final
-    cols_to_explode = ["Driver", "Age", "License", "Insurance", "State", "City"]
+    # Colunas a serem ajustadas
+    cols_to_explode = ["Driver", "Age", "Gender","License", "Insurance", "State", "City"]
+
+    # Ajustando para que cada coluna tenha o mesmo número de elementos por linha
     max_len = df[cols_to_explode].applymap(len).max(axis=1)
 
     for col in cols_to_explode:
         df[col] = df.apply(lambda row: row[col] + [""] * (max_len[row.name] - len(row[col])), axis=1)
 
+    # Explodindo corretamente, mantendo alinhamento
     df_expanded = df.explode(cols_to_explode, ignore_index=True)
-    insert_full_crash_data(df_expanded, output_pdf)
-
+    # info datafram
+    try:
+        print_dataframe_info(df_expanded)
+    except Exception as e:
+        logger.warning("Error in struct dataframe")
+    #insert into DB
+    insert_full_crash_data(df_expanded, kansas_dir)
+    #add current date to file name ojo
     file_name='Data_Crashes_Kansas_24H_'+desired_date.strftime('%Y%m%d')+'.csv'
-    output_path = os.path.join(path_dir, file_name)
-    df_expanded.to_csv(output_path,index=False)
-    logger.info("File csv loaded!")
 
+    #save file in saved_files/ folder
+    file_name=os.path.join(path_dir, "kansas",file_name)
+
+    df_expanded.to_csv(file_name,index=False)
+    logger.info(f"File csv loaded!: {file_name}")
 
 # Add src/ folder to sys.path to import scraper and parser modules
 #base_dir = os.path.dirname(os.path.abspath(__file__))
