@@ -6,10 +6,10 @@ import pandas as pd
 from datetime import datetime, timedelta
 from src.utils.logger_config import setup_logger
 from config.config import get_connection
+from src.utils.info_dataframe import print_dataframe_info
 
 
 main_script_path = sys.path[0]
-
 logger = setup_logger("Texas_execution", main_script_path)
 
 def clean_numeric(value):
@@ -62,9 +62,8 @@ def insert_crash_data_to_db(df: pd.DataFrame, pdf_base_path: str):
             crash_severity = clean_text(group['Crash Severity'].iloc[0])
             nearest_center_d = clean_numeric(group['Nearest Trauma Center Distance'].iloc[0])
             city = clean_text(group['City'].iloc[0])
-
-            original_document_location = pdf_base_path
             number_of_units = group['VIN'].nunique()
+            original_document_location = pdf_base_path
 
             narrative_parts = [
                 f"Nearest Trauma Center: {clean_text(group['Nearest Trauma Center Distance'].iloc[0])}",
@@ -89,14 +88,15 @@ def insert_crash_data_to_db(df: pd.DataFrame, pdf_base_path: str):
             # Insert incident
             cur.execute("""
                 INSERT INTO incident_reports (
-                    report_number, accident_datetime, city, street, zip, crash_severity,
+                    report_number, internal_report_number, accident_datetime, city, street, zip, crash_severity,
                     source_url, original_document_location, generation_date, json, narrative,
                     nearest_center_d, number_of_units, state, original_format
                 )
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 RETURNING id
             """, (
                 report_number,
+                "tx" + str(report_number),
                 accident_datetime,
                 city,
                 street,
@@ -198,10 +198,7 @@ def insert_crash_data_to_db(df: pd.DataFrame, pdf_base_path: str):
     conn.commit()
     cur.close()
     conn.close()
-    logger.info("Data inserted successfully.")
-
-
-
+    logger.info("Data inserted successfully: Texas")
 
 
 
@@ -228,24 +225,23 @@ def read_and_save_recent_csv(raw_path: str = None, processed_path: str = None, m
             full_path = os.path.join(raw_folder, f)
             if os.path.getmtime(full_path) > threshold:
                 df = pd.read_csv(full_path, skiprows=10)
-                print(f"Loaded recent CSV: {f}")
+                logger.info(f"Loaded recent CSV: {f}")
                 today = datetime.now()
                 try: 
                     begin_date = (today - timedelta(days=4)).strftime("%m/%d/%Y").replace("/", "_")
                     end_date = (today - timedelta(days=1)).strftime("%m/%d/%Y").replace("/", "_")
-                    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
                     output_name = f"texasprocessed_crashes_{begin_date}_to_{end_date}.csv"
                     output_path = os.path.join(processed_folder, output_name)
                     df.to_csv(output_path, index=False)
-                    print(df.columns)
+                    logger.info(df.columns)
+                    print_dataframe_info(df)
                     insert_crash_data_to_db(df, output_path)
                 except Exception as e:
                     logger.error(e)
-                print(f"Saved to: {output_path}")
+                logger.info(f"Saved to: {output_path}")
                 return df
 
-    print("No recent CSV found.")
-    logger.info("4")
+    logger.warning("No recent CSV found.")
     return None
 
 

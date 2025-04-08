@@ -1,10 +1,47 @@
 import psycopg2
+from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
+
+def create_database_if_not_exists():
+    """Conecta a postgres y crea la base de datos si no existe"""
+    try:
+        # Primero conectamos a la base de datos postgres (que siempre existe)
+        conn = psycopg2.connect(
+            dbname="postgres",
+            user="synapseiq",
+            password="SynapseIQ$2025",
+            host="localhost",
+            port="5432"
+        )
+        
+        # Necesario para crear bases de datos
+        conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+        
+        cur = conn.cursor()
+        
+        # Verificamos si la base de datos existe
+        cur.execute("SELECT 1 FROM pg_database WHERE datname = 'crash_records_001'")
+        exists = cur.fetchone()
+        
+        if not exists:
+            print("Creando base de datos crash_records_001...")
+            cur.execute("CREATE DATABASE crash_records_001")
+            print("Base de datos creada exitosamente.")
+        else:
+            print("La base de datos crash_records_001 ya existe.")
+            
+        cur.close()
+        conn.close()
+        return True
+        
+    except Exception as e:
+        print(f"Error al crear la base de datos: {e}")
+        return False
 
 def create_crash_report_schema():
     conn = psycopg2.connect(
-        dbname="crash_records",
-        user="synapseiq",     #"cristianb",
-        password="SynapseIQ$2025",# "Mozart503"
+        dbname="crash_records_001",
+        user="synapseiq",     
+        password="SynapseIQ$2025",
         host="localhost", 
         port="5432"   
     )
@@ -15,7 +52,8 @@ def create_crash_report_schema():
     cur.execute("""
     CREATE TABLE IF NOT EXISTS incident_reports (
         id SERIAL PRIMARY KEY,
-        report_number TEXT NOT NULL UNIQUE,
+        report_number TEXT NOT NULL,
+        internal_report_number TEXT NOT NULL UNIQUE,
         version_json TEXT,
         source_url TEXT,
         original_format TEXT,
@@ -35,7 +73,10 @@ def create_crash_report_schema():
         crash_severity TEXT,
         number_of_units INTEGER,
         narrative TEXT,
+        nearest_center_d NUMERIC(10,2),
+        nearest_hope_d NUMERIC(10,2),
         notes TEXT,
+        technical_notes TEXT,
         json JSONB
     )
     """)
@@ -59,12 +100,20 @@ def create_crash_report_schema():
         insurance_company TEXT,
         policy_number TEXT,
         driver_name TEXT,
+        driver_first_name TEXT,
+        driver_middle_name TEXT,
+        driver_last_name TEXT,
         driver_license TEXT,
         driver_state TEXT,
+        driver_address TEXT,
         owner_name TEXT,
+        owner_first_name TEXT,
+        owner_middle_name TEXT,
+        owner_last_name TEXT,
         owner_address TEXT,
         owner_phone TEXT,
-        notes TEXT
+        notes TEXT,
+        technical_notes TEXT
     )
     """)
 
@@ -75,13 +124,19 @@ def create_crash_report_schema():
         vehicle_id INTEGER REFERENCES vehicles(id) ON DELETE CASCADE,
         role TEXT,
         name TEXT,
+        first_name TEXT,
+        middle_name TEXT,
+        last_name TEXT,
         age INTEGER,
         gender TEXT,
         license_number TEXT,
         injury_severity TEXT,
+        number_occupant INTEGER,
+        year_birth INTEGER,
         phone1 TEXT,
         phone2 TEXT,
-        notes TEXT
+        notes TEXT,
+        technical_notes TEXT
     )
     """)
 
@@ -89,5 +144,13 @@ def create_crash_report_schema():
     cur.close()
     conn.close()
 
-create_crash_report_schema()
+def main():
+    # Primero creamos la base de datos si no existe
+    if create_database_if_not_exists():
+        # Luego creamos las tablas
+        create_crash_report_schema()
+    else:
+        print("No se pudo continuar con la creación de tablas debido a un error.")
 
+if __name__ == "__main__":
+    main()

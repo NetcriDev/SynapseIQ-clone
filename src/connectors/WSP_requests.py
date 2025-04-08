@@ -1,17 +1,41 @@
 import requests
+import json
+import re
+import os
+import pdfplumber
+import sys
 import pandas as pd
 from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
-import pdfplumber
-import re
-import os
-import psycopg2
 from config.config import get_connection
-import json
+from src.utils.logger_config import setup_logger
+from src.utils.info_dataframe import print_dataframe_info
+import numpy as np
+
+main_script_path = sys.path[0]
+logger = setup_logger("Winstonsalem_execution", main_script_path)
 
 
 #insert into DB
 def insert_dataframe_into_db(df: pd.DataFrame, file_path: str):
+    """
+    Insert crash report data from a DataFrame into the database.
+
+    This function iterates over each row in the provided DataFrame and inserts
+    crash incident data into the `incident_reports` table. It also checks and inserts
+    related vehicle and passenger data into the `vehicles` and `passengers` tables
+    if they do not already exist.
+
+    Args:
+        df_expanded (pd.DataFrame): 
+            A DataFrame containing the expanded crash data. Each row should represent
+            a crash record with fields like ID, URL, Driver, License, Insurance, 
+            State, City, Type (severity), Date, Time, and Age.
+        file_path (str): 
+            The file path (carpet storage/winstonsalem) where the original document (PDF) is stored. 
+            This is saved along with each incident report.
+
+    """
     conn = get_connection()
     cur = conn.cursor()
 
@@ -32,26 +56,27 @@ def insert_dataframe_into_db(df: pd.DataFrame, file_path: str):
         insurance = str(row.get('Insurance', '')).strip()
         policy = str(row.get('Policy', '')).strip()
         generation_date = datetime.now()
-
+        age = int(row['Age']) if pd.notnull(row.get('Age')) and str(row.get('Age')).strip().isdigit() else None
+        date_birth = int(row['Date of Birth']) if pd.notnull(row.get('Date of Birth')) and str(row.get('Date of Birth')).strip().isdigit() else None
         row_json = json.dumps(row.dropna().to_dict())
-
-        original_document_location = file_path  # ubicación real del PDF
+        original_document_location = os.path.join(file_path,"WSP-"+str(datetime.now().year)+"-"+report_number+".pdf")  # ubicación real del PDF
 
         # Insert incident if not exists
-        cur.execute("SELECT id FROM incident_reports WHERE report_number = %s", (report_number,))
+        cur.execute("SELECT id FROM incident_reports WHERE report_number = %s AND accident_datetime = %s", (report_number, accident_datetime))
         res = cur.fetchone()
         if res:
             incident_id = res[0]
         else:
             cur.execute("""
                 INSERT INTO incident_reports (
-                    report_number, source_url, accident_datetime, city, state, street,
-                    notes, json, original_document_location, generation_date,
+                    report_number, internal_report_number, source_url, accident_datetime, city, state, street,
+                    technical_notes, json, original_document_location, generation_date,
                     original_format
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 RETURNING id
             """, (
                 report_number,
+                "wsp" + str(report_number),
                 source_url,
                 accident_datetime,
                 city,
@@ -79,7 +104,7 @@ def insert_dataframe_into_db(df: pd.DataFrame, file_path: str):
                 cur.execute("""
                     INSERT INTO vehicles (
                         incident_report_id, vin, insurance_company, policy_number,
-                        driver_name, notes
+                        driver_name, technical_notes
                     ) VALUES (%s, %s, %s, %s, %s, %s)
                     RETURNING id
                 """, (
@@ -102,20 +127,21 @@ def insert_dataframe_into_db(df: pd.DataFrame, file_path: str):
             if not exists:
                 cur.execute("""
                     INSERT INTO passengers (
-                        vehicle_id, role, name, notes
-                    ) VALUES (%s, %s, %s, %s)
+                        vehicle_id, role, name, technical_notes, age, year_birth
+                    ) VALUES (%s, %s, %s, %s, %s, %s)
                 """, (
                     vehicle_id,
                     'Driver',
                     driver,
-                    "Inserted from WSP Daily DataFrame"
+                    "Inserted from WSP Daily DataFrame",
+                    age,
+                    date_birth
                 ))
 
     conn.commit()
     cur.close()
     conn.close()
-    print("Data successfully inserted.")
-
+    logger.info("Data successfully inserted: WinstonSalem")
 
 # Função para extrair os nomes dos motoristas
 def extrair_motoristas(texto):
@@ -156,7 +182,9 @@ def separar_motoristas_por_nome(nomes, sobrenomes):
         #     motoristas.append(' '.join(nome_completo))
 
         #codigo patrick:::::
-        nome_completo=nomes[0]
+        
+        nome_completo=' '.join(nomes)
+        # print(nome_completo)
         for sobrenome in sobrenomes:
             sobrenome_split=sobrenome.split(';')
             sobrenome_split=[sobr.strip() for sobr in sobrenome_split]
@@ -192,7 +220,21 @@ def fix_city_state_base_insurance(cityState,insurances): #inserir vazios para co
     
     return content_out
 
+
+
 def run_wsp_crash_scraper(output_dir):
+    """
+    Scrapes crash data from the Winston Salem crash reporting system.
+
+    Parameters
+    ----------
+    path_dir : str
+        Path to the directory where downloaded files, storage folder (storage) or results should be stored.
+
+    Returns
+    -------
+    None
+    """
     # Creating lists for scrapping table content
     list_report=[]
     list_date=[]
@@ -206,11 +248,14 @@ def run_wsp_crash_scraper(output_dir):
     owner_list=[]
     list_cities=[]
     list_States=[]
+    list_Addresses=[]
+    list_DOB=[]
 
     # Creating Date Variable
-    days=3 #2
+    days=2 #2
     # (-1) from today
     desired_date = datetime.now() - timedelta(days)
+    logger.info(desired_date)
     # Format 1: 2024.11.6 (NOV)
     format1 = desired_date.strftime('%Y.%m.%d')
     # Format 2: 11/06/2024 (NOV)
@@ -290,21 +335,24 @@ def run_wsp_crash_scraper(output_dir):
         pages=pages//10 + (pages % 10 > 0) -1
     except:
         pages = 0
-    print('pages total:',pages)
+    logger.info('pages total:' + str(pages))
 
     # Update data info in response to get other page details
     for page in range(pages):
-        print('running page',page)
+        logger.info('running page' + str(page))
         data = ('''__EVENTTARGET=&__EVENTARGUMENT=&__VIEWSTATE='''+viewstate.replace('/','%2F')+'''&__VIEWSTATEGENERATOR=0C6A3359&ob_iDdlob_grid1PageSizeSelectorTB=10&ASPxRoundPanel2%24grid1%24ob_grid1FooterContainer%24ob_grid1PageSizeSelector=10&ob_iDdlob_grid1PageSizeSelectorSIS=1&ASPxRoundPanel2%24grid1%24ob_grid1EditControl1=&ASPxRoundPanel2%24grid1%24ob_grid1EditControl2=&ASPxRoundPanel2%24grid1%24ob_grid1EditControl3=&ASPxRoundPanel2%24grid1%24ob_grid1EditControl4=&ASPxRoundPanel2%24grid1%24ob_grid1ViewstateContainer='''+
                 viewstateContainer
                 +'''&ASPxRoundPanel2%24grid1%24ob_grid1EMRC=&ASPxRoundPanel2%24grid1%24ob_grid1PageSelector='''+
                 str(1+page)+'''&ASPxRoundPanel2%24grid1%24ob_grid1TotalRecords=32&ASPxRoundPanel2%24grid1%24ob_grid1CellDivsWidthContainer=&ASPxRoundPanel2%24grid1%24ob_grid1ColumnsWidthContainer=0%2C110%2C90%2C50%25%2C50%25&ASPxRoundPanel2%24grid1%24ob_grid1VSC=&ASPxRoundPanel2%24grid1%24ob_grid1FBConfC=1&ASPxRoundPanel2%24grid1%24ob_grid1CFEC=&ASPxRoundPanel2%24grid1%24ob_grid1SerializedCols=key_crash*_o_osep_*None*_o_osep_*0*_o_osep_*false*_o_osep_*0*_o_osep_*false*_o_osep_*0*_o_osep_*key_crash*_o_asep_*LocalUse*_o_osep_*Desc*_o_osep_*0*_o_osep_*false*_o_osep_*0*_o_osep_*true*_o_osep_*1*_o_osep_*LocalUse*_o_asep_*DateOfCrash*_o_osep_*None*_o_osep_*0*_o_osep_*false*_o_osep_*0*_o_osep_*true*_o_osep_*2*_o_osep_*DateOfCrash*_o_asep_*LastName*_o_osep_*None*_o_osep_*0*_o_osep_*false*_o_osep_*0*_o_osep_*true*_o_osep_*3*_o_osep_*LastName*_o_asep_*RoadOn*_o_osep_*None*_o_osep_*0*_o_osep_*false*_o_osep_*0*_o_osep_*true*_o_osep_*4*_o_osep_*RoadOn&ASPxRoundPanel2%24grid1%24ob_grid1SortExpression=&ASPxRoundPanel2%24grid1%24ob_grid1SortOrder=&&__ob_gridgrid1IsCallback=1&__CALLBACKID=ASPxRoundPanel2%24grid1&__CALLBACKPARAM=&__EVENTVALIDATION='''+eventvalidation.replace('/','%2F')
                 )
-        response = requests.post(
-            'https://winston-salem.ecrash.interplat.com/SearchReports.aspx',
-            headers=headers,
-            data=data,
-        )
+        try:
+            response = requests.post(
+                'https://winston-salem.ecrash.interplat.com/SearchReports.aspx',
+                headers=headers,
+                data=data,
+            )
+        except Exception as e:
+            logger.error(e)
         # Update html and scrap each page remaining
         soup = BeautifulSoup(response.content, 'html.parser')
         trs_table = soup.find("table", class_="ob_gBody").find("tbody").find_all("tr")
@@ -323,6 +371,7 @@ def run_wsp_crash_scraper(output_dir):
         list_url_final.append(f"{base_url}{report_id}")
 
     # PDF Scrapping ---------------------------------------------------------------------------------
+    logger.info("List Driver: " + str(list_driver))
     for k in range(len(list_url)):
         attempts=0
         while attempts<10:
@@ -375,10 +424,13 @@ def run_wsp_crash_scraper(output_dir):
 
             # URL do arquivo que você deseja baixar
             new_url = "https://winston-salem.ecrash.interplat.com" + conteudo
-            print(new_url)
+            #print(new_url)
 
-            # Caminho temporário para salvar o arquivo
-            file_path = "temp_file.txt"
+            # Define the directory and ensure it exists
+            path_ws = os.path.join(output_dir, "winstonsalem")
+            os.makedirs(path_ws, exist_ok=True)
+
+            file_path2 = os.path.join(path_ws,"temp_file.txt") 
 
             headers = {
                 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
@@ -400,30 +452,31 @@ def run_wsp_crash_scraper(output_dir):
 
             #now download pdf from link
             response = requests.get(new_url, headers=headers,stream=True) #verify=False
-            with open("temp_file.pdf", "wb") as pdf:
+            with open(os.path.join(path_ws,"temp_file.pdf"), "wb") as pdf:
                 for chunk in response.iter_content(chunk_size=4096):
                     if chunk:
                         pdf.write(chunk)
 
             # Criar uma cópia do arquivo como "xx.pdf"
-            output_pdf=output_dir + "/" +list_report[k]+".pdf"
-            with open("temp_file.pdf", "rb") as temp_pdf, open(output_pdf, "wb") as copy_pdf:
+            file_path_data=os.path.join(path_ws,"WSP-"+str(datetime.now().year)+"-"+list_report[k]+".pdf")
+            with open(os.path.join(path_ws,"temp_file.pdf"), "rb") as temp_pdf, open(file_path_data, "wb") as copy_pdf:
                 copy_pdf.write(temp_pdf.read())
 
             try:
-                with pdfplumber.open('temp_file.pdf') as pdf:
+                with pdfplumber.open(os.path.join(path_ws,'temp_file.pdf')) as pdf:
                     pass
                 break
             except:
-                os.remove('temp_file.pdf')
+                os.remove(os.path.join(path_ws,'temp_file.pdf'))
                 response = requests.get(new_url, headers=headers,stream=True) #verify=False
-                with open("temp_file.pdf", "wb") as pdf:
+                with open(os.path.join(path_ws,'temp_file.pdf'), "wb") as pdf:
                     for chunk in response.iter_content(chunk_size=4096):
                         if chunk:
                             pdf.write(chunk)
 
                 # Criar uma cópia do arquivo como "xx.pdf"
-                with open("temp_file.pdf", "rb") as temp_pdf, open(list_report[k]+".pdf", "wb") as copy_pdf:
+                logger.warning(" list_report: " + str(list_report[k]))
+                with open(os.path.join(path_ws,'temp_file.pdf'), "rb") as temp_pdf, open(os.path.join(path_ws,list_report[k]+".pdf"), "wb") as copy_pdf:
                     copy_pdf.write(temp_pdf.read())
 
                 attempts+=1
@@ -431,7 +484,7 @@ def run_wsp_crash_scraper(output_dir):
             attempts+=1
 
         # Abrir o arquivo PDF
-        with pdfplumber.open('temp_file.pdf') as pdf:
+        with pdfplumber.open(os.path.join(path_ws,'temp_file.pdf')) as pdf:
             texto = ''
             nomes_extraidos=[]
             # Extrair texto de cada página
@@ -451,7 +504,7 @@ def run_wsp_crash_scraper(output_dir):
             # Chamar as funções
             
             owners = separar_motoristas_por_nome(nomes_extraidos, sobrenomes)
-            print(owners)
+            #print(owners)
 
             # Extract Insurance
             insurance = []
@@ -488,8 +541,24 @@ def run_wsp_crash_scraper(output_dir):
 
             cities=fix_city_state_base_insurance(cities,insurance)
             States=fix_city_state_base_insurance(States,insurance)
+            
+            #get the address information
+            Addresses=[]
+            match_found=re.findall(r'First Middle Last.*?City State Zip',texto,re.DOTALL)
+            for partial_content in match_found:
+                partial_content=partial_content.split('First Middle Last')[-1].split('City State Zip')[0].strip().split('Address')[1:]
+                partial_content=[content.split('\n')[0].strip() for content in partial_content]
+                Addresses+=partial_content
 
-            print(cities), print(States)
+            #get DOB information
+            DOB=[]
+            match_found=re.findall(r'\n.*DOB.*DOB.*\n',texto)
+            for partial_content in match_found:
+                partial_content=partial_content.split('DOB ')[1:]
+                partial_content=[content.strip().split(' ')[0].strip().split('/')[-1].strip() for content in partial_content]
+                DOB+=partial_content
+
+            #print(cities), print(States),print(Addresses)
 
             # Extract VINs
             vins = []
@@ -526,9 +595,11 @@ def run_wsp_crash_scraper(output_dir):
         owner_list.append(owners)
         list_cities.append(cities)
         list_States.append(States)
+        list_Addresses.append(Addresses)
+        list_DOB.append(DOB)
         
         # Deleta o arquivo após a leitura
-        os.remove('temp_file.pdf')
+        os.remove(os.path.join(path_ws,'temp_file.pdf'))
 
     # print(texto)
 
@@ -537,17 +608,18 @@ def run_wsp_crash_scraper(output_dir):
         "REPORT": list_report,
         "DATE": list_date,
         "DRIVERS": owner_list,
-        "STREET": list_street, 
+        "STREET": list_Addresses, 
         "URL": list_url_final,
         "Insurances":list_insurance,
         "VINs": list_vin,
         "Policies": list_policy,
         "Cities": list_cities,
-        "States": list_States
+        "States": list_States,
+        "DOB": list_DOB,
     })
 
     # Colunas que precisam ser expandidas
-    cols_to_explode = ["DRIVERS", "Insurances", "VINs", "Policies", "Cities", "States"]
+    cols_to_explode = ["DRIVERS", "Insurances", "VINs", "Policies", "Cities", "States","STREET","DOB"]
 
     # Garantir que todas as colunas tenham listas com o mesmo tamanho por linha
     max_len = df[cols_to_explode].applymap(len).max(axis=1)
@@ -560,21 +632,35 @@ def run_wsp_crash_scraper(output_dir):
 
     # Renomear colunas para um nome singular
     df_expanded.rename(columns={"DRIVERS": "Driver", "Insurances": "Insurance", "VINs": "VIN", "Policies": "Policy", 
-                                "Cities": "City", "States": "State"}, inplace=True)
+                                "Cities": "City", "States": "State","DOB":"Date of Birth"}, inplace=True)
 
     # Substituir valores None por string vazia para evitar problemas ao salvar
     df_expanded.fillna("", inplace=True)
 
+    df_expanded['Insurance']=df_expanded['Insurance'].apply(lambda x : x[:-9].strip() if x.strip().endswith('Insurance') else x)
+    df_expanded.replace("", np.nan, inplace=True)
+    df_expanded = df_expanded.dropna(subset=['Driver', 'Insurance','VIN','City','State'], how='all')
+    df_expanded.fillna("", inplace=True)
+    df_expanded.sort_values(by=["REPORT","Driver"],inplace=True)
+    #drop duplicates keep first
+    df_expanded.drop_duplicates(subset=["REPORT","Driver"], keep='first', inplace=True)
+    df_expanded['Driver']=df_expanded['Driver'].apply(lambda x: 'UNKNOWN' if x.strip()=='' else x)
+    df_expanded['Date of Birth']=df_expanded['Date of Birth'].apply(lambda x: '' if len(x)<4 else x)
+    df_expanded['Age'] = df_expanded['Date of Birth'].apply(lambda x: datetime.now().year - int(x) if x.isdigit() and len(x) == 4 else '')
 
     #add current date to file name
-    file_name=output_dir+ "/" + 'Data_Crashes_WSP_Daily_'+format1+'.csv'     #datetime.now().strftime('%Y%m%d')+'.csv'
-
+    file_name= os.path.join(path_ws,'Data_Crashes_WSP_Daily_'+format1+'.csv')    #datetime.now().strftime('%Y%m%d')+'.csv'
+    
     #save file in saved_files/ folder
     # file_name=os.path.join('saved_files',file_name)
 
+    insert_dataframe_into_db(df_expanded, path_ws)
+    print_dataframe_info(df_expanded)
     df_expanded.to_csv(file_name,index=False)
-    insert_dataframe_into_db(df_expanded, output_pdf)
-    print("File saved!")
+
+    logger.info("File saved!: Winston Salem csv")
+
+
 
 #output_dir = "/Users/cristianb/Documents/Python/rel8ed/SynapseIQ_staging/storage"
 #output_dir = "/home/data"

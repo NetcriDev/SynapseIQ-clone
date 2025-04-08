@@ -69,7 +69,7 @@ def wait_for_download_complete(folder, extension=".csv", timeout=30, margin=10):
 def rename_downloaded_file(download_dir, old_name, begin_date, end_date, abbreviation="my_list"):
     # Verify that the name contains the abbreviation
     if abbreviation not in old_name:
-        print(f"File ignored because it does not contain '{abbreviation}': {old_name}")
+        logger.info(f"File ignored because it does not contain '{abbreviation}': {old_name}")
         return None
     begin_fmt = begin_date.replace("/", "_")
     end_fmt = end_date.replace("/", "_")
@@ -84,8 +84,7 @@ def rename_downloaded_file(download_dir, old_name, begin_date, end_date, abbrevi
 
 def load_csv_from_raw(path):
     df = pd.read_csv(path, skiprows=10)
-    print("CSV loaded:")
-    print(df.head())
+    logger.info(df.head())
     return df
 
 def run_scraper(data_dir: str = None, home_dir: str = None):
@@ -143,7 +142,6 @@ def run_scraper(data_dir: str = None, home_dir: str = None):
         df = load_csv_from_raw(renamed_path)
         return df
     else:
-        print(" No file was downloaded.")
         logger.warning("No file was downloaded.")
         return None
 

@@ -1,24 +1,48 @@
+import re
 import requests
-from src.utils.logger_config import setup_logger
+import pdfkit
+import json
+import sys
+import os
 import pandas as pd
 from bs4 import BeautifulSoup
-import pdfkit
 from datetime import datetime, timedelta
-import re
 from weasyprint import HTML
-from datetime import datetime
 from config.config import get_connection
-import psycopg2
-import json
+from src.utils.logger_config import setup_logger
+from src.utils.info_dataframe import print_dataframe_info
 
+main_script_path = sys.path[0]
+logger = setup_logger("Minnesota_execution", main_script_path)
 
 def insert_dataframe_to_db(df, pdf_base_path):
+    """
+    Insert crash report data from a DataFrame into the database.
+
+    This function iterates over each row in the provided DataFrame and inserts
+    crash incident data into the `incident_reports` table. It also checks and inserts
+    related vehicle and passenger data into the `vehicles` and `passengers` tables
+    if they do not already exist.
+
+    Args:
+        df_expanded (pd.DataFrame): 
+            A DataFrame containing the expanded crash data. Each row should represent
+            a crash record with fields like ID, URL, Driver, License, Insurance, 
+            State, City, Type (severity), Date, Time, and Age.
+        file_path (str): 
+            The file path (carpet storage/minnesota) where the original document (PDF) is stored. 
+            This is saved along with each incident report.
+
+    """
     conn = get_connection()
     cur = conn.cursor()
 
     for _, row in df.iterrows():
         report_number = str(row['ID']).strip()
-        accident_datetime = pd.to_datetime(row['Date']) if pd.notna(row['Date']) else None
+        try:
+            accident_datetime = pd.to_datetime(row['Date']) if pd.notna(row['Date']) else None
+        except Exception as e:
+            logger.error(e)
         city = row['City'].strip() if pd.notna(row['City']) else ''
         street = row['Location'].strip() if pd.notna(row['Location']) else ''
         source_url = row['URL'].strip() if pd.notna(row['URL']) else ''
@@ -27,28 +51,28 @@ def insert_dataframe_to_db(df, pdf_base_path):
         age = int(row['Age']) if pd.notna(row['Age']) else None
         media_contact = row['Media Contact'].strip() if pd.notna(row['Media Contact']) else ''
         crash_severity = row['Type'].strip() if pd.notna(row['Type']) else ''
-        original_document_location = f"{pdf_base_path}/ms{report_number}.pdf"
+        original_document_location = os.path.join(pdf_base_path,"ms"+ report_number +".pdf")
         generation_date = datetime.now()
         case_number= row['Case Number'].strip() if pd.notna(row['Case Number']) else ''
-
         # JSON completo del registro
         row_json = json.dumps(row.dropna().to_dict(),default=str)
 
         # Verificar si ya existe el incidente
-        cur.execute("SELECT id FROM incident_reports WHERE report_number = %s", (report_number,))
+        cur.execute("SELECT id FROM incident_reports WHERE report_number = %s AND accident_datetime = %s", (report_number, accident_datetime))
         result = cur.fetchone()
         if result:
             incident_id = result[0]
         else:
             cur.execute("""
                 INSERT INTO incident_reports (
-                    report_number, accident_datetime, city, street,
+                    report_number, internal_report_number, accident_datetime, city, street,
                     state, source_url, narrative, original_document_location,
                     generation_date, original_format, notes, crash_severity, json
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 RETURNING id
             """, (
                 report_number,
+                "msp" + str(report_number),
                 accident_datetime,
                 city,
                 street,
@@ -103,14 +127,12 @@ def insert_dataframe_to_db(df, pdf_base_path):
     conn.commit()
     cur.close()
     conn.close()
-    print("Data inserted successfully.")
+    logger.info("Data inserted successfully!: Minnesota")
 
 
 
-def run_msp_crash_scraper(output_dir, output_home="/home/SynapseIQ"):
+def run_msp_crash_scraper(output_dir):
     # Creating lists for scrapping table content
-    logger = setup_logger("MSP_execution", output_home)
-    logger.info(f"Date and time of execution: {datetime.now()}")
     date_list=[]
     crash_type=[]
 
@@ -294,13 +316,15 @@ def run_msp_crash_scraper(output_dir, output_home="/home/SynapseIQ"):
         description_out.append(description)
 
         # Exibir os resultados
-        print("Drivers:", driver_names)
-        print("City:", citys)
-        print("Age:", Age)
-        print("--------------------")
+        logger.info("Drivers: " + str(driver_names))
+        # print("City:", citys)
+        # print("Age:", Age)
+        # print("--------------------")
 
         url = crash_link[i]
-        output_pdf = output_dir + "/ms" + crash_number[i] + ".pdf"
+        path_minnesota = os.path.join(output_dir,"minnesota")
+        os.makedirs(path_minnesota, exist_ok=True)
+        output_pdf = os.path.join(path_minnesota,"ms" + str(crash_number[i]) + ".pdf")
 
         df_temp = pd.DataFrame({
         "ID": [crash_number[i]]*len(driver_names),
@@ -331,15 +355,14 @@ def run_msp_crash_scraper(output_dir, output_home="/home/SynapseIQ"):
             # Converte a página para PDF
             try:
                 HTML(url).write_pdf(output_pdf)
-                print(f"saved pdf {output_pdf}")
+                logger.info(f"saved pdf with weasyprint {output_pdf}")
             except:
                 try:
                     pdfkit.from_url(url, output_pdf)
-                    print(f"saved pdf {output_pdf}")
+                    logger.info(f"saved pdf with pdfkit {output_pdf}")
                 except:
-                    print(f"could not save pdf {output_pdf}")
+                    logger.info(f"could not save pdf {output_pdf}")
 
-        
 
     #old method doesnt split people in different rows:
     # DF for the current day in "days"
@@ -359,13 +382,14 @@ def run_msp_crash_scraper(output_dir, output_home="/home/SynapseIQ"):
     # "URL": crash_link,
     # })
     # df_final = pd.concat([df_final, df_temp], ignore_index=True)
-    insert_dataframe_to_db(df_final, output_dir)
-    df_final.to_csv('output.csv',index=False)
+    print_dataframe_info(df_final)
+    insert_dataframe_to_db(df_final, path_minnesota)
+    df_final.to_csv(os.path.join(path_minnesota,'output.csv'),index=False)
 
 
 #output_dir = "/Users/cristianb/Documents/Python/rel8ed/SynapseIQ_staging/storage"
 #output_home = "/Users/cristianb/Documents/Python/rel8ed/SynapseIQ_staging"
-#run_msp_crash_scraper(output_dir, output_home)
+#run_msp_crash_scraper(output_dir)
 
 
 
