@@ -11,6 +11,7 @@ from config.config import get_connection
 from src.utils.logger_config import setup_logger
 from src.utils.info_dataframe import print_dataframe_info
 import numpy as np
+from src.utils.split_name import split_driver_name
 
 main_script_path = sys.path[0]
 logger = setup_logger("Winstonsalem_execution", main_script_path)
@@ -60,6 +61,7 @@ def insert_dataframe_into_db(df: pd.DataFrame, file_path: str):
         date_birth = int(row['Date of Birth']) if pd.notnull(row.get('Date of Birth')) and str(row.get('Date of Birth')).strip().isdigit() else None
         row_json = json.dumps(row.dropna().to_dict())
         original_document_location = os.path.join(file_path,"WSP-"+str(datetime.now().year)+"-"+report_number+".pdf")  # ubicación real del PDF
+        driver_first, driver_middle, driver_last = split_driver_name(driver)
 
         # Insert incident if not exists
         cur.execute("SELECT id FROM incident_reports WHERE report_number = %s AND accident_datetime = %s", (report_number, accident_datetime))
@@ -104,8 +106,11 @@ def insert_dataframe_into_db(df: pd.DataFrame, file_path: str):
                 cur.execute("""
                     INSERT INTO vehicles (
                         incident_report_id, vin, insurance_company, policy_number,
-                        driver_name, technical_notes
-                    ) VALUES (%s, %s, %s, %s, %s, %s)
+                        driver_name, technical_notes,
+                        driver_first_name, 
+                        driver_middle_name, 
+                        driver_last_name
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
                     RETURNING id
                 """, (
                     incident_id,
@@ -113,7 +118,10 @@ def insert_dataframe_into_db(df: pd.DataFrame, file_path: str):
                     insurance,
                     policy,
                     driver,
-                    "Inserted from WSP Daily DataFrame"
+                    "Inserted from WSP Daily DataFrame",
+                    driver_first,
+                    driver_middle,
+                    driver_last
                 ))
                 vehicle_id = cur.fetchone()[0]
 
@@ -127,15 +135,22 @@ def insert_dataframe_into_db(df: pd.DataFrame, file_path: str):
             if not exists:
                 cur.execute("""
                     INSERT INTO passengers (
-                        vehicle_id, role, name, technical_notes, age, year_birth
-                    ) VALUES (%s, %s, %s, %s, %s, %s)
+                        vehicle_id, role, name, technical_notes,
+                        age, year_birth,
+                        first_name,
+                        middle_name,
+                        last_name
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """, (
                     vehicle_id,
                     'Driver',
                     driver,
                     "Inserted from WSP Daily DataFrame",
                     age,
-                    date_birth
+                    date_birth,
+                    driver_first, 
+                    driver_middle, 
+                    driver_last
                 ))
 
     conn.commit()

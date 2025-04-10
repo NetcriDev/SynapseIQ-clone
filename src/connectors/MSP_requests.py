@@ -11,6 +11,7 @@ from weasyprint import HTML
 from config.config import get_connection
 from src.utils.logger_config import setup_logger
 from src.utils.info_dataframe import print_dataframe_info
+from src.utils.split_name import split_driver_name
 
 main_script_path = sys.path[0]
 logger = setup_logger("Minnesota_execution", main_script_path)
@@ -54,6 +55,7 @@ def insert_dataframe_to_db(df, pdf_base_path):
         original_document_location = os.path.join(pdf_base_path,"ms"+ report_number +".pdf")
         generation_date = datetime.now()
         case_number= row['Case Number'].strip() if pd.notna(row['Case Number']) else ''
+        driver_first, driver_middle, driver_last = split_driver_name(driver)
         # JSON completo del registro
         row_json = json.dumps(row.dropna().to_dict(),default=str)
 
@@ -99,10 +101,19 @@ def insert_dataframe_to_db(df, pdf_base_path):
         else:
             cur.execute("""
                 INSERT INTO vehicles (
-                    incident_report_id, driver_name, notes
-                ) VALUES (%s, %s, %s)
+                    incident_report_id, driver_name, notes,
+                    driver_first_name,
+                    driver_middle_name,
+                    driver_last_name
+                ) VALUES (%s, %s, %s, %s, %s, %s)
                 RETURNING id
-            """, (incident_id, driver, "Imported from CSV"))
+            """, (incident_id, 
+                  driver,
+                  "Imported from CSV",
+                  driver_first,
+                  driver_middle,
+                  driver_last
+            ))
             vehicle_id = cur.fetchone()[0]
 
         # Verificar si ya existe el pasajero tipo "Driver"
@@ -114,14 +125,20 @@ def insert_dataframe_to_db(df, pdf_base_path):
         if not result:
             cur.execute("""
                 INSERT INTO passengers (
-                    vehicle_id, role, name, age, notes
-                ) VALUES (%s, %s, %s, %s, %s)
+                    vehicle_id, role, name, age, notes,
+                    first_name,
+                    middle_name,
+                    last_name   
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
             """, (
                 vehicle_id,
                 'Driver',
                 driver,
                 age,
-                " "     #notes
+                " ",     #notes
+                driver_first, 
+                driver_middle, 
+                driver_last
             ))
 
     conn.commit()

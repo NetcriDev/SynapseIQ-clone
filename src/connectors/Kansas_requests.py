@@ -13,6 +13,7 @@ from weasyprint.urls import URLFetchingError
 from src.utils.logger_config import setup_logger
 from src.utils.info_dataframe import print_dataframe_info
 from config.config import get_connection
+from src.utils.split_name import split_driver_name
 
 main_script_path = sys.path[0]
 logger = setup_logger("Kansas_execution", main_script_path)
@@ -51,7 +52,7 @@ def insert_full_crash_data(df_expanded: pd.DataFrame, file_path: str):
         age = row.get("Age", None)
         generation_date = datetime.now()
         gender=row.get("Gender", "").strip()
-
+        driver_first, driver_middle, driver_last = split_driver_name(driver)
         accident_dt_str = f"{row['Date']} {row['Time']}"
         try:
             accident_dt = datetime.strptime(accident_dt_str, "%m/%d/%Y %H:%M")
@@ -124,9 +125,12 @@ def insert_full_crash_data(df_expanded: pd.DataFrame, file_path: str):
                         driver_license,
                         driver_state,
                         insurance_company,
-                        technical_notes
+                        technical_notes,
+                        driver_first_name,
+                        driver_middle_name,
+                        driver_last_name
                     )
-                    VALUES (%s, %s, %s, %s, %s, %s)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
                     RETURNING id
                 """, (
                     incident_id,
@@ -134,7 +138,10 @@ def insert_full_crash_data(df_expanded: pd.DataFrame, file_path: str):
                     license,
                     state,
                     insurance,
-                    "Vehicle record inferred from license"
+                    "Vehicle record inferred from license",
+                    driver_first,
+                    driver_middle,
+                    driver_last
                 ))
                 vehicle_id = cur.fetchone()[0]
 
@@ -158,8 +165,11 @@ def insert_full_crash_data(df_expanded: pd.DataFrame, file_path: str):
                     age,
                     injury_severity,
                     gender,
-                    technical_notes
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s)
+                    technical_notes,
+                    first_name,
+                    middle_name,
+                    last_name
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """, (
                 vehicle_id,
                 "Driver" if license else "Occupant",
@@ -167,7 +177,10 @@ def insert_full_crash_data(df_expanded: pd.DataFrame, file_path: str):
                 int(age) if pd.notnull(age) and str(age).isdigit() else None,
                 severity,
                 "male" if gender.upper() == "M" else "female" if gender.upper() == "F" else "",
-                "Passenger record from CSV"
+                "Passenger record from CSV",
+                driver_first, 
+                driver_middle, 
+                driver_last
             ))
 
     conn.commit()
