@@ -1,4 +1,4 @@
-import psycopg2
+
 from config.config import get_connection
 from src.utils.split_name import split_driver_name
 
