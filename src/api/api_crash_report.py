@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Query, HTTPException, Response
+from fastapi import FastAPI, Query, HTTPException, Response, Depends
 from typing import List, Optional
 from datetime import datetime, time
 from src.models.models_api import Passenger, PassengerUpdatePhones, Vehicle, IncidentReport
@@ -9,6 +9,10 @@ import psycopg2
 import psycopg2.extras
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse
+import os
+from psycopg2.extras import RealDictCursor
+from src.models.models_api import CrashReportWithPassengers  # Define este modelo pydantic si no existe aún
 
 app = FastAPI()
 
@@ -46,8 +50,6 @@ def get_incident_by_report_number(report_number: str,response: Response= None):
     
     return incident
 
-from fastapi.responses import FileResponse
-import os
 
 @app.get("/incident/pdf/{report_number}")
 def get_incident_pdf(report_number: str, response: Response = None):
@@ -298,3 +300,75 @@ def search_vehicles(
     if response:
         response.headers["Access-Control-Allow-Origin"] = "*"
     return vehicles
+
+#texas endpoint
+@app.get("/list-reports-texas/search", response_model=List[CrashReportWithPassengers])
+def search_crash_reports(
+    crash_id: Optional[str] = None,
+    state: Optional[str] = None,
+    city: Optional[str] = None,
+    county: Optional[str] = None,
+    agency: Optional[str] = None,
+    crash_date: Optional[datetime] = None,
+    crash_severity: Optional[str] = None,
+    page: int = 1,
+    page_size: int = 10,
+    response: Response = None
+):
+    conn = get_connection()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+
+    filters = []
+    params = []
+
+    if crash_id:
+        filters.append("crash_id ILIKE %s")
+        params.append(f"%{crash_id}%")
+    if state:
+        filters.append("state ILIKE %s")
+        params.append(f"%{state}%")
+    if city:
+        filters.append("city ILIKE %s")
+        params.append(f"%{city}%")
+    if county:
+        filters.append("county ILIKE %s")
+        params.append(f"%{county}%")
+    if agency:
+        filters.append("agency ILIKE %s")
+        params.append(f"%{agency}%")
+    if crash_date:
+        filters.append("DATE(crash_date) = %s")
+        params.append(crash_date)
+    if crash_severity:
+        filters.append("crash_severity ILIKE %s")
+        params.append(f"%{crash_severity}%")
+
+    query = """
+    SELECT * FROM list_of_accident_report
+    """
+
+    if filters:
+        query += " WHERE " + " AND ".join(filters)
+
+    query += " ORDER BY crash_date DESC"
+
+    # Paginación
+    offset = (page - 1) * page_size
+    query += f" LIMIT {page_size} OFFSET {offset}"
+
+    cur.execute(query, tuple(params))
+    crashes = cur.fetchall()
+
+    for crash in crashes:
+        cur.execute("""
+            SELECT * FROM passenger_report_list WHERE crash_report_id = %s
+        """, (crash['id'],))
+        passengers = cur.fetchall()
+        crash['passengers'] = passengers
+
+    conn.close()
+
+    if response:
+        response.headers["Access-Control-Allow-Origin"] = "*"
+
+    return crashes

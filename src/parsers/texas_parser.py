@@ -8,199 +8,136 @@ from src.utils.logger_config import setup_logger
 from config.config import get_connection
 from src.utils.info_dataframe import print_dataframe_info
 
-
 main_script_path = sys.path[0]
 logger = setup_logger("Texas_execution", main_script_path)
 
-def clean_numeric(value):
-    if pd.isna(value) or str(value).strip().lower() in ['no data', '']:
+
+# Funciones utilitarias
+def clean_value(value):
+    if value in ('NO DATA', 'No Data', '', None) or pd.isna(value):
+        return None
+    return value
+
+def clean_int(value):
+    if value in ('NO DATA', 'No Data', '', None) or pd.isna(value):
+        return None
+    try:
+        return int(value)
+    except (ValueError, TypeError):
+        return None
+
+def clean_float(value):
+    if value in ('NO DATA', 'No Data', '', None) or pd.isna(value):
         return None
     try:
         return float(value)
     except (ValueError, TypeError):
         return None
+    
 
-def clean_integer(value):
-    num = clean_numeric(value)
-    if num is not None:
-        return int(num)
-    return None
-
-def clean_text(value):
-    if pd.isna(value):
-        return None
-    value = str(value).strip()
-    if value.lower() in ['no data', '']:
-        return None
-    return value
-
-
-
-def insert_crash_data_to_db(df: pd.DataFrame, pdf_base_path: str):
+def insert_crash_and_passengers(df: pd.DataFrame):
     conn = get_connection()
     cur = conn.cursor()
 
-    grouped = df.groupby("Crash ID")
-    logger.info("Start insert into DB")
-    
-    for crash_id, group in grouped:
-        report_number = str(crash_id)
-        accident_datetime = pd.to_datetime(group["Crash Date"].iloc[0], errors='coerce')
-
-        cur.execute("""
-            SELECT id FROM incident_reports 
-            WHERE report_number = %s AND accident_datetime = %s
-        """, (report_number, accident_datetime))
-        incident = cur.fetchone()
-        
-        if incident:
-            incident_id = incident[0]
-        else:
-            # --- Limpieza y preparación de datos ---
-            street = clean_text(group['Intersecting Street Number'].iloc[0])
-            zip_code = clean_text(group['Driver Zip Code'].iloc[0])
-            crash_severity = clean_text(group['Crash Severity'].iloc[0])
-            nearest_center_d = clean_numeric(group['Nearest Trauma Center Distance'].iloc[0])
-            city = clean_text(group['City'].iloc[0])
-            number_of_units = group['VIN'].nunique()
-            original_document_location = pdf_base_path
-
-            narrative_parts = [
-                f"Nearest Trauma Center: {clean_text(group['Nearest Trauma Center Distance'].iloc[0])}",
-                f"Region: {clean_text(group['Region'].iloc[0])}",
-                f"Contributing Factors: {', '.join(group['Contributing Factors'].dropna().unique())}",
-                f"Contributing Factor 1: {', '.join(group['Contributing Factor 1'].dropna().unique())}",
-                f"Contributing Factor 2: {', '.join(group['Contributing Factor 2'].dropna().unique())}",
-                f"Contributing Factor 3: {', '.join(group['Contributing Factor 3'].dropna().unique())}",
-                f"""$1000 Damage: {clean_text(group["$1000 Damage to Any One Person's Property"].iloc[0])}""",
-                f"Agency: {clean_text(group['Agency'].iloc[0])}",
-                f"Case ID: {clean_text(group['Case ID'].iloc[0])}",
-                f"County: {clean_text(group['County'].iloc[0])}",
-                f"Fatal Crash Flag: {clean_text(group['Fatal Crash Flag'].iloc[0])}",
-                f"Lessee/Owner Zip Code: {clean_text(group['Lessee/Owner Zip Code'].iloc[0])}",
-                f"Vehicle Hit and Run Flag: {clean_text(group['Vehicle Hit and Run Flag'].iloc[0])}",
-                f"Person Non-Suspected Serious Injury Count: {clean_text(group['Person Non-Suspected Serious Injury Count'].iloc[0])}"
-            ]
-            narrative = " || ".join([p for p in narrative_parts if p]) + "."
-
-            row_json = json.dumps(group.dropna().to_dict())
-
-            # Insert incident
-            cur.execute("""
-                INSERT INTO incident_reports (
-                    report_number, internal_report_number, accident_datetime, city, street, zip, crash_severity,
-                    source_url, original_document_location, generation_date, json, narrative,
-                    nearest_center_d, number_of_units, state, original_format
-                )
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                RETURNING id
-            """, (
-                report_number,
-                "tx" + str(report_number),
-                accident_datetime,
-                city,
-                street,
-                zip_code,
-                crash_severity,
-                "https://cris.dot.state.tx.us/public/Query/app/home",
-                original_document_location,
-                datetime.now(),
-                row_json,
-                narrative,
-                nearest_center_d,
-                number_of_units,
-                "Texas",
-                ".csv"
-            ))
-            incident_id = cur.fetchone()[0]
-
-        vins_seen = {}
-        for idx, row in group.iterrows():
-            vin = clean_text(row['VIN'])
-
-            if vin not in vins_seen:
-                vins_seen[vin] = len(vins_seen) + 1
-            unit_number = vins_seen[vin]
-
-            cur.execute("""
-                SELECT id FROM vehicles WHERE incident_report_id = %s AND vin = %s
-            """, (incident_id, vin))
-            vehicle = cur.fetchone()
+    try:
+        for idx, row in df.iterrows():
+            crash_id = row.get('Crash ID')
+            crash_date_raw = row.get('Crash Date')
             
-            if vehicle:
-                vehicle_id = vehicle[0]
-            else:
-                notes_parts = [
-                    f"County: {clean_text(row['County'])}",
-                    f"Contributing Factors: {clean_text(row['Contributing Factors'])}",
-                    f"Contributing Factor 1: {clean_text(row['Contributing Factor 1'])}",
-                    f"Contributing Factor 2: {clean_text(row['Contributing Factor 2'])}",
-                    f"Contributing Factor 3: {clean_text(row['Contributing Factor 3'])}"
-                ]
-                notes = ". ".join([n for n in notes_parts if n]) + "."
+            # Convertir el crash_date a datetime si existe
+            crash_date = pd.to_datetime(crash_date_raw, errors='coerce') if crash_date_raw else None
 
-                cur.execute("""
-                    INSERT INTO vehicles (
-                        incident_report_id, vin, unit_number, notes
-                    ) VALUES (%s, %s, %s, %s)
-                    RETURNING id
-                """, (incident_id, vin, unit_number, notes))
-                vehicle_id = cur.fetchone()[0]
+            if crash_id is None or crash_date is None:
+                print(f"Fila {idx} omitida: Crash ID o Crash Date nulo.")
+                continue  # Saltar filas incompletas
 
-            person_number = clean_integer(row.get('Person Number'))
+            # Verificar si ya existe el registro
+            check_query = """
+            SELECT id FROM list_of_accident_report
+            WHERE crash_id = %s AND crash_date= %s;
+            """
+            cur.execute(check_query, (str(crash_id), crash_date))
+            existing = cur.fetchone()
 
-            cur.execute("""
-                SELECT id FROM passengers 
-                WHERE vehicle_id = %s AND number_occupant = %s
-            """, (vehicle_id, person_number))
-            existing_passenger = cur.fetchone()
+            if existing:
+                continue  # Saltar si ya existe
 
-            if not existing_passenger:
-                location = clean_text(row.get('Physical Location of An Occupant', ''))
-                role = "Driver" if location and ('FRONT LEFT' in location or 'DRIVER' in location) else "Passenger"
+            # Insertar en list_of_accident_report
+            insert_crash_query = """
+            INSERT INTO list_of_accident_report (
+                crash_id, internal_crash_id, agency, case_id, state, city, county,
+                street_number, street, region, crash_date, crash_severity
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            RETURNING id;
+            """
 
-                gender = clean_text(row.get('Person Gender', ''))
-                if gender:
-                    gender = gender.lower()
-                    if "male" in gender:
-                        gender = "male"
-                    elif "female" in gender:
-                        gender = "female"
-                    else:
-                        gender = None
+            crash_values = (
+                crash_id,
+                f"tx{crash_id}",  # Generar internal_crash_id basado en Crash ID
+                clean_value(row.get('Agency')),
+                clean_value(row.get('Case ID')),
+                clean_value(row.get('State')) or "Texas",
+                clean_value(row.get('City')),
+                clean_value(row.get('County')),
+                clean_value(row.get('Intersecting Street Number')),
+                None,  # Street sigue en None
+                clean_value(row.get('Region')),
+                crash_date,  # crash_date ya está limpio como datetime o None
+                clean_value(row.get('Crash Severity'))
+            )
 
-                notes_parts = [
-                    f"Person Number: {person_number}",
-                    f"Contributing Factors: {clean_text(row.get('Contributing Factors', ''))}",
-                    f"Contributing Factor 1: {clean_text(row.get('Contributing Factor 1', ''))}",
-                    f"Contributing Factor 2: {clean_text(row.get('Contributing Factor 2', ''))}",
-                    f"Contributing Factor 3: {clean_text(row.get('Contributing Factor 3', ''))}",
-                    f"Physical Location: {location}"
-                ]
-                notes = " || ".join([n for n in notes_parts if n])
+            cur.execute(insert_crash_query, crash_values)
+            crash_report_id = cur.fetchone()[0]
 
-                cur.execute("""
-                    INSERT INTO passengers (
-                        vehicle_id, role, name, age, gender, injury_severity, number_occupant, notes
-                    )
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-                """, (
-                    vehicle_id,
-                    role,
-                    location,
-                    clean_integer(row.get('Person Age')),
-                    gender,
-                    clean_text(row.get('Person Injury Severity')),
-                    person_number,
-                    notes
-                ))
+            # Insertar en passenger_report_list
+            insert_passenger_query = """
+            INSERT INTO passenger_report_list (
+                crash_report_id, crash_id, amount_damage, contributing_factors, fatal_crash_flag,
+                street_number, nearest_trauma_center, nearest_trauma_center_distance,
+                contributing_factor_1, contributing_factor_2, contributing_factor_3,
+                driver_zip_code, lessee_owner_zip_code, vehicle_hit_and_run_flag, vin,
+                person_age, person_gender, person_injury_severity,
+                person_non_suspected_serious_injury_count, person_count_number,
+                physical_location_of_an_occupant
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
+            """
 
-    conn.commit()
-    cur.close()
-    conn.close()
-    logger.info("Data inserted successfully: Texas")
+            passenger_values = (
+                crash_report_id,
+                crash_id,
+                clean_value(row.get("$1000 Damage to Any One Person's Property")),  # amount_damage
+                clean_value(row.get('Contributing Factors')),                       # contributing_factors
+                clean_value(row.get('Fatal Crash Flag')),                            # fatal_crash_flag
+                clean_value(row.get('Intersecting Street Number')),                 # street_number
+                clean_value(row.get('Nearest Trauma Center')),                      # nearest_trauma_center
+                clean_float(row.get('Nearest Trauma Center Distance')),             # nearest_trauma_center_distance (NUMERIC)
+                clean_value(row.get('Contributing Factor 1')),                      # contributing_factor_1
+                clean_value(row.get('Contributing Factor 2')),                      # contributing_factor_2
+                clean_value(row.get('Contributing Factor 3')),                      # contributing_factor_3
+                clean_int(row.get('Driver Zip Code')),                               # driver_zip_code (INTEGER)
+                clean_int(row.get('Lessee/Owner Zip Code')),                         # lessee_owner_zip_code (INTEGER)
+                clean_value(row.get('Vehicle Hit and Run Flag')),                   # vehicle_hit_and_run_flag
+                clean_value(row.get('VIN')),                                         # vin
+                clean_int(row.get('Person Age')),                                    # person_age (INTEGER)
+                clean_value(row.get('Person Gender')),                               # person_gender
+                clean_value(row.get('Person Injury Severity')),                     # person_injury_severity
+                clean_int(row.get('Person Non-Suspected Serious Injury Count')),     # person_non_suspected_serious_injury_count (INTEGER)
+                clean_int(row.get('Person Number')),                                 # person_count_number (INTEGER)
+                clean_value(row.get('Physical Location of An Occupant'))             # physical_location_of_an_occupant
+            )
 
+            cur.execute(insert_passenger_query, passenger_values)
 
+        conn.commit()
+        logger.info("Datos insertados exitosamente.")
+
+    except Exception as e:
+        conn.rollback()
+        print(f"Error insertando datos: {e}")
+
+    finally:
+        cur.close()
+        conn.close()
 
 
 def get_paths():
@@ -234,9 +171,9 @@ def read_and_save_recent_csv(raw_path: str = None, processed_path: str = None, m
                     output_path = os.path.join(processed_folder, output_name)
                     os.makedirs(processed_folder, exist_ok=True)
                     df.to_csv(output_path, index=False)
-                    logger.info(df.columns)
+                    #logger.info(df.columns)
                     print_dataframe_info(df)
-                    #insert_crash_data_to_db(df, output_path)
+                    insert_crash_and_passengers(df)
                 except Exception as e:
                     logger.error(e)
                 logger.info(f"Saved to: {output_path}")

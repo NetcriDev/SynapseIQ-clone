@@ -77,3 +77,45 @@ class IncidentReport(BaseModel):
     narrative: Optional[str]
     notes: Optional[str]
     vehicles: Optional[List[Vehicle]] = []
+
+#texas
+class PassengerReport(BaseModel):
+    id: int
+    crash_report_id: Optional[int]
+    crash_id: Optional[str]
+    amount_damage: Optional[str]
+    contributing_factors: Optional[str]
+    fatal_crash_flag: Optional[str]
+    street_number: Optional[str]
+    nearest_trauma_center: Optional[str]
+    nearest_trauma_center_distance: Optional[float]
+    contributing_factor_1: Optional[str]
+    contributing_factor_2: Optional[str]
+    contributing_factor_3: Optional[str]
+    driver_zip_code: Optional[int]
+    lessee_owner_zip_code: Optional[int]
+    vehicle_hit_and_run_flag: Optional[str]
+    vin: Optional[str]
+    person_age: Optional[int]
+    person_gender: Optional[str]
+    person_injury_severity: Optional[str]
+    person_non_suspected_serious_injury_count: Optional[int]
+    person_count_number: Optional[int]
+    physical_location_of_an_occupant: Optional[str]
+
+#Texas
+class CrashReportWithPassengers(BaseModel):
+    id: int
+    crash_id: str
+    internal_crash_id: str
+    agency: Optional[str]
+    case_id: Optional[str]
+    state: Optional[str]
+    city: Optional[str]
+    county: Optional[str]
+    street_number: Optional[str]
+    street: Optional[str]
+    region: Optional[str]
+    crash_date: Optional[datetime]
+    crash_severity: Optional[str]
+    passengers: List[PassengerReport] = []

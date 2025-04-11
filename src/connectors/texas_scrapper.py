@@ -101,25 +101,28 @@ def run_scraper(data_dir: str = None, home_dir: str = None):
     driver = setup_driver(download_dir)
     driver.get('https://cris.dot.state.tx.us/public/Query/app/home')
 
-    wait = WebDriverWait(driver, 20)
-    wait.until(EC.element_to_be_clickable((By.XPATH, "/html/body/app-root/div[2]/app-homepage/cris-page/div/cris-homepage-card-container/div/div[2]/div[2]/ul/li[1]/a"))).click()
-    wait.until(EC.element_to_be_clickable((By.XPATH, '//*[@id="btn-accept"]'))).click()
-    wait.until(EC.element_to_be_clickable((By.XPATH, '//*[@id="ngb-nav-0-panel"]/app-panel-renderer/app-wizard-type-panel/app-query-type-selector/div[2]/div/div[3]/label'))).click()
-    wait.until(EC.element_to_be_clickable((By.XPATH, '//*[@id="btn-next"]'))).click()
-    wait.until(EC.element_to_be_clickable((By.XPATH, '//*[@id="ngb-nav-1-panel"]/app-panel-renderer/app-wizard-date-panel/app-query-date-selector-panel/app-query-date-selector/div/div/div[3]/label'))).click()
+    try:
+        wait = WebDriverWait(driver, 20)
+        wait.until(EC.element_to_be_clickable((By.XPATH, "/html/body/app-root/div[2]/app-homepage/cris-page/div/cris-homepage-card-container/div/div[2]/div[2]/ul/li[1]/a"))).click()
+        wait.until(EC.element_to_be_clickable((By.XPATH, '//*[@id="btn-accept"]'))).click()
+        wait.until(EC.element_to_be_clickable((By.XPATH, '//*[@id="ngb-nav-0-panel"]/app-panel-renderer/app-wizard-type-panel/app-query-type-selector/div[2]/div/div[3]/label'))).click()
+        wait.until(EC.element_to_be_clickable((By.XPATH, '//*[@id="btn-next"]'))).click()
+        wait.until(EC.element_to_be_clickable((By.XPATH, '//*[@id="ngb-nav-1-panel"]/app-panel-renderer/app-wizard-date-panel/app-query-date-selector-panel/app-query-date-selector/div/div/div[3]/label'))).click()
 
-    fecha_inicio = wait.until(EC.presence_of_element_located((By.XPATH, '//*[@id="queryBeginCrashDate"]')))
-    fecha_fin = wait.until(EC.presence_of_element_located((By.XPATH, '//*[@id="queryEndDate"]')))
-    fecha_inicio.clear()
-    fecha_fin.clear()
-    fecha_inicio.send_keys(begin_date)
-    fecha_fin.send_keys(end_date)
+        fecha_inicio = wait.until(EC.presence_of_element_located((By.XPATH, '//*[@id="queryBeginCrashDate"]')))
+        fecha_fin = wait.until(EC.presence_of_element_located((By.XPATH, '//*[@id="queryEndDate"]')))
+        fecha_inicio.clear()
+        fecha_fin.clear()
+        fecha_inicio.send_keys(begin_date)
+        fecha_fin.send_keys(end_date)
 
-    wait.until(EC.element_to_be_clickable((By.XPATH, '//*[@id="btn-next"]'))).click()
-    wait.until(EC.element_to_be_clickable((By.XPATH, "(//app-query-location-selector//label)[5]"))).click()
-    wait.until(EC.element_to_be_clickable((By.XPATH, '//*[@id="btn-view-results"]'))).click()
-    wait.until(EC.element_to_be_clickable((By.XPATH, '//*[@id="views"]/li[4]/a/div[2]'))).click()
-    wait.until(EC.element_to_be_clickable((By.XPATH, '//*[@id="btn-select-columns"]'))).click()
+        wait.until(EC.element_to_be_clickable((By.XPATH, '//*[@id="btn-next"]'))).click()
+        wait.until(EC.element_to_be_clickable((By.XPATH, "(//app-query-location-selector//label)[5]"))).click()
+        wait.until(EC.element_to_be_clickable((By.XPATH, '//*[@id="btn-view-results"]'))).click()
+        wait.until(EC.element_to_be_clickable((By.XPATH, '//*[@id="views"]/li[4]/a/div[2]'))).click()
+        wait.until(EC.element_to_be_clickable((By.XPATH, '//*[@id="btn-select-columns"]'))).click()
+    except Exception as e:
+        logger.error(e)
 
     fields = [
         "$1000 Damage to Any One Person's Property", "Agency", "Case ID", "City", "Contributing Factors",
