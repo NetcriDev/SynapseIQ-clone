@@ -15,10 +15,10 @@ import os
 base_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, base_dir)
 
-#outputdata_dir = "/Users/cristianb/Documents/Python/rel8ed/SynapseIQ_staging/storage"
-#home_dir = "/Users/cristianb/Documents/Python/rel8ed/SynapseIQ_staging"
-outputdata_dir = "/home/data"
-home_dir="home/data/SynapseIQ"
+outputdata_dir = "/Users/cristianb/Documents/Python/rel8ed/SynapseIQ_staging/storage"
+home_dir = "/Users/cristianb/Documents/Python/rel8ed/SynapseIQ_staging"
+#outputdata_dir = "/home/data"
+#home_dir="home/data/SynapseIQ"
 
 logger= setup_logger("Scheduled_execution", home_dir)
 # now
@@ -48,19 +48,19 @@ logger= setup_logger("Scheduled_execution", home_dir)
 # Minnesota()
 
 
-# def Texas():
-#     logger.info(">>> Start script: Texas")
-#     try:
-#         logger.info(" scraping execute...")
-#         df_scraped = run_scraper(os.path.join(outputdata_dir,"texas"), os.path.join(home_dir,"texas"))
+def Texas():
+    logger.info(">>> Start script: Texas")
+    try:
+        logger.info(" scraping execute...")
+        df_scraped = run_scraper(os.path.join(outputdata_dir,"texas"), os.path.join(home_dir,"texas"))
 
-#         logger.info("processed CSV ")
-#         df_processed = read_and_save_recent_csv(os.path.join(outputdata_dir,"texas"), 
-#                                                 os.path.join(outputdata_dir,"texas", "processed"),
-#                                                 margin_seconds=60)
-#         logger.info("Finish script: Texas -----|")
-#     except Exception as e:
-#         logger.error("Error script: Texas -----|")
-#Texas()
+        logger.info("processed CSV ")
+        df_processed = read_and_save_recent_csv(os.path.join(outputdata_dir,"texas"), 
+                                                os.path.join(outputdata_dir,"texas", "processed"),
+                                                margin_seconds=60)
+        logger.info("Finish script: Texas -----|")
+    except Exception as e:
+        logger.error("Error script: Texas -----|")
+Texas()
 
 #process_names_in_db()
