@@ -26,7 +26,6 @@ app.add_middleware(
 )
 
 
-
 # Endpoint: Search by report_number and fetch vehicles + passengers
 @app.get("/incident/by-report", response_model=IncidentReport)
 def get_incident_by_report_number(report_number: str,response: Response= None):
@@ -120,7 +119,7 @@ def view_incident_pdf(report_number: str, response: Response = None):
     )
 
 
-# Endpoint: Filtrado múltiple de incident_reports
+# Endpoint: Filtrado múltiple de incident_reports con paginación
 @app.get("/incident/search", response_model=List[IncidentReport])
 def search_incidents(
     generation_from: Optional[str] = None,
@@ -168,14 +167,26 @@ def search_incidents(
         filters.append("crash_severity ILIKE %s")
         params.append(f"%{crash_severity}%")
 
-    query = "SELECT * FROM incident_reports"
+    base_query = "FROM incident_reports"
     if filters:
-        query += " WHERE " + " AND ".join(filters)
-    query += " ORDER BY generation_date DESC"
+        base_query += " WHERE " + " AND ".join(filters)
 
-    cur.execute(query, tuple(params))
+    # Obtener total si deseas usarlo (opcional)
+    count_query = f"SELECT COUNT(*) {base_query}"
+    cur.execute(count_query, tuple(params))
+    total_rows = cur.fetchone()["count"]
+
+    # Agregar paginación al query final
+    offset = (page - 1) * page_size
+    select_query = f"""
+        SELECT * {base_query}
+        ORDER BY generation_date DESC
+        LIMIT %s OFFSET %s
+    """
+    cur.execute(select_query, tuple(params + [page_size, offset]))
     incidents = cur.fetchall()
 
+    # Agregar vehículos y pasajeros
     for incident in incidents:
         cur.execute("SELECT * FROM vehicles WHERE incident_report_id = %s", (incident['id'],))
         vehicles = cur.fetchall()
@@ -187,13 +198,18 @@ def search_incidents(
     conn.close()
     if response:
         response.headers["Access-Control-Allow-Origin"] = "*"
+        response.headers["X-Total-Count"] = str(total_rows)
+        response.headers["X-Page"] = str(page)
+        response.headers["X-Page-Size"] = str(page_size)
         response.headers["Content-Security-Policy"] = (
             "default-src 'self'; "
             "font-src 'self' https://assets.ngrok.com; "
             "style-src 'self' 'unsafe-inline'; "
             "script-src 'self';"
-            )
+        )
+
     return incidents
+
 
 # Endpoint: Buscar pasajeros por nombre, edad o license
 @app.get("/passengers/search", response_model=List[Passenger])
