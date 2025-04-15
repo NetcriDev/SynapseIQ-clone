@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 from src.utils.record_update import process_names_in_db
 import sys
 import os
-
+from src.models.texas_db import create_tables_texas
 
 # Add src/ folder to sys.path to import scraper and parser modules
 base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -48,19 +48,20 @@ logger= setup_logger("Scheduled_execution", home_dir)
 # Minnesota()
 
 
-def Texas():
-    logger.info(">>> Start script: Texas")
-    try:
-        logger.info(" scraping execute...")
-        df_scraped = run_scraper(os.path.join(outputdata_dir,"texas"), os.path.join(home_dir,"texas"))
+# def Texas():
+#     logger.info(">>> Start script: Texas")
+#     try:
+#         logger.info(" scraping execute...")
+#         df_scraped = run_scraper(os.path.join(outputdata_dir,"texas"), os.path.join(home_dir,"texas"))
 
-        logger.info("processed CSV ")
-        df_processed = read_and_save_recent_csv(os.path.join(outputdata_dir,"texas"), 
-                                                os.path.join(outputdata_dir,"texas", "processed"),
-                                                margin_seconds=60)
-        logger.info("Finish script: Texas -----|")
-    except Exception as e:
-        logger.error("Error script: Texas -----|")
-Texas()
+#         logger.info("processed CSV ")
+#         df_processed = read_and_save_recent_csv(os.path.join(outputdata_dir,"texas"), 
+#                                                 os.path.join(outputdata_dir,"texas", "processed"),
+#                                                 margin_seconds=60)
+#         logger.info("Finish script: Texas -----|")
+#     except Exception as e:
+#         logger.error("Error script: Texas -----|")
+# Texas()
 
 #process_names_in_db()
+#create_tables_texas()
