@@ -288,7 +288,7 @@
         height: 50px;
         background-size: contain;
         background-repeat: no-repeat;
-        background-image: url("./images/rel8ed_logo_v2.png");
+        background-image: url("static/img/rel8ed_logo_v2.png");
     }
 
     .logo-container-2 {
@@ -296,7 +296,7 @@
         height: 50px;
         background-size: contain;
         background-repeat: no-repeat;
-        background-image: url("./images/Hope-Neuro_Logo.png");
+        background-image: url("static/img/Hope-Neuro_Logo.png");
         flex-grow: 0;
     }
     
@@ -405,7 +405,6 @@
 
 
 <script>
-    const API_URL = "https://990c-52-116-202-144.ngrok-free.app/incident/search";
     let data = [];
     let selectedItems = new Set();
 
@@ -414,10 +413,7 @@
 
     async function buscarIncidentes() {
         try {
-            const resposta = await fetch(API_URL, {
-                headers: { "ngrok-skip-browser-warning": "true" }
-            });
-
+            const resposta = await fetch('/incident_search')
             if (!resposta.ok) throw new Error(`Erro: ${resposta.status}`);
 
             const dados = await resposta.json();
