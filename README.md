@@ -20,7 +20,9 @@
     - [6. Get Record Details](#6-get-record-details)
     - [7. Consult Available Databases](#7-consult-available-databases)
     - [Annexes: databaseType](#annexes-databasetype)
-    - [Search criteria in consumer](#search-criteria-in-consumer)
+    - [Annexes: Search criteria in consumer](#annexes-search-criteria-in-consumer)
+    - [Annexes: Field of databaseType cellphone](#annexes-field-of-databasetype-cellphone)
+  - [Possible Fields](#possible-fields)
 # Introduction
 Repository layout (under construction)
 
@@ -492,6 +494,51 @@ Each *databaseType* has a specific set of valid fields and criteria, which can b
 GET /V1/search/metadata/{databaseType}
 ```
 
-### Search criteria in consumer
+### Annexes: Search criteria in consumer
 Representative list of search criteria supported by the DataIRIS API for the *consumer* database, according to the official API documentation:
+Searchable Fields (`fieldID`)
+
+| `fieldID`                                | Description                                |
+|------------------------------------------|--------------------------------------------|
+| `First_Name`                             | First name                                 |
+| `Last_Name`                              | Last name                                  |
+| `Physical_Address`                       | Physical address                           |
+| `Physical_City`                          | City                                       |
+| `Physical_Zip`                           | ZIP code                                   |
+| `Physical_State`                         | State                                      |
+| `Email`                                  | Email address                              |
+| `Phone`                                  | Landline phone                             |
+| `CellPhone`                              | Mobile phone                               |
+| `Ind_Age`                                | Individual age                             |
+| `Ind_Gender_Code`                        | Gender (e.g., M / F)                       |
+| `Home_Market_Value`                      | Estimated home value                       |
+| `Credit_Capacity_Code`                   | Credit capacity code                       |
+| `Credit_Capacity_Description`            | Credit capacity description                |
+| `Income_Estimated_Household_Ranges`      | Estimated household income range           |
+| `Length_Of_Residence_Code`               | Length of residence                        |
+| `Home_Dwelling_Type_Code`                | Type of dwelling                           |
+| `Home_Owner_Renter_Code`                 | Owner or renter                            |
+| `NetWorth_Code`                          | Net worth code                             |
+| `Marital_Status_Code`                    | Marital status                             |
+| `Household_Id`                           | Household ID                               |
+| `Vendor_State_County`                    | Associated county                          |
+| `Id`                                     | Unique record ID                           |
+| `CBSA_Code`                              | Metropolitan area code                     |
+| `Tally_Physical_State`                   | Tallied state                              |
+| `Tally_Physical_Zip`                     | Tallied ZIP                                |
+| `Tally_County_Code`                      | Tallied county code                        |
+
+### Annexes: Field of databaseType cellphone
+## Possible Fields
+
+| Field             | Description                                             |
+|-------------------|---------------------------------------------------------|
+| `CellPhone`       | Mobile phone number                                     |
+| `First_Name`      | First name of the holder                                |
+| `Last_Name`       | Last name of the holder                                 |
+| `Physical_Address`| Associated physical address                             |
+| `Physical_Zip`    | ZIP code linked to the number                           |
+| `Phone_Carrier`   | Phone service provider                                  |
+| `State / City`    | Geographic location                                     |
+| `Ind_Age`, `Gender` | Demographic characteristics (if applicable)          |
 
