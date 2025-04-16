@@ -11,7 +11,16 @@
 - [Design Pattern and File System](#design-pattern-and-file-system)
   - [Design Pattern](#design-pattern)
   - [Design Pattern: File System](#design-pattern-file-system)
-
+- [Api Contact](#api-contact)
+    - [1. Autentication](#1-autentication)
+    - [2. Send Search Criteria](#2-send-search-criteria)
+    - [3. Delete Search Criteria](#3-delete-search-criteria)
+    - [4. Obtener Resultados de la Búsqueda](#4-obtener-resultados-de-la-búsqueda)
+    - [5. Get Field Metadata](#5-get-field-metadata)
+    - [6. Get Record Details](#6-get-record-details)
+    - [7. Consult Available Databases](#7-consult-available-databases)
+    - [Annexes: databaseType](#annexes-databasetype)
+    - [Search criteria in consumer](#search-criteria-in-consumer)
 # Introduction
 Repository layout (under construction)
 
@@ -343,3 +352,146 @@ src/
 └── main.py                      # Entry point
 
 ```
+# Api Contact
+### 1. Autentication
+Obtain a valid TokenID to authorize the following requests.
+URL:
+```
+GET https://www.datairis.co/V1/auth/subscriber/?AccessToken=TU_TOKEN
+```
+Required headers:
+
+* SubscriberID \
+* subscriberUsername \
+* SubscriberPassword \
+* (optional) AccountUsername, AccountPassword (for “Application” type users)
+
+expected response:
+```
+{
+  "Response": {
+    "responseDetails": {
+      "TokenID": "a1b2cx123xyz...", 
+      ...
+    },
+    "responseCode": "200",
+    "responseMessage": "Success"
+  }
+}
+
+```
+**Token lifespan: 8 to 10 hours. After that, it must be regenerated.**
+
+### 2. Send Search Criteria  
+a) Add a single criterion
+```
+PUT /V1/criteria/search/add/{databaseType}/{criteriaName}/{criteriaValue}
+```
+Example:
+```
+PUT /V1/criteria/search/add/consumer/Physical_Zip/61834
+```
+b) Add multiple criteria
+```
+PUT /V1/criteria/search/addall/{databaseType}
+```
+Body JSON::
+```
+{
+  "Physical_Zip": "61834",
+  "First_Name": "Adman",
+  "Last_Name": "Smith"
+}
+```
+**Required header: TokenID**
+
+### 3. Delete Search Criteria 
+a) Delete a single criterion
+```
+DELETE /V1/criteria/search/delete/{databaseType}/{criteriaName}
+```
+b) Delete all criteria (reset search)
+```
+DELETE /V1/criteria/search/deleteall/{databaseType}
+```
+This is important because the search criteria are cumulative. If they are not deleted, any new search will include the conditions from previous ones. Therefore, using deleteall to reset the criteria between searches helps ensure accurate and isolated results.
+
+### 4. Obtener Resultados de la Búsqueda
+a) Count result
+```
+GET /V1/search/count/{databaseType}
+```
+Required header: TokenID
+
+b) get result
+```
+GET /V1/search/{databaseType}?Start=1&End=10
+```
+Pagination: use the `Start` and `End` parameters to navigate through the results.
+Response Structure:
+```
+{
+  "Response": {
+    "responseDetails": {
+      "SearchResult": {
+        "searchResultRecord": [
+          {
+            "resultFields": [
+              {"fieldID": "First_Name", "fieldValue": "Adams"},
+              {"fieldID": "Last_Name", "fieldValue": "Smith"},
+              ...
+            ]
+          }
+        ]
+      }
+    }
+  }
+}
+```
+
+### 5. Get Field Metadata
+```
+GET /V1/search/metadata/{databaseType}
+
+```
+Response:
+* List of available fields (`fieldID`)
+* Whether it is searchable (isSearchable)
+* Whether it is visible in the output (isVisible)
+* Supported operators
+* Special formats (if applicable)
+
+### 6. Get Record Details
+```
+GET /V1/search/recordDetail/{databaseType}/{fieldName}/{fieldValue}
+```
+Example:
+```
+GET /V1/search/recordDetail/consumer/Id/11132543091991
+```
+Returns: the full details of the record based on its ID.
+
+### 7. Consult Available Databases
+```
+GET /V1/search/mapped/database
+```
+Returns: List of bases like "consumer", "business", "cellphone".
+
+### Annexes: databaseType
+Available Databases (`databaseType`)
+
+| `databaseType` | Description                                                                 |
+|----------------|-----------------------------------------------------------------------------|
+| `consumer`     | Database of individuals (demographic data, address, credit capacity, etc.) |
+| `business`     | Database of businesses (name, activity, revenue, etc.)                      |
+| `cellphone`    | Mobile records database (numbers and associated data)                       |
+| `newbusiness`  | Database of newly created or recently established businesses                |
+
+Each *databaseType* has a specific set of valid fields and criteria, which can be queried with:
+```
+GET /V1/search/metadata/{databaseType}
+```
+
+### Search criteria in consumer
+Representative list of search criteria supported by the DataIRIS API for the *consumer* database, according to the official API documentation:
+
