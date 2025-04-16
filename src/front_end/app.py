@@ -12,7 +12,7 @@ PROFILE_KEY = 'profile'
 AUTH0_CLIENT_ID="RYJg443VOd2t6cX9CrtD6F0PZgqEILQX"
 AUTH0_DOMAIN="rel8edto.us.auth0.com"
 AUTH0_CLIENT_SECRET="HEo_aOEuEKiHHL9yKFG4F8uqL1ZvgGzW935t8Jp1J-jQ-IZLFYPeGVqI4KxAKFy6"
-AUTH0_CALLBACK_URL="http://10.8.1.104:5001/callback"
+AUTH0_CALLBACK_URL="https://synapse.rel8ed.to/callback"
 
 app.secret_key = 'ThisIsTheSecretKey'
 oauth = OAuth(app)
@@ -23,6 +23,7 @@ auth0 = oauth.register(
     api_base_url=f'https://{AUTH0_DOMAIN}',
     access_token_url=f'https://{AUTH0_DOMAIN}/oauth/token',
     authorize_url=f'https://{AUTH0_DOMAIN}/authorize',
+    server_metadata_url=f'https://{AUTH0_DOMAIN}/.well-known/openid-configuration',
     client_kwargs={
         'scope': 'openid profile email',
     },
@@ -31,7 +32,6 @@ auth0 = oauth.register(
 def requires_auth(f):
     @wraps(f)
     def decorated(*args, **kwargs):
-        print("HELLO????")
         if PROFILE_KEY not in session:
             return redirect('/login')
         return f(*args, **kwargs)
@@ -42,7 +42,7 @@ def requires_auth(f):
 def main_page():
     return render_template('main.html')
 
-SEARCH_API_URL = "https://990c-52-116-202-144.ngrok-free.app/incident/search"
+SEARCH_API_URL = "https://990c-52-116-202-144.ngrok-free.app/incident/search?page=1&page_size=200"
 @app.route('/incident_search')
 @requires_auth
 def incident_search():
@@ -81,4 +81,4 @@ def callback_handling():
     return redirect('/')
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5001, debug=True)
+    app.run(host='localhost', port=5000, debug=True)

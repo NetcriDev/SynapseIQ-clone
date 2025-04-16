@@ -16,3 +16,6 @@ pdfkit==1.0.0
 logging==0.4.9.6
 webdriver_manager==4.0.2
 pypdf2==3.0.1
+flask
+six
+authlib
