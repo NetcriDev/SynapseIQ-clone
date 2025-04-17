@@ -1,7 +1,7 @@
 ## Table of Contents
 
 - [Introduction](#introduction)
-- [Configuration](#configuration)
+- [Access to the virtual machine](#access-to-the-virtual-machine)
 - [Api execution](#api-execution)
 - [Scraping execution](#scraping-execution)
 - [File-System](#file-system)
@@ -19,14 +19,14 @@
     - [5. Get Field Metadata](#5-get-field-metadata)
     - [6. Get Record Details](#6-get-record-details)
     - [7. Consult Available Databases](#7-consult-available-databases)
+    - [API Endpoints - Use Cases](#api-endpoints---use-cases)
     - [Annexes: databaseType](#annexes-databasetype)
     - [Annexes: Search criteria in consumer](#annexes-search-criteria-in-consumer)
     - [Annexes: Field of databaseType cellphone](#annexes-field-of-databasetype-cellphone)
-  - [Possible Fields](#possible-fields)
 # Introduction
 Repository layout (under construction)
 
-# Configuration
+# Access to the virtual machine
 ```
 ssh -i rel8tedkey01_rsa.prv root@52.116.202.144
 ```
@@ -479,6 +479,31 @@ GET /V1/search/mapped/database
 ```
 Returns: List of bases like "consumer", "business", "cellphone".
 
+### API Endpoints - Use Cases
+
+| Use Case           | Endpoint                                                                 | Method  | Description                                                                                       |
+|--------------------|--------------------------------------------------------------------------|---------|---------------------------------------------------------------------------------------------------|
+| Authentication     | `/auth/subscriber/?AccessToken={token}`                                 | GET     | Authenticates the subscriber and returns a TokenID for use in subsequent calls                   |
+| Search Criteria     | `/criteria/search/add/{databaseType}/{criteriaName}/{criteriaValue}`   | PUT     | Adds a single search criterion                                                                    |
+| Search Criteria     | `/criteria/search/addall/{databaseType}`                               | PUT     | Adds multiple search criteria in a single JSON payload                                            |
+| Search Criteria     | `/criteria/search/deleteall/{databaseType}`                            | DELETE  | Deletes all current criteria for the specified databaseType (reset)                              |
+| Search Criteria     | `/criteria/search/getall/{databaseType}`                               | GET     | Retrieves all active search criteria for the session                                              |
+| Search & Data       | `/search/count/{databaseType}`                                         | GET     | Returns the number of current search matches                                                      |
+| Search & Data       | `/search/{databaseType}?Start=X&End=Y`                                 | GET     | Returns paginated search results                                                                  |
+| Search & Data       | `/search/recordDetail/{databaseType}/{RecordId}`                       | GET     | Returns all details of an individual record                                                       |
+| Metadata            | `/search/metadata/{databaseType}`                                     | GET     | Returns the available fields for search and output                                                |
+| Metadata            | `/lookup/metadata/{databaseType}?Search={field}&Start=X&End=Y&ApplyKeyword=false` | GET     | Returns decoded values for encoded fields                                                         |
+| Reports             | `/reports/{ReportType}/{AccountID}/{StartDate}/{EndDate}`              | GET     | Returns reports by date, month, week, database, etc. Types: ByDay, ByMonth, etc.                 |
+| Session             | `/session/getAllKeys`                                                  | GET     | Returns all session key names                                                                     |
+| Session             | `/session/get/{SessionKeyName}`                                        | GET     | Returns the value of a specific session key                                                       |
+| Session             | `/session/getAll`                                                      | GET     | Returns all session values                                                                        |
+| Session             | `/session/delete/{SessionKeyName}`                                     | DELETE  | Deletes a specific session key                                                                    |
+| Session             | `/session/deleteAll`                                                   | DELETE  | Deletes all session keys                                                                          |
+| Personalization     | `/personalization/availablelayouts`                                    | GET     | Returns available layouts for the subscriber                                                      |
+| Personalization     | `/personalization/theme`                                               | GET     | Returns CSS theme details configured for the user                                                 |
+
+
+
 ### Annexes: databaseType
 Available Databases (`databaseType`)
 
@@ -488,6 +513,13 @@ Available Databases (`databaseType`)
 | `business`     | Database of businesses (name, activity, revenue, etc.)                      |
 | `cellphone`    | Mobile records database (numbers and associated data)                       |
 | `newbusiness`  | Database of newly created or recently established businesses                |
+
+These databases define the context for the following operations:
+
+* searches (/search/...)
+* criteria submission (/criteria/search/...)
+* metadata (/search/metadata/...)
+* record details (/search/recordDetail/...)
 
 Each *databaseType* has a specific set of valid fields and criteria, which can be queried with:
 ```
@@ -529,7 +561,7 @@ Searchable Fields (`fieldID`)
 | `Tally_County_Code`                      | Tallied county code                        |
 
 ### Annexes: Field of databaseType cellphone
-## Possible Fields
+Possible Fields
 
 | Field             | Description                                             |
 |-------------------|---------------------------------------------------------|
