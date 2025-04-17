@@ -31,27 +31,29 @@
                 </div>
 
                 <br>
-                <table id="dataTable">
-                    <thead>
-                        <tr>
-                            <th><input type="checkbox" id="selectAll" onclick="toggleSelectAll(this)"></th>
-                            <th>Report N°</th>
-                            <th>Crash Date</th>
-                            <th>Driver Name</th>
-                            <th>Phone N°</th>
-                            <th>Insurance Details</th>
-                            <th>Crash Severity</th>
-                            <th>Age</th>
-                            <th>Gender</th>
-                            <th>Address</th>
-                            <th>State</th>
-                            <th>City</th>
-                            <th>Report PDF</th>
-                            <th>Distance from Clinic</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tableBody"></tbody>
-                </table>
+                <div class="table-container-table">
+                    <table id="dataTable">
+                        <thead>
+                            <tr>
+                                <th><input type="checkbox" id="selectAll" onclick="toggleSelectAll(this)"></th>
+                                <th>Report N°</th>
+                                <th>Crash Date</th>
+                                <th>Driver Name</th>
+                                <th>Phone N°</th>
+                                <th>Insurance Details</th>
+                                <th>Crash Severity</th>
+                                <th>Age</th>
+                                <th>Gender</th>
+                                <th>Address</th>
+                                <th>State</th>
+                                <th>City</th>
+                                <th>Report PDF</th>
+                                <th>Distance from Clinic</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody"></tbody>
+                    </table>
+                </div>
                 <div id="pagination"></div>
             </div>
 
@@ -142,9 +144,14 @@
         border-radius: 8px;
         box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
         height: 100%;
-        overflow-y: auto;
+        /* overflow-y: auto; */
         display: flex;
         flex-direction: column;
+    }
+
+    .table-container-table {
+        overflow-y: auto;
+        margin-bottom: 20px;
     }
 
     .free-space {
@@ -239,6 +246,13 @@
         opacity: 0.5;
         cursor: default;
     }
+
+    #pagination button.special {
+        background-color: #43aad36e;
+        font-weight: bold;
+        color: #000000;
+    }
+
 
     .free-space button {
         float: right;
@@ -427,6 +441,33 @@
         }
     }
 
+
+    // const API_URL = "https://990c-52-116-202-144.ngrok-free.app/incident/search?page=1&page_size=2000";
+    // let data = [];
+    // let selectedItems = new Set();
+
+    // let currentPage = 1;
+    // const rowsPerPage = 20;
+
+    // async function buscarIncidentes() {
+    //     try {
+    //         const resposta = await fetch(API_URL, {
+    //             headers: { "ngrok-skip-browser-warning": "true" }
+    //         });
+
+    //         if (!resposta.ok) throw new Error(`Erro: ${resposta.status}`);
+
+    //         const dados = await resposta.json();
+    //         data = transformarDados(dados);
+    //         atualizarRelacionamentosEstadoCidade(dados); // <-- ESSENCIAL!
+    //         carregarFiltros();
+    //         renderTable();
+
+    //     } catch (erro) {
+    //         console.error("Erro ao buscar incidentes:", erro);
+    //     }
+    // }
+
     function transformarDados(dados) {
         let incidentesFormatados = [];
 
@@ -554,11 +595,46 @@
     }
 
 
+    // function renderPagination(totalPages) {
+    //     const container = document.getElementById("pagination");
+    //     container.innerHTML = "";
+
+    //     for (let i = 1; i <= totalPages; i++) {
+    //         const btn = document.createElement("button");
+    //         btn.textContent = i;
+    //         btn.style.fontWeight = i === currentPage ? "bold" : "normal";
+    //         btn.onclick = () => {
+    //             currentPage = i;
+    //             renderTable();
+    //         };
+    //         container.appendChild(btn);
+    //     }
+    // }
+
+    let pageGroupStart = 1;
+
     function renderPagination(totalPages) {
         const container = document.getElementById("pagination");
         container.innerHTML = "";
 
-        for (let i = 1; i <= totalPages; i++) {
+        const groupSize = 10;
+        const groupEnd = Math.min(pageGroupStart + groupSize - 1, totalPages);
+
+        // Botões "Ver X" ANTES do grupo atual
+        for (let i = 1; i < pageGroupStart; i += groupSize) {
+            const jumpBackBtn = document.createElement("button");
+            jumpBackBtn.textContent = `${i}`;
+            jumpBackBtn.classList.add("special");
+            jumpBackBtn.onclick = () => {
+                pageGroupStart = i;
+                currentPage = i;
+                renderTable();
+            };
+            container.appendChild(jumpBackBtn);
+        }
+
+        // Botões do grupo atual
+        for (let i = pageGroupStart; i <= groupEnd; i++) {
             const btn = document.createElement("button");
             btn.textContent = i;
             btn.style.fontWeight = i === currentPage ? "bold" : "normal";
@@ -568,7 +644,21 @@
             };
             container.appendChild(btn);
         }
+
+        // Botões "Ver X" DEPOIS do grupo atual
+        for (let i = groupEnd + 1; i <= totalPages; i += groupSize) {
+            const jumpNextBtn = document.createElement("button");
+            jumpNextBtn.textContent = `${i}`;
+            jumpNextBtn.classList.add("special");
+            jumpNextBtn.onclick = () => {
+                pageGroupStart = i;
+                currentPage = i;
+                renderTable();
+            };
+            container.appendChild(jumpNextBtn);
+        }
     }
+
 
     // Função para carregar todos os filtros de forma interdependente
     function carregarFiltros() {
