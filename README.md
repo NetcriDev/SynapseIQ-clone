@@ -355,6 +355,52 @@ src/
 
 ```
 # Api Contact
+
+```python
+import httpx
+
+BASE_URL = "https://www.datairis.co/V1"
+AUTH_URL = f"{BASE_URL}/auth/subscriber/"
+TOKEN_ID = None  # Será asignado tras autenticarse
+
+# Credenciales proporcionadas
+account_name = "*************"
+account_password = "********"
+token_id = "********"
+subscriber_id = 249
+subscriber_name = "********"
+subscriber_password = "********"
+
+def authenticate():
+    headers = {
+        "SubscriberID": str(subscriber_id),
+        "subscriberUsername": subscriber_name,
+        "SubscriberPassword": subscriber_password,
+        "AccountUsername": account_name,
+        "AccountPassword": account_password,
+        "AccountDetailsRequired": "true"
+    }
+
+    response = httpx.get(AUTH_URL + f"?AccessToken={token_id}", headers=headers)
+    response.raise_for_status()
+    data = response.json()
+    token = data["Response"]["responseDetails"]["TokenID"]
+    print("Autenticado con Token:", token)
+    return token
+
+def send_search_criteria(token: str, zip_code: str):
+    url = f"{BASE_URL}/criteria/search/addall/consumer"
+    headers = {
+        "Content-Type": "application/json",
+        "TokenID": token
+    }
+    payload = {"Physical_Zip": zip_code}
+    response = httpx.put(url, headers=headers, json=payload)
+    response.raise_for_status()
+    return response.json()
+...
+```
+
 ### 1. Autentication
 Obtain a valid TokenID to authorize the following requests.
 URL:
@@ -405,6 +451,26 @@ Body JSON::
   "Last_Name": "Smith"
 }
 ```
+c) Types of Match
+* Exact Match
+    For an exact search in fields like First_Name, Last_Name, Physical_City, etc., the value must be enclosed in double quotes:
+```
+{ "First_Name": "\"Javier\"" }
+```
+This restricts the results to exact text matches.
+* Multiple Values
+You can pass multiple comma-separated values to search for several matches:
+```
+{ "Physical_State": "NY,CA,TX" }
+```
+* Age
+The Ind_Age field accepts lists for approximate range searches:
+```
+{ "Ind_Age": "41,42,43" }
+```
+
+
+
 **Required header: TokenID**
 
 ### 3. Delete Search Criteria 
