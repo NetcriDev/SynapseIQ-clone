@@ -425,15 +425,15 @@
     let currentPage = 1;
     const rowsPerPage = 20;
 
-    async function buscarIncidentes() {
+    async function searchIncidents() {
         try {
             const resposta = await fetch('/incident_search')
             if (!resposta.ok) throw new Error(`Erro: ${resposta.status}`);
 
             const dados = await resposta.json();
-            data = transformarDados(dados);
-            atualizarRelacionamentosEstadoCidade(dados); // <-- ESSENCIAL!
-            carregarFiltros();
+            data = transformData(dados);
+            updateRelationStateCity(dados); // <-- ESSENCIAL!
+            loadFilters();
             renderTable();
 
         } catch (erro) {
@@ -443,13 +443,14 @@
 
 
     // const API_URL = "https://990c-52-116-202-144.ngrok-free.app/incident/search?page=1&page_size=2000";
-    // let data = [];
-    // let selectedItems = new Set();
+    // let filteredData = [];         // Armazena os dados filtrados globalmente
+    // const selectedItems = new Set(); // Armazena os itens selecionados globalmente
+
 
     // let currentPage = 1;
     // const rowsPerPage = 20;
 
-    // async function buscarIncidentes() {
+    // async function searchIncidents() {
     //     try {
     //         const resposta = await fetch(API_URL, {
     //             headers: { "ngrok-skip-browser-warning": "true" }
@@ -458,9 +459,9 @@
     //         if (!resposta.ok) throw new Error(`Erro: ${resposta.status}`);
 
     //         const dados = await resposta.json();
-    //         data = transformarDados(dados);
-    //         atualizarRelacionamentosEstadoCidade(dados); // <-- ESSENCIAL!
-    //         carregarFiltros();
+    //         data = transformData(dados);
+    //         updateRelationStateCity(dados); // <-- ESSENCIAL!
+    //         loadFilters();
     //         renderTable();
 
     //     } catch (erro) {
@@ -468,7 +469,7 @@
     //     }
     // }
 
-    function transformarDados(dados) {
+    function transformData(dados) {
         let incidentesFormatados = [];
 
         dados.forEach(incidente => {
@@ -513,7 +514,8 @@
         const filterCol10 = document.getElementById("filterCol10").value;
         const filterCol11 = document.getElementById("filterCol11").value;
 
-        const filteredData = data.filter(item =>
+        // Atualiza a variável global
+        filteredData = data.filter(item =>
             (!filterFolder || item.sourceFolder === filterFolder) &&
             (!filterDate || item.col2 === filterDate) &&
             (item.col5 === "--" || (parseInt(item.col7) >= 18)) &&
@@ -529,11 +531,11 @@
         tableBody.innerHTML = "";
 
         filteredData.slice(start, end).forEach((item, index) => {
-            const realIndex = start + index;
+            const itemString = escapeHtml(JSON.stringify(item));
             const linkIcon = item.col12 ? `<a href="#" onclick="viewPDF('${item.col12}', '${item.id}')">🔗</a>` : "";
 
             tableBody.innerHTML += `<tr>
-                <td><input type="checkbox" class="rowCheckbox" data-id="${item.id}" data-item='${escapeHtml(JSON.stringify(item))}'></td>
+                <td><input type="checkbox" class="rowCheckbox" data-id="${item.id}" data-item='${itemString}'></td>
                 <td>${item.id}</td>
                 <td>${item.col2}</td>
                 <td>${item.col3}</td>
@@ -550,17 +552,14 @@
             </tr>`;
         });
 
-
         renderPagination(totalPages);
 
-        // Atualiza os checkboxes da página com base nos selecionados globalmente
+        // Sincroniza checkboxes com seleção global
         document.querySelectorAll(".rowCheckbox").forEach(checkbox => {
             const itemString = checkbox.getAttribute("data-item");
-            
-            // Marca como selecionado se já estiver salvo
+
             checkbox.checked = selectedItems.has(itemString);
 
-            // Evita múltiplos event listeners no mesmo checkbox
             checkbox.onchange = () => {
                 if (checkbox.checked) {
                     selectedItems.add(itemString);
@@ -571,9 +570,9 @@
             };
         });
 
-        updateSelectAllCheckbox(); // Reflete o estado correto do checkbox "select-all"
-
+        updateSelectAllCheckbox();
     }
+
 
     function escapeHtml(unsafe) {
         return unsafe
@@ -661,7 +660,7 @@
 
 
     // Função para carregar todos os filtros de forma interdependente
-    function carregarFiltros() {
+    function loadFilters() {
         const filterSourceFolder = document.getElementById("filterSourceFolder");
         const filterCol10 = document.getElementById("filterCol10");
         const filterCol11 = document.getElementById("filterCol11");
@@ -718,7 +717,7 @@
 
 
     let estadoCidadeMap = {};
-    function atualizarRelacionamentosEstadoCidade(dados) {
+    function updateRelationStateCity(dados) {
         estadoCidadeMap = {};
 
         dados.forEach(incidente => {
@@ -732,7 +731,7 @@
         });
     }
 
-    function atualizarFiltrosPorEstado(estadoSelecionado) {
+    function updateFilterPerState(estadoSelecionado) {
         const cidadesFiltradas = estadoCidadeMap[estadoSelecionado] || new Set();
         const filterCol11 = document.getElementById("filterCol11");
 
@@ -743,7 +742,7 @@
         });
     }
 
-    function atualizarFiltrosPorCidade(cidadeSelecionada) {
+    function updateFilterPerCity(cidadeSelecionada) {
         const estadosFiltrados = Object.entries(estadoCidadeMap)
             .filter(([_, cidades]) => cidades.has(cidadeSelecionada))
             .map(([estado]) => estado);
@@ -756,11 +755,11 @@
         });
     }
 
-    function atualizarFiltros(dadosFiltrados) {
+    function updateFilters(filteredData) {
         const estados = new Set();
         const cidades = new Set();
 
-        dadosFiltrados.forEach(incidente => {
+        filteredData.forEach(incidente => {
             if (incidente.state) estados.add(incidente.state.trim());
             if (incidente.city) cidades.add(incidente.city.trim());
         });
@@ -815,31 +814,43 @@
     // Função para selecionar/deselecionar todos os checkboxes
     function toggleSelectAll(masterCheckbox) {
         const isChecked = masterCheckbox.checked;
-        const checkboxes = document.querySelectorAll(".rowCheckbox");
 
-        checkboxes.forEach(cb => {
-            const itemString = cb.getAttribute("data-item");  // Aqui, garantimos que estamos utilizando o item completo (não só o id)
-            cb.checked = isChecked;
+        filteredData.forEach(item => {
+            const itemString = JSON.stringify(item);
             if (isChecked) {
-                selectedItems.add(itemString);  // Adiciona o item inteiro na seleção global
+                selectedItems.add(itemString);
             } else {
-                selectedItems.delete(itemString);  // Remove o item da seleção global
+                selectedItems.delete(itemString);
             }
         });
 
-        updateSelectAllCheckbox();  // Atualiza o estado do checkbox "select-all"
+        // Atualiza os checkboxes da página atual visualmente
+        document.querySelectorAll(".rowCheckbox").forEach(cb => {
+            const itemString = cb.getAttribute("data-item");
+            cb.checked = isChecked;
+        });
+
+        updateSelectAllCheckbox();
     }
+
 
     // Função para atualizar o estado do checkbox "select-all"
     function updateSelectAllCheckbox() {
-        const checkboxes = document.querySelectorAll(".rowCheckbox");
-        const allChecked = [...checkboxes].every(cb => cb.checked);
-        const someChecked = [...checkboxes].some(cb => cb.checked);
+        const currentCheckboxes = document.querySelectorAll(".rowCheckbox");
+
+        const allChecked = filteredData.every(item =>
+            selectedItems.has(JSON.stringify(item))
+        );
+
+        const someChecked = filteredData.some(item =>
+            selectedItems.has(JSON.stringify(item))
+        );
 
         const selectAll = document.getElementById("selectAll");
         selectAll.checked = allChecked;
         selectAll.indeterminate = !allChecked && someChecked;
     }
+
 
     function viewPDF(url, id) {
         document.getElementById("pdfViewer").data = url;
@@ -880,21 +891,21 @@
         // Listener para Agency
         document.getElementById("filterSourceFolder").addEventListener("change", () => {
             currentPage = 1;
-            carregarFiltros();
+            loadFilters();
             renderTable();
         });
         
         // Listener para State
         document.getElementById("filterCol10").addEventListener("change", () => {
             currentPage = 1;
-            carregarFiltros();
+            loadFilters();
             renderTable();
         });
         
         // Listener para City
         document.getElementById("filterCol11").addEventListener("change", () => {
             currentPage = 1;
-            carregarFiltros();
+            loadFilters();
             renderTable();
         });
         
@@ -904,7 +915,7 @@
             renderTable();
         });
         
-        buscarIncidentes();
+        searchIncidents();
         });
 </script>
 
