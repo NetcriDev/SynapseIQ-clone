@@ -1,55 +1,91 @@
 
-
 import httpx
+import json
+import re, os, sys
+import pandas as pd
 from datetime import datetime, timedelta
 from typing import Optional, List, Dict
+from config.config_api_contact import BASE_URL, ACCESS_TOKEN, CREDENTIALS
+from typing import Union, Optional
+from src.utils.utils_api_contact import extract_initial, lookup_data_state, normalize_gender, normalize_state
+from src.utils.logger_config import setup_logger
 
-BASE_URL = "https://www.datairis.co/V1"
-ACCESS_TOKEN = "1f1cb-be386-49d3"  # Este es el token fijo de acceso de app
-
-# Credenciales
-CREDENTIALS = {
-    "SubscriberID": "249",
-    "subscriberUsername": "rel8edsub",
-    "SubscriberPassword": "95GiYIhghsjCfUQW0Q7d",
-    "AccountUsername": "rel8edapp",
-    "AccountPassword": "reference",
-    "AccountDetailsRequired": "true"
-}
-
-from enum import Enum
-class DatabaseType(Enum):
-    consumer = 1
-    business = 2
-    cellphone = 3
-    newbusiness = 4
-#print(DatabaseType(2).name)
-
+main_script_path = sys.path[0]
+logger = setup_logger("Session_api_contact", main_script_path)
 
 class DataIrisSession:
-    def __init__(self):
-        self.token_id = None
+
+    _instance = None
+
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = super(DataIrisSession, cls).__new__(cls)
+        return cls._instance
+
+    def __init__(self, token: str = None, token_file_path: str = None):
+        """
+        token_file_path: is path a file. For example, '/home/SynapseIQ/config/json_token.json'
+        """
+        if hasattr(self, '_initialized') and self._initialized:
+            return
+        self._initialized = True
+        self.token_id = token
         self.token_expiration = None
+        self.token_file_path = token_file_path
+        if token:
+            self.token_expiration = datetime.now() + timedelta(hours=8)
 
     def authenticate(self):
-        """Solicita un nuevo token y almacena hora de expiración estimada"""
+        """
+        Requests a new token and stores estimated expiration time.
+        Optionally saves token and expiration in a JSON file if path is given.
+        """
         url = f"{BASE_URL}/auth/subscriber/?AccessToken={ACCESS_TOKEN}"
         response = httpx.get(url, headers=CREDENTIALS)
         response.raise_for_status()
 
         data = response.json()
         self.token_id = data["Response"]["responseDetails"]["TokenID"]
-        self.token_expiration = datetime.now() + timedelta(hours=8)
-        print(" Token obtenido:", self.token_id)
+        self.token_expiration = datetime.now() + timedelta(hours=10)
+
+        logger.info("Token obtained:", self.token_id)
+
+        if self.token_file_path:
+            with open(self.token_file_path, "w") as f:
+                json.dump({
+                    "token_id": self.token_id,
+                    "token_expiration": self.token_expiration.isoformat()
+                }, f)
 
     def is_token_valid(self):
-        """Verifica si el token actual aún es válido"""
-        return self.token_id is not None and datetime.now() < self.token_expiration
+        """Check if the current token is still valid"""
+        return self.token_id is not None and self.token_expiration and datetime.now() < self.token_expiration
+
 
     def ensure_authenticated(self):
-        """Valida el token y lo renueva si es necesario"""
-        if not self.is_token_valid():
-            print("Token expirado o inexistente. Reautenticando...")
+        """
+        Validates token. If a valid path is given, loads the token from file and reuses it if valid.
+        If invalid or expired, re-authenticates and updates the file.
+        """
+        if self.token_id is not None and self.token_expiration is not None:
+            if not self.is_token_valid():
+                self.authenticate()
+        elif self.token_file_path and os.path.exists(self.token_file_path):
+            try:
+                with open(self.token_file_path, "r") as f:
+                    data = json.load(f)
+                    token = data.get("token_id")
+                    expiration_str = data.get("token_expiration")
+                    expiration = datetime.fromisoformat(expiration_str) if expiration_str else None
+
+                    if token and expiration and datetime.now() < expiration:
+                        self.token_id = token
+                        self.token_expiration = expiration
+                        return
+            except Exception as e:
+                logger.error("Error reading token file. Reauthenticating...", str(e))
+        else:
+            logger.error("Token missing or expired. Reauthenticating...")
             self.authenticate()
 
     def reset_criteria(self, database_type: str):
@@ -58,8 +94,10 @@ class DataIrisSession:
         response = httpx.delete(url, headers={"TokenID": self.token_id})
         response.raise_for_status()
 
-    def add_criteria(self, database_type: str, filters: dict):
+    def add_criteria(self, database_type: str, filters: dict, reset_cri: bool = True):
         self.ensure_authenticated()
+        if reset_cri:
+            self.reset_criteria({database_type})
         url = f"{BASE_URL}/criteria/search/addall/{database_type}"
         response = httpx.put(url, headers={"TokenID": self.token_id}, json=filters)
         response.raise_for_status()
@@ -78,17 +116,34 @@ class DataIrisSession:
         response.raise_for_status()
         return int(response.json()["Response"]["responseDetails"]["SearchCount"])
 
-    def get_metadata(self, database_type: str):
+    def get_metadata(self, database_type: str, summary: bool = True):
+        """
+        Gets the list of fields available for searches in a specific database type.
+        """
         self.ensure_authenticated()
         url = f"{BASE_URL}/search/metadata/{database_type}"
         headers = {"TokenID": self.token_id}
         response = httpx.get(url, headers=headers)
         response.raise_for_status()
+
+        if summary:
+            metadata = response.json()["Response"]["responseDetails"]["Metadata"]
+            campos = []
+            for campo in metadata:
+                campos.append({
+                    "fieldID": campo.get("id"),
+                    "fieldAlias": campo.get("dbFieldAliasName"),
+                    "nombre": campo.get("displayName", {}).get("value", ""),
+                    "tipo": campo.get("dataType", ""),
+                    "esOculto": campo.get("isHiddenField", {}).get("value", "") == "true",
+                    "esBuscable": bool(campo.get("queryExpression", {}).get("queryFormatExpression"))
+                })
+            return campos
         return response.json()
-    
+
     def json_to_table_consumer(self, data: dict) -> pd.DataFrame:
         """
-        Convierte el JSON de resultados de búsqueda de DataIris a una tabla.
+        Converts DataIris search results JSON to a table.
         """
         records = data["Response"]["responseDetails"]["SearchResult"]["searchResultRecord"]
         rows = []
@@ -102,36 +157,58 @@ class DataIrisSession:
 
     def search_person_by_name(self,
         database_type: str,
-        first_name: str,
-        last_name: str,
-        middle_name: str,
-        age: Optional[int] = None,
+        first_name: Optional[str] = None,
+        last_name: Optional[str] = None,
+        middle_name: Optional[str] = None,
+        age: Optional[Union[int, str]] = None,
         state: Optional[str] = None,
         city: Optional[str] = None,
         gender: Optional[str] = None,
         start: int = 1,
         end: int = 10
     ) -> List[Dict[str, str]]:
+        """
+        All 'null-like' values (e.g., 'null', 'NULL', '', ' ') are treated as None.
+        """
+        
         self.ensure_authenticated()
         # 1. Reset previous criteria
-        reset_criteria(database_type)
+        self.reset_criteria(database_type)
+
+        def clean(value):
+            if isinstance(value, str) and value.strip().lower() in {"null", "", " ", ".", ","}:
+                return None
+            return value
+
+        # Normalize all inputs
+        first_name = clean(first_name)
+        last_name = clean(last_name)
+        middle_name = clean(middle_name)
+        #print(f"middle name: {middle_name}")
+        state = clean(state)
+        city = clean(city)
+        gender = clean(gender)
+        age = None if isinstance(age, str) and age.strip().lower() in {"null", ""} else age
 
         # 2. Prepare filters
-        filters = {
-            "First_Name": first_name,
-            "Last_Name": last_name,
-            "Middle_Initial": middle_name
-        }
+        filters = {}
 
+        if first_name:
+            filters["First_Name"] = first_name
+        if last_name:
+            filters["Last_Name"] = last_name
+        if middle_name:
+            filters["Middle_Initial"] = extract_initial(middle_name)
         if state:
-            filters["Physical_State"] = state
+            filters["Physical_State"] = normalize_state(state,lookup_data=lookup_data_state)
         if city:
             filters["Physical_City"] = city
         if gender:
-            filters["Ind_Gender_Code"] = gender.upper()
+            filters["Ind_Gender_Code"] = normalize_gender(gender.upper())
         if age:
-            filters["Ind_Age"] = f"{age-2},{age-1},{age},{age+1},{age+2}"
+            filters["Ind_Age"] = f"{int(age)-2},{int(age)-1},{int(age)},{int(age)+1}"
 
+        logger.info(f"filters:{filters}")
         # 3. Enviar criterios
         self.add_criteria(database_type,filters)
 
@@ -157,13 +234,16 @@ class DataIrisSession:
                 "State": fields.get("Physical_State", ""),
                 "Zip": fields.get("Physical_Zip", ""),
                 "Phone": fields.get("Phone", ""),
-                "CellPhone": fields.get("CellPhone", "")
+                "CellPhone": fields.get("CellPhone", ""),
+                "Gender": fields.get("Ind_Gender_Code", ""),
+                "Email": fields.get("Email", ""),
+                "Age": fields.get("Ind_Age", "")
             })
         return resultados
 
-    def obtener_detalle_registro(self, database_type: str, field_name: str = "id", field_value: str = None) -> dict:
-        """
-        Devuelve el detalle completo de un registro único en la base de datos especificada.
+    def get_record_detail(self, database_type: str, field_name: str = "id", field_value: str = None) -> dict:
+        """ 
+        Returns the full details of a single record in the specified database.
         """
         self.ensure_authenticated()
 
@@ -181,42 +261,112 @@ class DataIrisSession:
         else:
             raise Exception(f"Error {response.status_code}: {response.text}")
         
-    detalle = obtener_detalle_registro(
-        database_type="consumer",
-        field_name="Id",
-        field_value="15002006660373"
-    )
+        # detalle = obtener_detalle_registro(
+        #     database_type="consumer",
+        #     field_name="Id",
+        #     field_value="15002006660373"
+        # )
 
-    for campo in detalle["recordDetailFields"]:
-        print(f"{campo['fieldID']:30} => {campo['fieldValue']}")
+        # for campo in detalle["recordDetailFields"]:
+        #     print(f"{campo['fieldID']:30} => {campo['fieldValue']}")
 
+
+    def get_lookup_values(self, database_type: str, field: str, value: str = " ", start: int = 0, end: int = 100) -> list:
+        """
+        Query valid values ​​for a search field (e.g. Physical_State, Physical_City).
+        """
+        url = (
+            f"{BASE_URL}/lookup/metadata/{database_type}"
+            f"?Search={field}&Field={value}&Start={start}&End={end}"
+        )
+        self.reset_criteria(database_type)
+        headers = {"TokenID": self.token_id}
+        response = httpx.get(url, headers=headers)
+        response.raise_for_status()
+        data = response.json()
+        return data
+
+
+    def get_contact_resolution(
+        self,
+        database_type: str,
+        first_name: Optional[str] = None,
+        last_name: Optional[str] = None,
+        middle_name: Optional[str] = None,
+        age: Optional[Union[int, str]] = None,
+        state: Optional[str] = None,
+        city: Optional[str] = None,
+        gender: Optional[str] = None,
+        start: int = 1,
+        end: int = 10
+    ) -> dict:
+        """
+        Performs a contact resolution search on the DataIRIS API and returns a summary result.
+
+        Rules:
+        - 'state' is mandatory.
+        - At least 2 of the following must be provided: first_name, last_name, middle_name.
+        - At least 1 of the following must also be provided: age, city, or gender.
+
+        Returns:
+            dict: {
+                "record_count": int,
+                "sufficient_criteria": bool,
+                "result": list
+            }
+        """
+        # Criteria validation
+        name_fields = [first_name, last_name, middle_name]
+        optional_fields = [age, city, gender]
+        valid_names = sum(1 for val in name_fields if val)
+        has_optional = any(val is not None for val in optional_fields)
+        state_valid = state is not None
+
+        sufficient_criteria = valid_names >= 2 and has_optional and state_valid
+
+        if not state_valid:
+            raise ValueError("The 'state' field is required to perform a search.")
+
+        result = self.search_person_by_name(
+            database_type=database_type,
+            first_name=first_name,
+            last_name=last_name,
+            middle_name=middle_name,
+            age=age,
+            state=state,
+            city=city,
+            gender=gender,
+            start=start,
+            end=end
+        )
+
+        return {
+            "record_count": len(result),
+            "sufficient_criteria": sufficient_criteria,
+            "result": result
+        }
     
     @staticmethod
-    def imprimir_registros_consumer(data: dict):
+    def print_consumer_records(data: dict):
+        """
+        Prints to console the search results from the 'consumer' database.
+
+        This function iterates over a list of records retrieved from the DataIRIS API,
+        specifically from the 'searchResultRecord' field, and displays each available 
+        field from 'resultFields' in a readable format.
+
+        Args:
+            data (dict): List of records returned by the DataIRIS search anda 'consumer'.
+                        Each element must contain a dictionary with a 'resultFields' key,
+                        which is a list of fields including 'fieldID' and 'fieldValue'.
+
+        Output:
+            Prints to the console the content of each field per record, 
+            numbering them in increasing order (Record #1, #2, ...).
+        """
         for i, registro in enumerate(data, start=1):
             print(f"\n Registro #{i}")
             for campo in registro.get("resultFields", []):
                 field = campo.get("fieldID", "")
                 valor = campo.get("fieldValue", "")
                 print(f"{field:30} : {valor}")
-
-
-
-session = DataIrisSession()
-# 1. Autenticarse y limpiar filtros anteriores
-session.reset_criteria("consumer")
-filtros = {
-        "First_Name": "Javier",
-        "Last_Name": "Padron",
-        "Middle_Initial": "S",
-        "Ind_Age": "69,70,71,72,73",
-        "Physical_State": "IL",
-        "Physical_City": "Danville",
-        "Ind_Gender_Code": "M"
-    }
-
-session.add_criteria("consumer", filtros)
-resultado = session.get_results("consumer")
-registros = resultado["Response"]["responseDetails"]["SearchResult"]["searchResultRecord"]
-
-DataIrisSession.imprimir_registros_consumer(registros)

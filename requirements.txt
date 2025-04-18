@@ -19,3 +19,4 @@ pypdf2==3.0.1
 flask
 six
 authlib
+httpx==0.28.1
