@@ -14,11 +14,12 @@ from src.utils.logger_config import setup_logger
 from src.utils.info_dataframe import print_dataframe_info
 from config.config import get_connection
 from src.utils.split_name import split_driver_name
+from src.services.api_contact import DataIrisSession
 
 main_script_path = sys.path[0]
 logger = setup_logger("Kansas_execution", main_script_path)
 
-def insert_full_crash_data(df_expanded: pd.DataFrame, file_path: str):
+def insert_full_crash_data(df_expanded: pd.DataFrame, file_path: str, home_path: str = None):
     """
     Insert crash report data from a DataFrame into the database.
 
@@ -168,8 +169,13 @@ def insert_full_crash_data(df_expanded: pd.DataFrame, file_path: str):
                     technical_notes,
                     first_name,
                     middle_name,
-                    last_name
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    last_name,
+                    state,
+                    city,
+                    phone1,
+                    phone2,
+                    contact_resolution
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """, (
                 vehicle_id,
                 "Driver" if license else "Occupant",
@@ -180,7 +186,12 @@ def insert_full_crash_data(df_expanded: pd.DataFrame, file_path: str):
                 "Passenger record from CSV",
                 driver_first, 
                 driver_middle, 
-                driver_last
+                driver_last,
+                state,
+                city,
+                cellphone,
+                phone,
+                "contact_resolution"
             ))
 
     conn.commit()
@@ -189,7 +200,7 @@ def insert_full_crash_data(df_expanded: pd.DataFrame, file_path: str):
     logger.info("Data inserted successfully!: Kansas")
 
 
-def run_kansas_crash_scraper(path_dir: str):
+def run_kansas_crash_scraper(path_dir: str, home_path: str = None):
     """
     Scrapes crash data from the Kansas crash reporting system.
 
@@ -493,7 +504,7 @@ def run_kansas_crash_scraper(path_dir: str):
     except Exception as e:
         logger.warning("Error in struct dataframe")
     #insert into DB
-    insert_full_crash_data(df_expanded, kansas_dir)
+    insert_full_crash_data(df_expanded, kansas_dir, home_path)
     #add current date to file name ojo
     file_name='Data_Crashes_Kansas_24H_'+desired_date.strftime('%Y%m%d')+'.csv'
 

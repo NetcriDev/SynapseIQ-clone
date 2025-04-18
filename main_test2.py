@@ -14,7 +14,7 @@ filtros = {
         "Ind_Gender_Code": "F"
     }
 
-solucion=sesion.get_contact_resolution(database_type=DatabaseType(1).name, 
+solucion=sesion.safe_get_contact_resolution(database_type=DatabaseType(1).name, 
                               first_name=filtros.get("First_Name"), 
                               last_name=filtros.get("Last_Name"),
                               middle_name=".",

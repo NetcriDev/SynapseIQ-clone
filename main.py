@@ -30,7 +30,7 @@ sched = BlockingScheduler()
 @sched.scheduled_job('interval', minutes=30, next_run_time=now)
 def kansas():
     logger.info(">>> Start script: Kansas")
-    run_kansas_crash_scraper(path_dir=outputdata_dir)
+    run_kansas_crash_scraper(path_dir=outputdata_dir, home_dir=home_dir)
     logger.info("Finish script: kansas -----|")
 
 

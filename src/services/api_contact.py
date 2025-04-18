@@ -1,6 +1,7 @@
 
 import httpx
 import json
+import time
 import re, os, sys
 import pandas as pd
 from datetime import datetime, timedelta
@@ -82,6 +83,9 @@ class DataIrisSession:
                         self.token_id = token
                         self.token_expiration = expiration
                         return
+                    else:
+                        logger.error("Token missing or expired. Reauthenticating...")
+                        self.authenticate()
             except Exception as e:
                 logger.error("Error reading token file. Reauthenticating...", str(e))
         else:
@@ -305,8 +309,8 @@ class DataIrisSession:
 
         Rules:
         - 'state' is mandatory.
-        - At least 2 of the following must be provided: first_name, last_name, middle_name.
-        - At least 1 of the following must also be provided: age, city, or gender.
+        - At least 2 of the following criteria must be provided: first_name, last_name, middle_name.
+        - At least 1 of the following criteria must also be provided: age, city, or gender.
 
         Returns:
             dict: {
@@ -345,7 +349,56 @@ class DataIrisSession:
             "sufficient_criteria": sufficient_criteria,
             "result": result
         }
-    
+        
+    def safe_get_contact_resolution(self, 
+        database_type: str, 
+        first_name: Optional[str] = None,
+        last_name: Optional[str] = None,
+        middle_name: Optional[str] = None,
+        age: Optional[Union[int, str]] = None,
+        state: Optional[str] = None,
+        city: Optional[str] = None,
+        gender: Optional[str] = None,
+        start: int = 1,
+        end: int = 10) -> Optional[dict]:
+
+        """
+        Intenta ejecutar get_contact_resolution hasta max_retries veces con pausa entre intentos.
+
+        Args:
+            session (DataIrisSession): instancia válida.
+            max_retries (int): número máximo de reintentos.
+            wait_seconds (int): segundos de espera entre cada intento.
+            **kwargs: parámetros que se pasan a get_contact_resolution.
+
+        Returns:
+            dict: resultado si tiene éxito, o None si todos los intentos fallan.
+        """
+        self.ensure_authenticated()
+        max_retries=4
+        wait_seconds=2
+
+        for attempt in range(1, max_retries + 1):
+            try:
+                logger.info(f"tried #{attempt}...")
+                return self.get_contact_resolution(database_type,
+                                                   first_name,
+                                                   last_name,
+                                                   middle_name,
+                                                   age,
+                                                   state,
+                                                   city,
+                                                   gender,
+                                                   start,
+                                                   end
+                                                   )
+            except Exception as e:
+                logger.error(f"failed attempt #{attempt}...")
+                if attempt < max_retries:
+                    time.sleep(wait_seconds)
+        return None
+
+
     @staticmethod
     def print_consumer_records(data: dict):
         """
