@@ -476,13 +476,19 @@
             const folder = incidente.original_document_location?.split("/")[3] || "--";
 
             incidente.vehicles.forEach(veiculo => {
-                const motorista = veiculo.passengers?.find(p => p.role === "Driver") || {};
+                const motorista = veiculo.passengers?.find(p => p.role === "Driver") || {
+                    name: veiculo.driver_name,
+                    phone1: null,
+                    age: "--",
+                    gender: "--"
+                };
+
                 const driverName = motorista.name || veiculo.driver_name || "--";
-                const insuranceDetails = veiculo.insurance_company ? `Insurance Company: ${veiculo.insurance_company}` : "N/A";
+                const insuranceDetails = veiculo.insurance_company ? `Insurance Company: ${veiculo.insurance_company}` : "--";
                 const driverLicense = veiculo.driver_license ? ` <br> License: ${veiculo.driver_license}` : "";
                 const policyNumber = veiculo.policy_number ? ` <br> Policy: ${veiculo.policy_number}` : "";
 
-                if (["Unknown", "--", "UNKNOWN"].includes(driverName) || insuranceDetails === "N/A") return;
+                if (["Unknown", "--", "UNKNOWN", "N/A"].includes(driverName)) return;
 
                 incidentesFormatados.push({
                     id: incidente.report_number,
@@ -518,7 +524,7 @@
         filteredData = data.filter(item =>
             (!filterFolder || item.sourceFolder === filterFolder) &&
             (!filterDate || item.col2 === filterDate) &&
-            (item.col5 === "--" || (parseInt(item.col7) >= 18)) &&
+            (item.col5 === "--" || isNaN(parseInt(item.col7)) || parseInt(item.col7) >= 18) &&
             (!filterCol10 || item.col10 === filterCol10) &&
             (!filterCol11 || item.col11 === filterCol11)
         );
