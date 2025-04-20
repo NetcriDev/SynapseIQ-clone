@@ -12,11 +12,13 @@ from config.config import get_connection
 from src.utils.logger_config import setup_logger
 from src.utils.info_dataframe import print_dataframe_info
 from src.utils.split_name import split_driver_name
+from src.services.api_contact import DataIrisSession
+from src.utils.utils_api_contact import DatabaseType
 
 main_script_path = sys.path[0]
 logger = setup_logger("Minnesota_execution", main_script_path)
 
-def insert_dataframe_to_db(df, pdf_base_path):
+def insert_dataframe_to_db(df: pd.DataFrame, pdf_base_path: str, home_path: str = None):
     """
     Insert crash report data from a DataFrame into the database.
 
@@ -33,8 +35,10 @@ def insert_dataframe_to_db(df, pdf_base_path):
         file_path (str): 
             The file path (carpet storage/minnesota) where the original document (PDF) is stored. 
             This is saved along with each incident report.
+        home_path (str): is the root carpet where the main script is (/home/home/SynapseIq/)
 
     """
+    sesion = DataIrisSession(token_file_path= os.path.join(home_path ,"config/token.json"))
     conn = get_connection()
     cur = conn.cursor()
 
@@ -45,6 +49,7 @@ def insert_dataframe_to_db(df, pdf_base_path):
         except Exception as e:
             logger.error(e)
         city = row['City'].strip() if pd.notna(row['City']) else ''
+        state = (lambda t: t.split(",")[1].strip() if len(t.split(",")) > 1 and len(t.split(",")[1].strip()) == 2 else "minnesota")(city)
         street = row['Location'].strip() if pd.notna(row['Location']) else ''
         source_url = row['URL'].strip() if pd.notna(row['URL']) else ''
         narrative = row['Description'].strip() if pd.notna(row['Description']) else ''
@@ -123,13 +128,29 @@ def insert_dataframe_to_db(df, pdf_base_path):
         """, (vehicle_id, driver))
         result = cur.fetchone()
         if not result:
+
+            info_contact = DataIrisSession.extract_phone_if_valid(
+                sesion.safe_get_contact_resolution(
+                    database_type=DatabaseType(1).name,
+                    first_name=driver_first, 
+                    last_name=driver_last,
+                    middle_name=driver_middle,
+                    age=age,
+                    state=state,
+                    city=city.split(",")[0].strip()))
+
             cur.execute("""
                 INSERT INTO passengers (
                     vehicle_id, role, name, age, notes,
                     first_name,
                     middle_name,
-                    last_name   
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                    last_name,
+                    state,
+                    city,
+                    phone1,
+                    phone2,
+                    contact_resolution   
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """, (
                 vehicle_id,
                 'Driver',
@@ -138,7 +159,12 @@ def insert_dataframe_to_db(df, pdf_base_path):
                 " ",     #notes
                 driver_first, 
                 driver_middle, 
-                driver_last
+                driver_last,
+                state,
+                city,
+                info_contact.get("CellPhone"),
+                info_contact.get("Phone"),
+                str(info_contact.get("contact_resolution"))            
             ))
 
     conn.commit()
@@ -148,7 +174,7 @@ def insert_dataframe_to_db(df, pdf_base_path):
 
 
 
-def run_msp_crash_scraper(output_dir):
+def run_msp_crash_scraper(output_dir, home_path: str = None):
     # Creating lists for scrapping table content
     date_list=[]
     crash_type=[]
@@ -400,7 +426,7 @@ def run_msp_crash_scraper(output_dir):
     # })
     # df_final = pd.concat([df_final, df_temp], ignore_index=True)
     print_dataframe_info(df_final)
-    insert_dataframe_to_db(df_final, path_minnesota)
+    insert_dataframe_to_db(df_final, path_minnesota, home_path)
     df_final.to_csv(os.path.join(path_minnesota,'output.csv'),index=False)
 
 

@@ -15,9 +15,11 @@ from src.utils.info_dataframe import print_dataframe_info
 from config.config import get_connection
 from src.utils.split_name import split_driver_name
 from src.services.api_contact import DataIrisSession
+from src.utils.utils_api_contact import DatabaseType
 
 main_script_path = sys.path[0]
 logger = setup_logger("Kansas_execution", main_script_path)
+
 
 def insert_full_crash_data(df_expanded: pd.DataFrame, file_path: str, home_path: str = None):
     """
@@ -36,8 +38,10 @@ def insert_full_crash_data(df_expanded: pd.DataFrame, file_path: str, home_path:
         file_path (str): 
             The file path (carpet storage/kansas) where the original document (PDF) is stored. 
             This is saved along with each incident report.
+        home_path: is the root carpet where the main script is (/home/home/SynapseIq/)
 
     """
+    sesion = DataIrisSession(token_file_path= os.path.join(home_path ,"config/token.json"))
     conn = get_connection()
     cur = conn.cursor()
     logger.info("Start insert into DB: Kansas")
@@ -157,6 +161,16 @@ def insert_full_crash_data(df_expanded: pd.DataFrame, file_path: str, home_path:
             passenger_exists = False
 
         if not passenger_exists:
+            
+            info_contact = DataIrisSession.extract_phone_if_valid(
+                sesion.safe_get_contact_resolution(
+                    database_type=DatabaseType(1).name,
+                    first_name=driver_first, 
+                    last_name=driver_last,
+                    middle_name=driver_middle,
+                    age=age,
+                    state=state))
+
             # Insertar pasajero
             cur.execute("""
                 INSERT INTO passengers (
@@ -175,7 +189,7 @@ def insert_full_crash_data(df_expanded: pd.DataFrame, file_path: str, home_path:
                     phone1,
                     phone2,
                     contact_resolution
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """, (
                 vehicle_id,
                 "Driver" if license else "Occupant",
@@ -189,9 +203,9 @@ def insert_full_crash_data(df_expanded: pd.DataFrame, file_path: str, home_path:
                 driver_last,
                 state,
                 city,
-                cellphone,
-                phone,
-                "contact_resolution"
+                info_contact.get("CellPhone"),
+                info_contact.get("Phone"),
+                str(info_contact.get("contact_resolution"))
             ))
 
     conn.commit()
@@ -208,6 +222,8 @@ def run_kansas_crash_scraper(path_dir: str, home_path: str = None):
     ----------
     path_dir : str
         Path to the directory where downloaded files, storage folder (storage) or results should be stored.
+    home_path : str
+        directory of main scriping (/home/SynapseIQ/)
 
     Returns
     -------

@@ -233,6 +233,7 @@ class DataIrisSession:
                 "Id": fields.get("Id", ""),
                 "First_Name": fields.get("First_Name", ""),
                 "Last_Name": fields.get("Last_Name", ""),
+                "Middle_Initial": fields.get("Middle_Initial", ""),
                 "Address": fields.get("Physical_Address", ""),
                 "City": fields.get("Physical_City", ""),
                 "State": fields.get("Physical_State", ""),
@@ -343,7 +344,7 @@ class DataIrisSession:
             start=start,
             end=end
         )
-
+        logger.info(result)
         return {
             "record_count": len(result),
             "sufficient_criteria": sufficient_criteria,
@@ -423,3 +424,40 @@ class DataIrisSession:
                 field = campo.get("fieldID", "")
                 valor = campo.get("fieldValue", "")
                 print(f"{field:30} : {valor}")
+    
+    @staticmethod
+    def extract_phone_if_valid(data: dict) -> dict:
+        """
+        Returns phone and cellphone from the first result if conditions are met:
+        - record_count <= 5
+        - sufficient_criteria == True
+        - result not empty
+        """
+        if not data or not isinstance(data, dict):
+            return {
+                    "CellPhone": None,
+                    "Phone": None,
+                    "contact_resolution": None
+                }
+        
+        if data.get("record_count") == 0:
+            return {
+                    "CellPhone": None,
+                    "Phone": None,
+                    "contact_resolution": "[]"
+                }
+
+        if data.get("record_count", 0) <= 5 and data.get("sufficient_criteria") is True:
+            results = data.get("result", [])
+            if results:
+                first = results[0]
+                return {
+                    "CellPhone": first.get("Phone", ""),
+                    "Phone": first.get("CellPhone", ""),
+                    "contact_resolution": data.get("result", [])
+                }
+        return {
+                    "CellPhone": None,
+                    "Phone": None,
+                    "contact_resolution": None
+                }

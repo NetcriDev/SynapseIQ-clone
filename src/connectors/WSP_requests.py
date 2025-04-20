@@ -5,20 +5,22 @@ import os
 import pdfplumber
 import sys
 import pandas as pd
+import numpy as np
 from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
 from config.config import get_connection
 from src.utils.logger_config import setup_logger
 from src.utils.info_dataframe import print_dataframe_info
-import numpy as np
 from src.utils.split_name import split_driver_name
+from src.services.api_contact import DataIrisSession
+from src.utils.utils_api_contact import DatabaseType
 
 main_script_path = sys.path[0]
 logger = setup_logger("Winstonsalem_execution", main_script_path)
 
 
 #insert into DB
-def insert_dataframe_into_db(df: pd.DataFrame, file_path: str):
+def insert_dataframe_into_db(df: pd.DataFrame, file_path: str, home_path: str = None):
     """
     Insert crash report data from a DataFrame into the database.
 
@@ -35,8 +37,11 @@ def insert_dataframe_into_db(df: pd.DataFrame, file_path: str):
         file_path (str): 
             The file path (carpet storage/winstonsalem) where the original document (PDF) is stored. 
             This is saved along with each incident report.
+        home_path (str):
+            is the root carpet where the main script is (/home/home/SynapseIq/)
 
     """
+    sesion = DataIrisSession(token_file_path= os.path.join(home_path ,"config/token.json"))
     conn = get_connection()
     cur = conn.cursor()
 
@@ -133,14 +138,30 @@ def insert_dataframe_into_db(df: pd.DataFrame, file_path: str):
             """, (vehicle_id, driver))
             exists = cur.fetchone()
             if not exists:
+                info_contact = DataIrisSession.extract_phone_if_valid(
+                    sesion.safe_get_contact_resolution(
+                        database_type=DatabaseType(1).name,
+                        first_name=driver_first, 
+                        last_name=driver_last,
+                        middle_name=driver_middle,
+                        age=age,
+                        state=state,
+                        city=city))
+                
                 cur.execute("""
                     INSERT INTO passengers (
                         vehicle_id, role, name, technical_notes,
                         age, year_birth,
                         first_name,
                         middle_name,
-                        last_name
-                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                        last_name,
+                        state,
+                        city,
+                        street,
+                        phone1,
+                        phone2,
+                        contact_resolution
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """, (
                     vehicle_id,
                     'Driver',
@@ -150,7 +171,13 @@ def insert_dataframe_into_db(df: pd.DataFrame, file_path: str):
                     date_birth,
                     driver_first, 
                     driver_middle, 
-                    driver_last
+                    driver_last,
+                    state,
+                    city,
+                    street,
+                    info_contact.get("CellPhone"),
+                    info_contact.get("Phone"),
+                    str(info_contact.get("contact_resolution"))
                 ))
 
     conn.commit()
@@ -237,7 +264,7 @@ def fix_city_state_base_insurance(cityState,insurances): #inserir vazios para co
 
 
 
-def run_wsp_crash_scraper(output_dir):
+def run_wsp_crash_scraper(output_dir, home_path: str = None):
     """
     Scrapes crash data from the Winston Salem crash reporting system.
 
@@ -669,7 +696,7 @@ def run_wsp_crash_scraper(output_dir):
     #save file in saved_files/ folder
     # file_name=os.path.join('saved_files',file_name)
 
-    insert_dataframe_into_db(df_expanded, path_ws)
+    insert_dataframe_into_db(df_expanded, path_ws, home_path)
     print_dataframe_info(df_expanded)
     df_expanded.to_csv(file_name,index=False)
 

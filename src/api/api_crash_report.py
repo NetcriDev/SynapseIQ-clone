@@ -1,18 +1,19 @@
-from fastapi import FastAPI, Query, HTTPException, Response, Depends
+import psycopg2
+import os
+import psycopg2.extras
+from fastapi import FastAPI, Query, HTTPException, Response, Depends, WebSocket, WebSocketDisconnect
 from typing import List, Optional
 from datetime import datetime, time
 from src.models.models_api import Passenger, PassengerUpdatePhones, Vehicle, IncidentReport
 from config.config import get_connection
 from src.utils.util_pagination import paginate
 from src.utils.parse_date import parse_date
-import psycopg2
-import psycopg2.extras
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.responses import FileResponse
-import os
 from psycopg2.extras import RealDictCursor
 from src.models.models_api import CrashReportWithPassengers  # Define este modelo pydantic si no existe aún
+from src.api.notification_manager import connected_clients
 
 app = FastAPI()
 
@@ -388,3 +389,15 @@ def search_crash_reports(
         response.headers["Access-Control-Allow-Origin"] = "*"
 
     return crashes
+
+
+# @app.websocket("/ws/notifications")
+# async def websocket_notifications(websocket: WebSocket):
+#     await websocket.accept()
+#     connected_clients.append(websocket)
+#     try:
+#         while True:
+#             await websocket.receive_text()  # Mantiene la conexión activa
+#     except WebSocketDisconnect:
+#         connected_clients.remove(websocket)
+
