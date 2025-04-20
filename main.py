@@ -27,28 +27,35 @@ now = datetime.now()
 
 sched = BlockingScheduler()
 
-@sched.scheduled_job('interval', minutes=30, next_run_time=now)
+@sched.scheduled_job('interval', minutes=45, next_run_time=now)
 def kansas():
     logger.info(">>> Start script: Kansas")
-    run_kansas_crash_scraper(path_dir=outputdata_dir)
-    logger.info("Finish script: kansas -----|")
+    try:
+        run_kansas_crash_scraper(path_dir=outputdata_dir, home_dir=home_dir)
+        logger.info("Finish script: kansas -----|")
+    except Exception as e:
+        logger.error(e)
 
-
-@sched.scheduled_job('interval', minutes=30, next_run_time=now + timedelta(minutes=5))
+@sched.scheduled_job('interval', minutes=45, next_run_time=now + timedelta(minutes=5))
 def WinstonSalem():
     logger.info(">>> Start script: WinstonSalem")
-    run_wsp_crash_scraper(output_dir=outputdata_dir)
-    logger.info("Finish script: WinstonSalem -----|")
+    try:
+        run_wsp_crash_scraper(output_dir=outputdata_dir, home_path=home_dir)
+        logger.info("Finish script: WinstonSalem -----|")
+    except Exception as e:
+        logger.error(e)
 
 
-@sched.scheduled_job('interval', minutes=30, next_run_time=now + timedelta(minutes=10))
+@sched.scheduled_job('interval', minutes=45, next_run_time=now + timedelta(minutes=10))
 def Minnesota():
     logger.info(">>> Start script: Minnesota")
-    run_msp_crash_scraper(outputdata_dir)
-    logger.info("Finish script: Minnesota -----|")
+    try:
+        run_msp_crash_scraper(outputdata_dir, home_path=home_dir)
+        logger.info("Finish script: Minnesota -----|")
+    except Exception as e:
+        logger.error(e)
 
-
-@sched.scheduled_job('interval', minutes=30, next_run_time=now + timedelta(minutes=15))
+@sched.scheduled_job('interval', minutes=45, next_run_time=now + timedelta(minutes=15))
 def Texas():
     logger.info(">>> Start script: Texas")
     try:

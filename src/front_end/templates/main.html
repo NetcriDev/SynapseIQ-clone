@@ -36,6 +36,10 @@
                         <thead>
                             <tr>
                                 <th><input type="checkbox" id="selectAll" onclick="toggleSelectAll(this)"></th>
+<<<<<<< HEAD:src/front_end/main.html
+=======
+                                <th></th> <!-- Nova coluna para o ícone de expansão -->
+>>>>>>> e4a2d09c66c446174a1e0d6cf086c46806a3bdaa:src/front_end/templates/main.html
                                 <th>Report N°</th>
                                 <th>Crash Date</th>
                                 <th>Driver Name</th>
@@ -417,23 +421,90 @@
 
 </style>
 
+<style>
+    .incident-details {
+        text-align: left;
+        font-size: 14px;
+        padding: 10px;
+        line-height: 1.5;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .incident-details h3 {
+        font-size: 16px;
+        margin: 0 0 10px;
+        font-weight: bold;
+        color: #333;
+    }
+
+    .general-info p,
+    .vehicles-section li {
+        margin: 4px 0;
+        color: #444;
+    }
+
+    .vehicles-section {
+        margin-top: 10px;
+    }
+
+    .vehicles-section h4 {
+        margin-bottom: 5px;
+        font-size: 15px;
+        font-weight: bold;
+        color: #222;
+    }
+
+    .vehicles-section ul {
+        list-style-type: disc;
+        padding-left: 20px;
+    }
+
+    .vehicles-section li {
+        padding-left: 5px;
+    }
+
+    /* Garante que os detalhes tenham espaço e fiquem bem visíveis */
+    .details-content {
+        padding: 15px;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        justify-content: flex-start;
+        background-color: #f9f9f9;
+    }
+
+    .expand-icon {
+        cursor: pointer;
+        user-select: none;
+        font-size: 12px;
+        padding: 0 10px;
+    }
+
+    .expand-icon:hover {
+        color: #0062ff;
+    }
+
+
+</style>
 
 <script>
     let data = [];
     let selectedItems = new Set();
 
     let currentPage = 1;
-    const rowsPerPage = 7;
+    const rowsPerPage = 20;
 
-    async function buscarIncidentes() {
+    async function searchIncidents() {
         try {
             const resposta = await fetch('/incident_search')
             if (!resposta.ok) throw new Error(`Erro: ${resposta.status}`);
 
             const dados = await resposta.json();
-            data = transformarDados(dados);
-            atualizarRelacionamentosEstadoCidade(dados); // <-- ESSENCIAL!
-            carregarFiltros();
+            data = transformData(dados);
+            updateRelationStateCity(dados); // <-- ESSENCIAL!
+            loadFilters();
             renderTable();
 
         } catch (erro) {
@@ -441,15 +512,25 @@
         }
     }
 
+<<<<<<< HEAD:src/front_end/main.html
 
     // const API_URL = "https://990c-52-116-202-144.ngrok-free.app/incident/search?page=1&page_size=2000";
     // let data = [];
     // let selectedItems = new Set();
+=======
+    // const API_URL = "https://990c-52-116-202-144.ngrok-free.app/incident/search?page=1&page_size=2000";
+    // let filteredData = [];         // Armazena os dados filtrados globalmente
+    // const selectedItems = new Set(); // Armazena os itens selecionados globalmente
+>>>>>>> e4a2d09c66c446174a1e0d6cf086c46806a3bdaa:src/front_end/templates/main.html
 
     // let currentPage = 1;
     // const rowsPerPage = 20;
 
+<<<<<<< HEAD:src/front_end/main.html
     // async function buscarIncidentes() {
+=======
+    // async function searchIncidents() {
+>>>>>>> e4a2d09c66c446174a1e0d6cf086c46806a3bdaa:src/front_end/templates/main.html
     //     try {
     //         const resposta = await fetch(API_URL, {
     //             headers: { "ngrok-skip-browser-warning": "true" }
@@ -458,9 +539,15 @@
     //         if (!resposta.ok) throw new Error(`Erro: ${resposta.status}`);
 
     //         const dados = await resposta.json();
+<<<<<<< HEAD:src/front_end/main.html
     //         data = transformarDados(dados);
     //         atualizarRelacionamentosEstadoCidade(dados); // <-- ESSENCIAL!
     //         carregarFiltros();
+=======
+    //         data = transformData(dados);
+    //         updateRelationStateCity(dados); // <-- ESSENCIAL!
+    //         loadFilters();
+>>>>>>> e4a2d09c66c446174a1e0d6cf086c46806a3bdaa:src/front_end/templates/main.html
     //         renderTable();
 
     //     } catch (erro) {
@@ -468,20 +555,51 @@
     //     }
     // }
 
+<<<<<<< HEAD:src/front_end/main.html
     function transformarDados(dados) {
+=======
+    function transformData(dados) {
+>>>>>>> e4a2d09c66c446174a1e0d6cf086c46806a3bdaa:src/front_end/templates/main.html
         let incidentesFormatados = [];
 
         dados.forEach(incidente => {
             const folder = incidente.original_document_location?.split("/")[3] || "--";
+            
+            // const motorista = veiculo.passengers?.find(p => p.role === "Driver") || {
+            //         name: veiculo.driver_name,
+            //         phone1: null,
+            //         age: "--",
+            //         gender: "--"
+            //     };
+
+            //     const driverName = motorista.name || veiculo.driver_name || "--";
 
             incidente.vehicles.forEach(veiculo => {
-                const motorista = veiculo.passengers?.find(p => p.role === "Driver") || {};
-                const driverName = motorista.name || veiculo.driver_name || "--";
-                const insuranceDetails = veiculo.insurance_company ? `Insurance Company: ${veiculo.insurance_company}` : "N/A";
+                const motorista = veiculo.passengers?.find(p => p.role === "Driver") || {
+                    name: veiculo.driver_name,
+                    first_name: veiculo.driver_first_name,
+                    middle_name: veiculo.driver_middle_name,
+                    last_name: veiculo.driver_last_name,
+                    phone1: null,
+                    age: "--",
+                    gender: "--"
+                };
+
+                // Concatena os nomes em ordem, ignorando os que não existem
+                const nameParts = [
+                    motorista.first_name,
+                    motorista.middle_name,
+                    motorista.last_name
+                ].filter(part => part && part.trim() !== ""); // Filtra partes vazias
+
+                const driverName = nameParts.length > 0 
+                    ? nameParts.join(" ") 
+                    : motorista.name ||  "--"; // veiculo.driver_name ||
+                const insuranceDetails = veiculo.insurance_company ? `Insurance Company: ${veiculo.insurance_company}` : "--";
                 const driverLicense = veiculo.driver_license ? ` <br> License: ${veiculo.driver_license}` : "";
                 const policyNumber = veiculo.policy_number ? ` <br> Policy: ${veiculo.policy_number}` : "";
 
-                if (["Unknown", "--", "UNKNOWN"].includes(driverName) || insuranceDetails === "N/A") return;
+                if (["Unknown", "--", "UNKNOWN", "N/A"].some(term => driverName.includes(term))) return;
 
                 incidentesFormatados.push({
                     id: incidente.report_number,
@@ -497,7 +615,9 @@
                     col11: incidente.city || "--",
                     col12: `https://990c-52-116-202-144.ngrok-free.app/incident/pdf/view/${incidente.pdf_id || incidente.report_number}`,
                     col13: "--",
-                    sourceFolder: folder
+                    sourceFolder: folder,
+                    original: incidente, // <-- isso aqui é essencial para recuperar os dados na hora de salvar
+                    passengerId: motorista.id,  // <-- adiciona aqui!
                 });
             });
         });
@@ -513,10 +633,11 @@
         const filterCol10 = document.getElementById("filterCol10").value;
         const filterCol11 = document.getElementById("filterCol11").value;
 
-        const filteredData = data.filter(item =>
+        // Atualiza a variável global
+        filteredData = data.filter(item =>
             (!filterFolder || item.sourceFolder === filterFolder) &&
             (!filterDate || item.col2 === filterDate) &&
-            (item.col5 === "--" || (parseInt(item.col7) >= 18)) &&
+            (isNaN(parseInt(item.col7)) || parseInt(item.col7) >= 18) &&
             (!filterCol10 || item.col10 === filterCol10) &&
             (!filterCol11 || item.col11 === filterCol11)
         );
@@ -529,15 +650,28 @@
         tableBody.innerHTML = "";
 
         filteredData.slice(start, end).forEach((item, index) => {
-            const realIndex = start + index;
+            const itemString = escapeHtml(JSON.stringify(item));
             const linkIcon = item.col12 ? `<a href="#" onclick="viewPDF('${item.col12}', '${item.id}')">🔗</a>` : "";
 
-            tableBody.innerHTML += `<tr>
-                <td><input type="checkbox" class="rowCheckbox" data-id="${item.id}" data-item='${escapeHtml(JSON.stringify(item))}'></td>
+            tableBody.innerHTML += `
+            <tr class="main-row" data-id="${item.id}">
+                <td><input type="checkbox" class="rowCheckbox" data-id="${item.id}" data-item='${itemString}'></td>
+                <td class="expand-icon" onclick="toggleDetails('${item.id}')">▶</td>
                 <td>${item.id}</td>
                 <td>${item.col2}</td>
                 <td>${item.col3}</td>
-                <td>${item.col4}</td>
+                <td>
+                    <div style="display: flex; align-items: center; gap: 4px;">
+                        <input 
+                            type="text" 
+                            value="${item.col4}" 
+                            data-passenger-id="${item.passengerId}" 
+                            class="phoneInput" 
+                            style="width: 120px; padding: 4px;"
+                            />
+                        <button onclick="savePhoneNumber(this)" style="cursor: pointer;border:none;background:none;">💾</button>
+                    </div>
+                </td>
                 <td>${item.col5}</td>
                 <td>${item.col6}</td>
                 <td>${item.col7}</td>
@@ -547,20 +681,23 @@
                 <td>${item.col11}</td>
                 <td>${linkIcon}</td>    
                 <td>${item.col13}</td>
+            </tr>
+            <tr class="details-row" id="details-${item.id}" style="display: none;">
+                <td colspan="15">
+                    <div class="details-content" id="details-content-${item.id}">
+                        <!-- Conteúdo será carregado dinamicamente -->
+                    </div>
+                </td>
             </tr>`;
         });
-
-
         renderPagination(totalPages);
 
-        // Atualiza os checkboxes da página com base nos selecionados globalmente
+        // Sincroniza checkboxes com seleção global
         document.querySelectorAll(".rowCheckbox").forEach(checkbox => {
             const itemString = checkbox.getAttribute("data-item");
-            
-            // Marca como selecionado se já estiver salvo
+
             checkbox.checked = selectedItems.has(itemString);
 
-            // Evita múltiplos event listeners no mesmo checkbox
             checkbox.onchange = () => {
                 if (checkbox.checked) {
                     selectedItems.add(itemString);
@@ -571,9 +708,41 @@
             };
         });
 
-        updateSelectAllCheckbox(); // Reflete o estado correto do checkbox "select-all"
-
+        updateSelectAllCheckbox();
     }
+
+    async function savePhoneNumber(button) {
+        const row = button.closest("tr");
+        const input = row.querySelector(".phoneInput");
+        const phone = input.value;
+        const passengerId = input.getAttribute("data-passenger-id");
+
+        if (!passengerId) {
+            alert("Passenger ID not found");
+            return;
+        }
+
+        const url = `https://990c-52-116-202-144.ngrok-free.app/passenger/${passengerId}/phones`;
+
+        try {
+            const res = await fetch(url, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'accept': 'application/json'
+                },
+                body: JSON.stringify({ phone1: phone, phone2: "string" })
+            });
+
+            if (!res.ok) throw new Error("Error saving phone number");
+
+            alert("Phone number updated!");
+        } catch (err) {
+            console.error(err);
+            alert("Error to update phone number.");
+        }
+    }
+
 
     function escapeHtml(unsafe) {
         return unsafe
@@ -594,6 +763,23 @@
         selectAll.indeterminate = !allChecked && someChecked;
     }
 
+    // function renderPagination(totalPages) {
+    //     const container = document.getElementById("pagination");
+    //     container.innerHTML = "";
+
+    //     for (let i = 1; i <= totalPages; i++) {
+    //         const btn = document.createElement("button");
+    //         btn.textContent = i;
+    //         btn.style.fontWeight = i === currentPage ? "bold" : "normal";
+    //         btn.onclick = () => {
+    //             currentPage = i;
+    //             renderTable();
+    //         };
+    //         container.appendChild(btn);
+    //     }
+    // }
+
+    let pageGroupStart = 1;
 
     // function renderPagination(totalPages) {
     //     const container = document.getElementById("pagination");
@@ -661,7 +847,7 @@
 
 
     // Função para carregar todos os filtros de forma interdependente
-    function carregarFiltros() {
+    function loadFilters() {
         const filterSourceFolder = document.getElementById("filterSourceFolder");
         const filterCol10 = document.getElementById("filterCol10");
         const filterCol11 = document.getElementById("filterCol11");
@@ -716,9 +902,8 @@
         });
     }
 
-
     let estadoCidadeMap = {};
-    function atualizarRelacionamentosEstadoCidade(dados) {
+    function updateRelationStateCity(dados) {
         estadoCidadeMap = {};
 
         dados.forEach(incidente => {
@@ -732,7 +917,7 @@
         });
     }
 
-    function atualizarFiltrosPorEstado(estadoSelecionado) {
+    function updateFilterPerState(estadoSelecionado) {
         const cidadesFiltradas = estadoCidadeMap[estadoSelecionado] || new Set();
         const filterCol11 = document.getElementById("filterCol11");
 
@@ -743,7 +928,7 @@
         });
     }
 
-    function atualizarFiltrosPorCidade(cidadeSelecionada) {
+    function updateFilterPerCity(cidadeSelecionada) {
         const estadosFiltrados = Object.entries(estadoCidadeMap)
             .filter(([_, cidades]) => cidades.has(cidadeSelecionada))
             .map(([estado]) => estado);
@@ -756,11 +941,11 @@
         });
     }
 
-    function atualizarFiltros(dadosFiltrados) {
+    function updateFilters(filteredData) {
         const estados = new Set();
         const cidades = new Set();
 
-        dadosFiltrados.forEach(incidente => {
+        filteredData.forEach(incidente => {
             if (incidente.state) estados.add(incidente.state.trim());
             if (incidente.city) cidades.add(incidente.city.trim());
         });
@@ -815,26 +1000,36 @@
     // Função para selecionar/deselecionar todos os checkboxes
     function toggleSelectAll(masterCheckbox) {
         const isChecked = masterCheckbox.checked;
-        const checkboxes = document.querySelectorAll(".rowCheckbox");
 
-        checkboxes.forEach(cb => {
-            const itemString = cb.getAttribute("data-item");  // Aqui, garantimos que estamos utilizando o item completo (não só o id)
-            cb.checked = isChecked;
+        filteredData.forEach(item => {
+            const itemString = JSON.stringify(item);
             if (isChecked) {
-                selectedItems.add(itemString);  // Adiciona o item inteiro na seleção global
+                selectedItems.add(itemString);
             } else {
-                selectedItems.delete(itemString);  // Remove o item da seleção global
+                selectedItems.delete(itemString);
             }
         });
 
-        updateSelectAllCheckbox();  // Atualiza o estado do checkbox "select-all"
+        // Atualiza os checkboxes da página atual visualmente
+        document.querySelectorAll(".rowCheckbox").forEach(cb => {
+            const itemString = cb.getAttribute("data-item");
+            cb.checked = isChecked;
+        });
+
+        updateSelectAllCheckbox();
     }
 
     // Função para atualizar o estado do checkbox "select-all"
     function updateSelectAllCheckbox() {
-        const checkboxes = document.querySelectorAll(".rowCheckbox");
-        const allChecked = [...checkboxes].every(cb => cb.checked);
-        const someChecked = [...checkboxes].some(cb => cb.checked);
+        const currentCheckboxes = document.querySelectorAll(".rowCheckbox");
+
+        const allChecked = filteredData.every(item =>
+            selectedItems.has(JSON.stringify(item))
+        );
+
+        const someChecked = filteredData.some(item =>
+            selectedItems.has(JSON.stringify(item))
+        );
 
         const selectAll = document.getElementById("selectAll");
         selectAll.checked = allChecked;
@@ -842,6 +1037,9 @@
     }
 
     function viewPDF(url, id) {
+        event.preventDefault(); // Previne o comportamento padrão do link
+        event.stopPropagation(); // Evita que o clique propague para a linha
+        
         document.getElementById("pdfViewer").data = url;
         document.getElementById("pdfId").textContent = id;
 
@@ -871,6 +1069,109 @@
         }, 300);
     }
 
+    function toggleDetails(reportId) {
+        const detailsRow = document.getElementById(`details-${reportId}`);
+        const expandIcon = document.querySelector(`tr.main-row[data-id="${reportId}"] .expand-icon`);
+        
+        if (detailsRow.style.display === 'none') {
+            // Se estiver recolhido, expande e carrega os detalhes
+            detailsRow.style.display = 'table-row';
+            expandIcon.textContent = '▼';
+            
+            // Carrega os detalhes apenas se ainda não foram carregados
+            if (!detailsRow.dataset.loaded) {
+                loadReportDetails(reportId);
+                detailsRow.dataset.loaded = 'true';
+            }
+        } else {
+            // Se estiver expandido, recolhe
+            detailsRow.style.display = 'none';
+            expandIcon.textContent = '▶';
+        }
+    }
+
+    async function loadReportDetails(reportId) {
+        
+        const detailsContent = document.getElementById(`details-content-${reportId}`);
+        detailsContent.innerHTML = '<p>Loading details...</p>';
+        
+        try {
+            // Encontra o item completo nos dados filtrados
+            const incident = filteredData.find(item => item.id === reportId);
+            
+            if (!incident) {
+                detailsContent.innerHTML = '<p>Error: Report not found</p>';
+                return;
+            }
+            
+            const originalData = incident.original;
+            
+            // Renderiza os detalhes baseado na cidade/estado
+            detailsContent.innerHTML = renderGenericDetails(originalData);
+            
+        } catch (error) {
+            console.error('Error loading report details:', error);
+            detailsContent.innerHTML = '<p>Error loading details</p>';
+        }
+    }
+
+    function renderGenericDetails(incident) {
+        const city = incident.city || '';
+        const state = incident.state || '';
+        const dateTime = incident.accident_datetime ? new Date(incident.accident_datetime).toLocaleString() : 'N/A';
+        const numberOfVehicles = Array.isArray(incident.vehicles) ? incident.vehicles.length : 0;
+
+        let html = `
+            <div class="incident-details">
+                <h3>Accident Details - ${incident.report_number || '--'}</h3>
+                <div class="general-info">
+                    <p><strong>Date & Time:</strong> ${dateTime}</p>
+                    <p><strong>Location:</strong> ${incident.street || '--'}, ${city}, ${state}</p>
+                    ${incident.weather_condition ? `<p><strong>Weather:</strong> ${incident.weather_condition}</p>` : ''}
+                    ${incident.road_condition ? `<p><strong>Road Condition:</strong> ${incident.road_condition}</p>` : ''}
+                    ${incident.crash_severity ? `<p><strong>Severity:</strong> ${incident.crash_severity}</p>` : ''}
+                    ${incident.narrative ? `<p><strong>Narrative:</strong> ${incident.narrative}</p>` : ''}
+                    ${incident.notes ? `<p><strong>Notes:</strong> ${incident.notes}</p>` : ''}
+                </div>
+        `;
+        // <p><strong>Units Involved:</strong> ${numberOfVehicles}</p>
+        // Mostrar veículos se existirem
+        if (numberOfVehicles > 0) {
+            html += `
+                <div class="vehicles-section">
+                    <h4>Vehicles Involved (${numberOfVehicles})</h4>
+                    <ul>
+            `;
+
+            incident.vehicles.forEach((vehicle, idx) => {
+                const nameParts = [
+                    vehicle.driver_first_name,
+                    vehicle.driver_middle_name,
+                    vehicle.driver_last_name
+                ].filter(part => part && part.trim() !== "");
+
+                const driverName = nameParts.length > 0 
+                    ? nameParts.join(" ") 
+                    : (vehicle.driver_name || "--");
+
+                html += `
+                    <li>
+                        <strong>Unit ${idx + 1} driver:</strong> ${driverName}<br>
+                    </li>
+                `;
+            });
+
+            html += `</ul></div>`;
+        }
+
+            html += `</div>`; // Fecha a div incident-details
+
+            return html;
+        }
+
+
+
+
     document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("export-excel").addEventListener("click", downloadCSV);
         document.getElementById("filterSourceFolder").addEventListener("change", () => {
@@ -880,21 +1181,21 @@
         // Listener para Agency
         document.getElementById("filterSourceFolder").addEventListener("change", () => {
             currentPage = 1;
-            carregarFiltros();
+            loadFilters();
             renderTable();
         });
         
         // Listener para State
         document.getElementById("filterCol10").addEventListener("change", () => {
             currentPage = 1;
-            carregarFiltros();
+            loadFilters();
             renderTable();
         });
         
         // Listener para City
         document.getElementById("filterCol11").addEventListener("change", () => {
             currentPage = 1;
-            carregarFiltros();
+            loadFilters();
             renderTable();
         });
         
@@ -904,7 +1205,7 @@
             renderTable();
         });
         
-        buscarIncidentes();
+        searchIncidents();
         });
 </script>
 

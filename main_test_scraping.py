@@ -24,25 +24,30 @@ logger= setup_logger("Scheduled_execution", home_dir)
 # now
 
 
+
+
 # def kansas():
 #     logger.info(">>> Start script: Kansas")
-#     run_kansas_crash_scraper(path_dir=outputdata_dir)
+#     run_kansas_crash_scraper(path_dir=outputdata_dir, home_path=home_dir )
 #     logger.info("Finish script: kansas -----|")
 
 # kansas()
 
 
-# def WinstonSalem():
-#     logger.info(">>> Start script: WinstonSalem")
-#     run_wsp_crash_scraper(output_dir=outputdata_dir)
-#     logger.info("Finish script: WinstonSalem -----|")
+def WinstonSalem():
+    logger.info(">>> Start script: WinstonSalem")
+    try:
+        run_wsp_crash_scraper(output_dir=outputdata_dir, home_path=home_dir)
+        logger.info("Finish script: WinstonSalem -----|")
+    except Exception as e:
+        logger.error(e)
 
-# WinstonSalem()
+WinstonSalem()
 
 
 # def Minnesota():
 #     logger.info(">>> Start script: Minnesota")
-#     run_msp_crash_scraper(outputdata_dir)
+#     run_msp_crash_scraper(outputdata_dir, home_path=home_dir)
 #     logger.info("Finish script: Minnesota -----|")
 
 # Minnesota()

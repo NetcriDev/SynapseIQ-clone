@@ -14,11 +14,14 @@ from src.utils.logger_config import setup_logger
 from src.utils.info_dataframe import print_dataframe_info
 from config.config import get_connection
 from src.utils.split_name import split_driver_name
+from src.services.api_contact import DataIrisSession
+from src.utils.utils_api_contact import DatabaseType
 
 main_script_path = sys.path[0]
 logger = setup_logger("Kansas_execution", main_script_path)
 
-def insert_full_crash_data(df_expanded: pd.DataFrame, file_path: str):
+
+def insert_full_crash_data(df_expanded: pd.DataFrame, file_path: str, home_path: str = None):
     """
     Insert crash report data from a DataFrame into the database.
 
@@ -35,8 +38,10 @@ def insert_full_crash_data(df_expanded: pd.DataFrame, file_path: str):
         file_path (str): 
             The file path (carpet storage/kansas) where the original document (PDF) is stored. 
             This is saved along with each incident report.
+        home_path: is the root carpet where the main script is (/home/home/SynapseIq/)
 
     """
+    sesion = DataIrisSession(token_file_path= os.path.join(home_path ,"config/token.json"))
     conn = get_connection()
     cur = conn.cursor()
     logger.info("Start insert into DB: Kansas")
@@ -156,6 +161,16 @@ def insert_full_crash_data(df_expanded: pd.DataFrame, file_path: str):
             passenger_exists = False
 
         if not passenger_exists:
+            
+            info_contact = DataIrisSession.extract_phone_if_valid(
+                sesion.safe_get_contact_resolution(
+                    database_type=DatabaseType(1).name,
+                    first_name=driver_first, 
+                    last_name=driver_last,
+                    middle_name=driver_middle,
+                    age=age,
+                    state=state))
+
             # Insertar pasajero
             cur.execute("""
                 INSERT INTO passengers (
@@ -168,8 +183,13 @@ def insert_full_crash_data(df_expanded: pd.DataFrame, file_path: str):
                     technical_notes,
                     first_name,
                     middle_name,
-                    last_name
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    last_name,
+                    state,
+                    city,
+                    phone1,
+                    phone2,
+                    contact_resolution
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """, (
                 vehicle_id,
                 "Driver" if license else "Occupant",
@@ -180,7 +200,12 @@ def insert_full_crash_data(df_expanded: pd.DataFrame, file_path: str):
                 "Passenger record from CSV",
                 driver_first, 
                 driver_middle, 
-                driver_last
+                driver_last,
+                state,
+                city,
+                info_contact.get("CellPhone"),
+                info_contact.get("Phone"),
+                str(info_contact.get("contact_resolution"))
             ))
 
     conn.commit()
@@ -189,7 +214,7 @@ def insert_full_crash_data(df_expanded: pd.DataFrame, file_path: str):
     logger.info("Data inserted successfully!: Kansas")
 
 
-def run_kansas_crash_scraper(path_dir: str):
+def run_kansas_crash_scraper(path_dir: str, home_path: str = None):
     """
     Scrapes crash data from the Kansas crash reporting system.
 
@@ -197,6 +222,8 @@ def run_kansas_crash_scraper(path_dir: str):
     ----------
     path_dir : str
         Path to the directory where downloaded files, storage folder (storage) or results should be stored.
+    home_path : str
+        directory of main scriping (/home/SynapseIQ/)
 
     Returns
     -------
@@ -493,7 +520,7 @@ def run_kansas_crash_scraper(path_dir: str):
     except Exception as e:
         logger.warning("Error in struct dataframe")
     #insert into DB
-    insert_full_crash_data(df_expanded, kansas_dir)
+    insert_full_crash_data(df_expanded, kansas_dir, home_path)
     #add current date to file name ojo
     file_name='Data_Crashes_Kansas_24H_'+desired_date.strftime('%Y%m%d')+'.csv'
 

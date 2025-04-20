@@ -1,7 +1,7 @@
 ## Table of Contents
 
 - [Introduction](#introduction)
-- [Configuration](#configuration)
+- [Access to the virtual machine](#access-to-the-virtual-machine)
 - [Api execution](#api-execution)
 - [Scraping execution](#scraping-execution)
 - [File-System](#file-system)
@@ -11,11 +11,22 @@
 - [Design Pattern and File System](#design-pattern-and-file-system)
   - [Design Pattern](#design-pattern)
   - [Design Pattern: File System](#design-pattern-file-system)
-
+- [Api Contact](#api-contact)
+    - [1. Autentication](#1-autentication)
+    - [2. Send Search Criteria](#2-send-search-criteria)
+    - [3. Delete Search Criteria](#3-delete-search-criteria)
+    - [4. Obtener Resultados de la Búsqueda](#4-obtener-resultados-de-la-búsqueda)
+    - [5. Get Field Metadata](#5-get-field-metadata)
+    - [6. Get Record Details](#6-get-record-details)
+    - [7. Consult Available Databases](#7-consult-available-databases)
+    - [API Endpoints - Use Cases](#api-endpoints---use-cases)
+    - [Annexes: databaseType](#annexes-databasetype)
+    - [Annexes: Search criteria in consumer](#annexes-search-criteria-in-consumer)
+    - [Annexes: Field of databaseType cellphone](#annexes-field-of-databasetype-cellphone)
 # Introduction
 Repository layout (under construction)
 
-# Configuration
+# Access to the virtual machine
 ```
 ssh -i rel8tedkey01_rsa.prv root@52.116.202.144
 ```
@@ -343,3 +354,289 @@ src/
 └── main.py                      # Entry point
 
 ```
+# Api Contact
+
+```python
+import httpx
+
+BASE_URL = "https://www.datairis.co/V1"
+AUTH_URL = f"{BASE_URL}/auth/subscriber/"
+TOKEN_ID = None  # Será asignado tras autenticarse
+
+# Credenciales proporcionadas
+account_name = "*************"
+account_password = "********"
+token_id = "********"
+subscriber_id = 249
+subscriber_name = "********"
+subscriber_password = "********"
+
+def authenticate():
+    headers = {
+        "SubscriberID": str(subscriber_id),
+        "subscriberUsername": subscriber_name,
+        "SubscriberPassword": subscriber_password,
+        "AccountUsername": account_name,
+        "AccountPassword": account_password,
+        "AccountDetailsRequired": "true"
+    }
+
+    response = httpx.get(AUTH_URL + f"?AccessToken={token_id}", headers=headers)
+    response.raise_for_status()
+    data = response.json()
+    token = data["Response"]["responseDetails"]["TokenID"]
+    print("Autenticado con Token:", token)
+    return token
+
+def send_search_criteria(token: str, zip_code: str):
+    url = f"{BASE_URL}/criteria/search/addall/consumer"
+    headers = {
+        "Content-Type": "application/json",
+        "TokenID": token
+    }
+    payload = {"Physical_Zip": zip_code}
+    response = httpx.put(url, headers=headers, json=payload)
+    response.raise_for_status()
+    return response.json()
+...
+```
+
+### 1. Autentication
+Obtain a valid TokenID to authorize the following requests.
+URL:
+```
+GET https://www.datairis.co/V1/auth/subscriber/?AccessToken=TU_TOKEN
+```
+Required headers:
+
+* SubscriberID \
+* subscriberUsername \
+* SubscriberPassword \
+* (optional) AccountUsername, AccountPassword (for “Application” type users)
+
+expected response:
+```
+{
+  "Response": {
+    "responseDetails": {
+      "TokenID": "a1b2cx123xyz...", 
+      ...
+    },
+    "responseCode": "200",
+    "responseMessage": "Success"
+  }
+}
+
+```
+**Token lifespan: 8 to 10 hours. After that, it must be regenerated.**
+
+### 2. Send Search Criteria  
+a) Add a single criterion
+```
+PUT /V1/criteria/search/add/{databaseType}/{criteriaName}/{criteriaValue}
+```
+Example:
+```
+PUT /V1/criteria/search/add/consumer/Physical_Zip/61834
+```
+b) Add multiple criteria
+```
+PUT /V1/criteria/search/addall/{databaseType}
+```
+Body JSON::
+```
+{
+  "Physical_Zip": "61834",
+  "First_Name": "Adman",
+  "Last_Name": "Smith"
+}
+```
+c) Types of Match
+* Exact Match
+    For an exact search in fields like First_Name, Last_Name, Physical_City, etc., the value must be enclosed in double quotes:
+```
+{ "First_Name": "\"Javier\"" }
+```
+This restricts the results to exact text matches.
+* Multiple Values
+You can pass multiple comma-separated values to search for several matches:
+```
+{ "Physical_State": "NY,CA,TX" }
+```
+* Age
+The Ind_Age field accepts lists for approximate range searches:
+```
+{ "Ind_Age": "41,42,43" }
+```
+
+
+
+**Required header: TokenID**
+
+### 3. Delete Search Criteria 
+a) Delete a single criterion
+```
+DELETE /V1/criteria/search/delete/{databaseType}/{criteriaName}
+```
+b) Delete all criteria (reset search)
+```
+DELETE /V1/criteria/search/deleteall/{databaseType}
+```
+This is important because the search criteria are cumulative. If they are not deleted, any new search will include the conditions from previous ones. Therefore, using deleteall to reset the criteria between searches helps ensure accurate and isolated results.
+
+### 4. Obtener Resultados de la Búsqueda
+a) Count result
+```
+GET /V1/search/count/{databaseType}
+```
+Required header: TokenID
+
+b) get result
+```
+GET /V1/search/{databaseType}?Start=1&End=10
+```
+Pagination: use the `Start` and `End` parameters to navigate through the results.
+Response Structure:
+```
+{
+  "Response": {
+    "responseDetails": {
+      "SearchResult": {
+        "searchResultRecord": [
+          {
+            "resultFields": [
+              {"fieldID": "First_Name", "fieldValue": "Adams"},
+              {"fieldID": "Last_Name", "fieldValue": "Smith"},
+              ...
+            ]
+          }
+        ]
+      }
+    }
+  }
+}
+```
+
+### 5. Get Field Metadata
+```
+GET /V1/search/metadata/{databaseType}
+
+```
+Response:
+* List of available fields (`fieldID`)
+* Whether it is searchable (isSearchable)
+* Whether it is visible in the output (isVisible)
+* Supported operators
+* Special formats (if applicable)
+
+### 6. Get Record Details
+```
+GET /V1/search/recordDetail/{databaseType}/{fieldName}/{fieldValue}
+```
+Example:
+```
+GET /V1/search/recordDetail/consumer/Id/11132543091991
+```
+Returns: the full details of the record based on its ID.
+
+### 7. Consult Available Databases
+```
+GET /V1/search/mapped/database
+```
+Returns: List of bases like "consumer", "business", "cellphone".
+
+### API Endpoints - Use Cases
+
+| Use Case           | Endpoint                                                                 | Method  | Description                                                                                       |
+|--------------------|--------------------------------------------------------------------------|---------|---------------------------------------------------------------------------------------------------|
+| Authentication     | `/auth/subscriber/?AccessToken={token}`                                 | GET     | Authenticates the subscriber and returns a TokenID for use in subsequent calls                   |
+| Search Criteria     | `/criteria/search/add/{databaseType}/{criteriaName}/{criteriaValue}`   | PUT     | Adds a single search criterion                                                                    |
+| Search Criteria     | `/criteria/search/addall/{databaseType}`                               | PUT     | Adds multiple search criteria in a single JSON payload                                            |
+| Search Criteria     | `/criteria/search/deleteall/{databaseType}`                            | DELETE  | Deletes all current criteria for the specified databaseType (reset)                              |
+| Search Criteria     | `/criteria/search/getall/{databaseType}`                               | GET     | Retrieves all active search criteria for the session                                              |
+| Search & Data       | `/search/count/{databaseType}`                                         | GET     | Returns the number of current search matches                                                      |
+| Search & Data       | `/search/{databaseType}?Start=X&End=Y`                                 | GET     | Returns paginated search results                                                                  |
+| Search & Data       | `/search/recordDetail/{databaseType}/{RecordId}`                       | GET     | Returns all details of an individual record                                                       |
+| Metadata            | `/search/metadata/{databaseType}`                                     | GET     | Returns the available fields for search and output                                                |
+| Metadata            | `/lookup/metadata/{databaseType}?Search={field}&Start=X&End=Y&ApplyKeyword=false` | GET     | Returns decoded values for encoded fields                                                         |
+| Reports             | `/reports/{ReportType}/{AccountID}/{StartDate}/{EndDate}`              | GET     | Returns reports by date, month, week, database, etc. Types: ByDay, ByMonth, etc.                 |
+| Session             | `/session/getAllKeys`                                                  | GET     | Returns all session key names                                                                     |
+| Session             | `/session/get/{SessionKeyName}`                                        | GET     | Returns the value of a specific session key                                                       |
+| Session             | `/session/getAll`                                                      | GET     | Returns all session values                                                                        |
+| Session             | `/session/delete/{SessionKeyName}`                                     | DELETE  | Deletes a specific session key                                                                    |
+| Session             | `/session/deleteAll`                                                   | DELETE  | Deletes all session keys                                                                          |
+| Personalization     | `/personalization/availablelayouts`                                    | GET     | Returns available layouts for the subscriber                                                      |
+| Personalization     | `/personalization/theme`                                               | GET     | Returns CSS theme details configured for the user                                                 |
+
+
+
+### Annexes: databaseType
+Available Databases (`databaseType`)
+
+| `databaseType` | Description                                                                 |
+|----------------|-----------------------------------------------------------------------------|
+| `consumer`     | Database of individuals (demographic data, address, credit capacity, etc.) |
+| `business`     | Database of businesses (name, activity, revenue, etc.)                      |
+| `cellphone`    | Mobile records database (numbers and associated data)                       |
+| `newbusiness`  | Database of newly created or recently established businesses                |
+
+These databases define the context for the following operations:
+
+* searches (/search/...)
+* criteria submission (/criteria/search/...)
+* metadata (/search/metadata/...)
+* record details (/search/recordDetail/...)
+
+Each *databaseType* has a specific set of valid fields and criteria, which can be queried with:
+```
+GET /V1/search/metadata/{databaseType}
+```
+
+### Annexes: Search criteria in consumer
+Representative list of search criteria supported by the DataIRIS API for the *consumer* database, according to the official API documentation:
+Searchable Fields (`fieldID`)
+
+| `fieldID`                                | Description                                |
+|------------------------------------------|--------------------------------------------|
+| `First_Name`                             | First name                                 |
+| `Last_Name`                              | Last name                                  |
+| `Physical_Address`                       | Physical address                           |
+| `Physical_City`                          | City                                       |
+| `Physical_Zip`                           | ZIP code                                   |
+| `Physical_State`                         | State                                      |
+| `Email`                                  | Email address                              |
+| `Phone`                                  | Landline phone                             |
+| `CellPhone`                              | Mobile phone                               |
+| `Ind_Age`                                | Individual age                             |
+| `Ind_Gender_Code`                        | Gender (e.g., M / F)                       |
+| `Home_Market_Value`                      | Estimated home value                       |
+| `Credit_Capacity_Code`                   | Credit capacity code                       |
+| `Credit_Capacity_Description`            | Credit capacity description                |
+| `Income_Estimated_Household_Ranges`      | Estimated household income range           |
+| `Length_Of_Residence_Code`               | Length of residence                        |
+| `Home_Dwelling_Type_Code`                | Type of dwelling                           |
+| `Home_Owner_Renter_Code`                 | Owner or renter                            |
+| `NetWorth_Code`                          | Net worth code                             |
+| `Marital_Status_Code`                    | Marital status                             |
+| `Household_Id`                           | Household ID                               |
+| `Vendor_State_County`                    | Associated county                          |
+| `Id`                                     | Unique record ID                           |
+| `CBSA_Code`                              | Metropolitan area code                     |
+| `Tally_Physical_State`                   | Tallied state                              |
+| `Tally_Physical_Zip`                     | Tallied ZIP                                |
+| `Tally_County_Code`                      | Tallied county code                        |
+
+### Annexes: Field of databaseType cellphone
+Possible Fields
+
+| Field             | Description                                             |
+|-------------------|---------------------------------------------------------|
+| `CellPhone`       | Mobile phone number                                     |
+| `First_Name`      | First name of the holder                                |
+| `Last_Name`       | Last name of the holder                                 |
+| `Physical_Address`| Associated physical address                             |
+| `Physical_Zip`    | ZIP code linked to the number                           |
+| `Phone_Carrier`   | Phone service provider                                  |
+| `State / City`    | Geographic location                                     |
+| `Ind_Age`, `Gender` | Demographic characteristics (if applicable)          |
+
