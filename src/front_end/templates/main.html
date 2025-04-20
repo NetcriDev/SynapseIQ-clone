@@ -36,6 +36,7 @@
                         <thead>
                             <tr>
                                 <th><input type="checkbox" id="selectAll" onclick="toggleSelectAll(this)"></th>
+                                <th></th> <!-- Nova coluna para o ícone de expansão -->
                                 <th>Report N°</th>
                                 <th>Crash Date</th>
                                 <th>Driver Name</th>
@@ -417,6 +418,73 @@
 
 </style>
 
+<style>
+    .incident-details {
+        text-align: left;
+        font-size: 14px;
+        padding: 10px;
+        line-height: 1.5;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .incident-details h3 {
+        font-size: 16px;
+        margin: 0 0 10px;
+        font-weight: bold;
+        color: #333;
+    }
+
+    .general-info p,
+    .vehicles-section li {
+        margin: 4px 0;
+        color: #444;
+    }
+
+    .vehicles-section {
+        margin-top: 10px;
+    }
+
+    .vehicles-section h4 {
+        margin-bottom: 5px;
+        font-size: 15px;
+        font-weight: bold;
+        color: #222;
+    }
+
+    .vehicles-section ul {
+        list-style-type: disc;
+        padding-left: 20px;
+    }
+
+    .vehicles-section li {
+        padding-left: 5px;
+    }
+
+    /* Garante que os detalhes tenham espaço e fiquem bem visíveis */
+    .details-content {
+        padding: 15px;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        justify-content: flex-start;
+        background-color: #f9f9f9;
+    }
+
+    .expand-icon {
+        cursor: pointer;
+        user-select: none;
+        font-size: 12px;
+        padding: 0 10px;
+    }
+
+    .expand-icon:hover {
+        color: #0062ff;
+    }
+
+
+</style>
 
 <script>
     let data = [];
@@ -524,7 +592,8 @@
                     col12: `https://990c-52-116-202-144.ngrok-free.app/incident/pdf/view/${incidente.pdf_id || incidente.report_number}`,
                     col13: "--",
                     sourceFolder: folder,
-                    original: incidente // <-- isso aqui é essencial para recuperar os dados na hora de salvar
+                    original: incidente, // <-- isso aqui é essencial para recuperar os dados na hora de salvar
+                    passengerId: motorista.id,  // <-- adiciona aqui!
                 });
             });
         });
@@ -560,23 +629,24 @@
             const itemString = escapeHtml(JSON.stringify(item));
             const linkIcon = item.col12 ? `<a href="#" onclick="viewPDF('${item.col12}', '${item.id}')">🔗</a>` : "";
 
-            tableBody.innerHTML += `<tr>
+            tableBody.innerHTML += `
+            <tr class="main-row" data-id="${item.id}">
                 <td><input type="checkbox" class="rowCheckbox" data-id="${item.id}" data-item='${itemString}'></td>
+                <td class="expand-icon" onclick="toggleDetails('${item.id}')">▶</td>
                 <td>${item.id}</td>
                 <td>${item.col2}</td>
                 <td>${item.col3}</td>
                 <td>
-                <div style="display: flex; align-items: center; gap: 4px;">
-                    <input 
-                    type="text" 
-                    value="${item.col4}" 
-                    data-driver-name="${item.col3}" 
-                    data-report-id="${item.id}" 
-                    class="phoneInput" 
-                    style="width: 120px; padding: 4px;"
-                    />
-                    <button onclick="savePhoneNumber(this)" style="cursor: pointer;border:none;background:none;">💾</button>
-                </div>
+                    <div style="display: flex; align-items: center; gap: 4px;">
+                        <input 
+                            type="text" 
+                            value="${item.col4}" 
+                            data-passenger-id="${item.passengerId}" 
+                            class="phoneInput" 
+                            style="width: 120px; padding: 4px;"
+                            />
+                        <button onclick="savePhoneNumber(this)" style="cursor: pointer;border:none;background:none;">💾</button>
+                    </div>
                 </td>
                 <td>${item.col5}</td>
                 <td>${item.col6}</td>
@@ -587,9 +657,15 @@
                 <td>${item.col11}</td>
                 <td>${linkIcon}</td>    
                 <td>${item.col13}</td>
+            </tr>
+            <tr class="details-row" id="details-${item.id}" style="display: none;">
+                <td colspan="15">
+                    <div class="details-content" id="details-content-${item.id}">
+                        <!-- Conteúdo será carregado dinamicamente -->
+                    </div>
+                </td>
             </tr>`;
         });
-
         renderPagination(totalPages);
 
         // Sincroniza checkboxes com seleção global
@@ -615,21 +691,13 @@
         const row = button.closest("tr");
         const input = row.querySelector(".phoneInput");
         const phone = input.value;
-        const driverName = input.getAttribute("data-driver-name");
-        const reportId = input.getAttribute("data-report-id");
+        const passengerId = input.getAttribute("data-passenger-id");
 
-        // Descobrir o passageiro correspondente a esse reportId e nome
-        const incidenteOriginal = data.find(i => i.id === reportId);
-        const veiculo = incidenteOriginal ? incidenteOriginal.original?.vehicles.find(v =>
-            v.passengers?.some(p => p.name === driverName)) : null;
-
-        const passageiro = veiculo?.passengers.find(p => p.name === driverName);
-        if (!passageiro) {
-            alert("Driver not found");
+        if (!passengerId) {
+            alert("Passenger ID not found");
             return;
         }
 
-        const passengerId = passageiro.id;
         const url = `https://990c-52-116-202-144.ngrok-free.app/passenger/${passengerId}/phones`;
 
         try {
@@ -645,12 +713,12 @@
             if (!res.ok) throw new Error("Error saving phone number");
 
             alert("Phone number updated!");
-
         } catch (err) {
             console.error(err);
             alert("Error to update phone number.");
         }
     }
+
 
     function escapeHtml(unsafe) {
         return unsafe
@@ -926,6 +994,9 @@
     }
 
     function viewPDF(url, id) {
+        event.preventDefault(); // Previne o comportamento padrão do link
+        event.stopPropagation(); // Evita que o clique propague para a linha
+        
         document.getElementById("pdfViewer").data = url;
         document.getElementById("pdfId").textContent = id;
 
@@ -954,6 +1025,109 @@
             tableContainer.style.width = "100%";
         }, 300);
     }
+
+    function toggleDetails(reportId) {
+        const detailsRow = document.getElementById(`details-${reportId}`);
+        const expandIcon = document.querySelector(`tr.main-row[data-id="${reportId}"] .expand-icon`);
+        
+        if (detailsRow.style.display === 'none') {
+            // Se estiver recolhido, expande e carrega os detalhes
+            detailsRow.style.display = 'table-row';
+            expandIcon.textContent = '▼';
+            
+            // Carrega os detalhes apenas se ainda não foram carregados
+            if (!detailsRow.dataset.loaded) {
+                loadReportDetails(reportId);
+                detailsRow.dataset.loaded = 'true';
+            }
+        } else {
+            // Se estiver expandido, recolhe
+            detailsRow.style.display = 'none';
+            expandIcon.textContent = '▶';
+        }
+    }
+
+    async function loadReportDetails(reportId) {
+        
+        const detailsContent = document.getElementById(`details-content-${reportId}`);
+        detailsContent.innerHTML = '<p>Loading details...</p>';
+        
+        try {
+            // Encontra o item completo nos dados filtrados
+            const incident = filteredData.find(item => item.id === reportId);
+            
+            if (!incident) {
+                detailsContent.innerHTML = '<p>Error: Report not found</p>';
+                return;
+            }
+            
+            const originalData = incident.original;
+            
+            // Renderiza os detalhes baseado na cidade/estado
+            detailsContent.innerHTML = renderGenericDetails(originalData);
+            
+        } catch (error) {
+            console.error('Error loading report details:', error);
+            detailsContent.innerHTML = '<p>Error loading details</p>';
+        }
+    }
+
+    function renderGenericDetails(incident) {
+        const city = incident.city || '';
+        const state = incident.state || '';
+        const dateTime = incident.accident_datetime ? new Date(incident.accident_datetime).toLocaleString() : 'N/A';
+        const numberOfVehicles = Array.isArray(incident.vehicles) ? incident.vehicles.length : 0;
+
+        let html = `
+            <div class="incident-details">
+                <h3>Accident Details - ${incident.report_number || '--'}</h3>
+                <div class="general-info">
+                    <p><strong>Date & Time:</strong> ${dateTime}</p>
+                    <p><strong>Location:</strong> ${incident.street || '--'}, ${city}, ${state}</p>
+                    ${incident.weather_condition ? `<p><strong>Weather:</strong> ${incident.weather_condition}</p>` : ''}
+                    ${incident.road_condition ? `<p><strong>Road Condition:</strong> ${incident.road_condition}</p>` : ''}
+                    ${incident.crash_severity ? `<p><strong>Severity:</strong> ${incident.crash_severity}</p>` : ''}
+                    ${incident.narrative ? `<p><strong>Narrative:</strong> ${incident.narrative}</p>` : ''}
+                    ${incident.notes ? `<p><strong>Notes:</strong> ${incident.notes}</p>` : ''}
+                </div>
+        `;
+        // <p><strong>Units Involved:</strong> ${numberOfVehicles}</p>
+        // Mostrar veículos se existirem
+        if (numberOfVehicles > 0) {
+            html += `
+                <div class="vehicles-section">
+                    <h4>Vehicles Involved (${numberOfVehicles})</h4>
+                    <ul>
+            `;
+
+            incident.vehicles.forEach((vehicle, idx) => {
+                const nameParts = [
+                    vehicle.driver_first_name,
+                    vehicle.driver_middle_name,
+                    vehicle.driver_last_name
+                ].filter(part => part && part.trim() !== "");
+
+                const driverName = nameParts.length > 0 
+                    ? nameParts.join(" ") 
+                    : (vehicle.driver_name || "--");
+
+                html += `
+                    <li>
+                        <strong>Unit ${idx + 1} driver:</strong> ${driverName}<br>
+                    </li>
+                `;
+            });
+
+            html += `</ul></div>`;
+        }
+
+            html += `</div>`; // Fecha a div incident-details
+
+            return html;
+        }
+
+
+
 
     document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("export-excel").addEventListener("click", downloadCSV);
