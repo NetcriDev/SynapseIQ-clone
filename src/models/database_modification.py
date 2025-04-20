@@ -1,9 +1,15 @@
 import psycopg2
-from config.config import get_connection
+#from config.config import get_connection
 
 try:
     # Establecer conexión y cursor
-    conexion = get_connection()
+    conexion = psycopg2.connect(
+        dbname="crash_records_001",
+        user="synapseiq",
+        password="SynapseIQ$2025",
+        host="localhost",
+        port="5432"
+    )
     cursor = conexion.cursor()
 
     # 1. Agregar columnas state, city, street
