@@ -36,10 +36,6 @@
                         <thead>
                             <tr>
                                 <th><input type="checkbox" id="selectAll" onclick="toggleSelectAll(this)"></th>
-<<<<<<< HEAD:src/front_end/main.html
-=======
-                                <th></th> <!-- Nova coluna para o ícone de expansão -->
->>>>>>> e4a2d09c66c446174a1e0d6cf086c46806a3bdaa:src/front_end/templates/main.html
                                 <th>Report N°</th>
                                 <th>Crash Date</th>
                                 <th>Driver Name</th>
@@ -512,25 +508,15 @@
         }
     }
 
-<<<<<<< HEAD:src/front_end/main.html
 
     // const API_URL = "https://990c-52-116-202-144.ngrok-free.app/incident/search?page=1&page_size=2000";
     // let data = [];
     // let selectedItems = new Set();
-=======
-    // const API_URL = "https://990c-52-116-202-144.ngrok-free.app/incident/search?page=1&page_size=2000";
-    // let filteredData = [];         // Armazena os dados filtrados globalmente
-    // const selectedItems = new Set(); // Armazena os itens selecionados globalmente
->>>>>>> e4a2d09c66c446174a1e0d6cf086c46806a3bdaa:src/front_end/templates/main.html
 
     // let currentPage = 1;
     // const rowsPerPage = 20;
 
-<<<<<<< HEAD:src/front_end/main.html
     // async function buscarIncidentes() {
-=======
-    // async function searchIncidents() {
->>>>>>> e4a2d09c66c446174a1e0d6cf086c46806a3bdaa:src/front_end/templates/main.html
     //     try {
     //         const resposta = await fetch(API_URL, {
     //             headers: { "ngrok-skip-browser-warning": "true" }
@@ -539,15 +525,9 @@
     //         if (!resposta.ok) throw new Error(`Erro: ${resposta.status}`);
 
     //         const dados = await resposta.json();
-<<<<<<< HEAD:src/front_end/main.html
     //         data = transformarDados(dados);
     //         atualizarRelacionamentosEstadoCidade(dados); // <-- ESSENCIAL!
     //         carregarFiltros();
-=======
-    //         data = transformData(dados);
-    //         updateRelationStateCity(dados); // <-- ESSENCIAL!
-    //         loadFilters();
->>>>>>> e4a2d09c66c446174a1e0d6cf086c46806a3bdaa:src/front_end/templates/main.html
     //         renderTable();
 
     //     } catch (erro) {
@@ -555,11 +535,7 @@
     //     }
     // }
 
-<<<<<<< HEAD:src/front_end/main.html
     function transformarDados(dados) {
-=======
-    function transformData(dados) {
->>>>>>> e4a2d09c66c446174a1e0d6cf086c46806a3bdaa:src/front_end/templates/main.html
         let incidentesFormatados = [];
 
         dados.forEach(incidente => {
