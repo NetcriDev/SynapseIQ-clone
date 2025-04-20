@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 from src.utils.logger_config import setup_logger
 from config.config import get_connection
 from src.utils.info_dataframe import print_dataframe_info
+from src.utils.texas_insert_into_db_temp import insert_crash_data_to_db_temp
 
 main_script_path = sys.path[0]
 logger = setup_logger("Texas_execution", main_script_path)
@@ -174,6 +175,10 @@ def read_and_save_recent_csv(raw_path: str = None, processed_path: str = None, m
                     #logger.info(df.columns)
                     print_dataframe_info(df)
                     insert_crash_and_passengers(df)
+                    try:
+                        insert_crash_data_to_db_temp(df,output_name)
+                    except Exception as e:
+                        logger.error(e)
                 except Exception as e:
                     logger.error(e)
                 logger.info(f"Saved to: {output_path}")

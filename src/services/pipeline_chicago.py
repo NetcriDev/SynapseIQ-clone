@@ -3,6 +3,7 @@ from config.config import get_connection
 import psycopg2, os
 import json
 from datetime import datetime
+from glob import glob
 
 def insert_incident_and_vehicles_chi(data: dict, path_output: str):
     try:
@@ -93,8 +94,9 @@ def insert_incident_and_vehicles_chi(data: dict, path_output: str):
         print(f" Error en la inserción: {e}")
 
 # # Aplicar a los archivos cargados
-# all_pdfs = glob("/ruta/a/pdfs/*.pdf")
-pdf_file = "/Users/cristianb/Documents/Python/rel8ed/SynapseIQ_Lab_01/JJ145209.pdf"
-extracted_data = parse_crash_pdf(pdf_file)
-insert_incident_and_vehicles_chi(extracted_data, "/Users/cristianb/Documents/Python/rel8ed/SynapseIQ_staging/storage")
-print(extracted_data)
+all_pdfs = glob("/home/data/chicago/*.pdf")
+#pdf_file = "/Users/cristianb/Documents/Python/rel8ed/SynapseIQ_Lab_01/JJ145209.pdf"
+for path in all_pdfs:
+    extracted_data = parse_crash_pdf(path)
+    insert_incident_and_vehicles_chi(extracted_data, "/home/data")
+    print(extracted_data)
