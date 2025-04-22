@@ -755,7 +755,7 @@
     //     }
     // }
 
-    let pageGroupStart = 1;
+    // let pageGroupStart = 1;
 
     // function renderPagination(totalPages) {
     //     const container = document.getElementById("pagination");
@@ -785,7 +785,7 @@
         // Botões "Ver X" ANTES do grupo atual
         for (let i = 1; i < pageGroupStart; i += groupSize) {
             const jumpBackBtn = document.createElement("button");
-            jumpBackBtn.textContent = `${i}`;
+            jumpBackBtn.textContent = `◀ (${i})`;
             jumpBackBtn.classList.add("special");
             jumpBackBtn.onclick = () => {
                 pageGroupStart = i;
@@ -810,7 +810,7 @@
         // Botões "Ver X" DEPOIS do grupo atual
         for (let i = groupEnd + 1; i <= totalPages; i += groupSize) {
             const jumpNextBtn = document.createElement("button");
-            jumpNextBtn.textContent = `${i}`;
+            jumpNextBtn.textContent = `(${i}) ▶`;
             jumpNextBtn.classList.add("special");
             jumpNextBtn.onclick = () => {
                 pageGroupStart = i;
