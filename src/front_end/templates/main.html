@@ -525,7 +525,7 @@
     //         if (!resposta.ok) throw new Error(`Erro: ${resposta.status}`);
 
     //         const dados = await resposta.json();
-    //         data = transformarDados(dados);
+    //         data = transformData(dados);
     //         atualizarRelacionamentosEstadoCidade(dados); // <-- ESSENCIAL!
     //         carregarFiltros();
     //         renderTable();
@@ -535,7 +535,7 @@
     //     }
     // }
 
-    function transformarDados(dados) {
+    function transformData(dados) {
         let incidentesFormatados = [];
 
         dados.forEach(incidente => {
