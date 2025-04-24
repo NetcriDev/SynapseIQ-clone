@@ -36,6 +36,7 @@
                         <thead>
                             <tr>
                                 <th><input type="checkbox" id="selectAll" onclick="toggleSelectAll(this)"></th>
+                                <th></th> <!-- Nova coluna para o ícone de expansão -->
                                 <th>Report N°</th>
                                 <th>Crash Date</th>
                                 <th>Driver Name</th>
@@ -486,8 +487,8 @@
 </style>
 
 <script>
-    let data = [];
-    let selectedItems = new Set();
+    let filteredData = [];         // Armazena os dados filtrados globalmente
+    const selectedItems = new Set(); // Armazena os itens selecionados globalmente
 
     let currentPage = 1;
     const rowsPerPage = 20;
@@ -508,15 +509,14 @@
         }
     }
 
-
     // const API_URL = "https://990c-52-116-202-144.ngrok-free.app/incident/search?page=1&page_size=2000";
-    // let data = [];
-    // let selectedItems = new Set();
+    // let filteredData = [];         // Armazena os dados filtrados globalmente
+    // const selectedItems = new Set(); // Armazena os itens selecionados globalmente
 
     // let currentPage = 1;
     // const rowsPerPage = 20;
 
-    // async function buscarIncidentes() {
+    // async function searchIncidents() {
     //     try {
     //         const resposta = await fetch(API_URL, {
     //             headers: { "ngrok-skip-browser-warning": "true" }
@@ -525,9 +525,9 @@
     //         if (!resposta.ok) throw new Error(`Erro: ${resposta.status}`);
 
     //         const dados = await resposta.json();
-    //         data = transformarDados(dados);
-    //         atualizarRelacionamentosEstadoCidade(dados); // <-- ESSENCIAL!
-    //         carregarFiltros();
+    //         data = transformData(dados);
+    //         updateRelationStateCity(dados); // <-- ESSENCIAL!
+    //         loadFilters();
     //         renderTable();
 
     //     } catch (erro) {
@@ -535,7 +535,7 @@
     //     }
     // }
 
-    function transformarDados(dados) {
+    function transformData(dados) {
         let incidentesFormatados = [];
 
         dados.forEach(incidente => {
@@ -757,24 +757,6 @@
 
     let pageGroupStart = 1;
 
-    // function renderPagination(totalPages) {
-    //     const container = document.getElementById("pagination");
-    //     container.innerHTML = "";
-
-    //     for (let i = 1; i <= totalPages; i++) {
-    //         const btn = document.createElement("button");
-    //         btn.textContent = i;
-    //         btn.style.fontWeight = i === currentPage ? "bold" : "normal";
-    //         btn.onclick = () => {
-    //             currentPage = i;
-    //             renderTable();
-    //         };
-    //         container.appendChild(btn);
-    //     }
-    // }
-
-    let pageGroupStart = 1;
-
     function renderPagination(totalPages) {
         const container = document.getElementById("pagination");
         container.innerHTML = "";
@@ -785,7 +767,7 @@
         // Botões "Ver X" ANTES do grupo atual
         for (let i = 1; i < pageGroupStart; i += groupSize) {
             const jumpBackBtn = document.createElement("button");
-            jumpBackBtn.textContent = `${i}`;
+            jumpBackBtn.textContent = `◀ (${i})`;
             jumpBackBtn.classList.add("special");
             jumpBackBtn.onclick = () => {
                 pageGroupStart = i;
@@ -810,7 +792,7 @@
         // Botões "Ver X" DEPOIS do grupo atual
         for (let i = groupEnd + 1; i <= totalPages; i += groupSize) {
             const jumpNextBtn = document.createElement("button");
-            jumpNextBtn.textContent = `${i}`;
+            jumpNextBtn.textContent = `(${i}) ▶`;
             jumpNextBtn.classList.add("special");
             jumpNextBtn.onclick = () => {
                 pageGroupStart = i;
@@ -820,7 +802,6 @@
             container.appendChild(jumpNextBtn);
         }
     }
-
 
     // Função para carregar todos os filtros de forma interdependente
     function loadFilters() {

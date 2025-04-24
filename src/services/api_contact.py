@@ -429,7 +429,7 @@ class DataIrisSession:
     def extract_phone_if_valid(data: dict) -> dict:
         """
         Returns phone and cellphone from the first result if conditions are met:
-        - record_count <= 5
+        - record_count <= 10
         - sufficient_criteria == True
         - result not empty
         """
@@ -447,7 +447,14 @@ class DataIrisSession:
                     "contact_resolution": "[]"
                 }
 
-        if data.get("record_count", 0) <= 5 and data.get("sufficient_criteria") is True:
+        if data.get("record_count") == 1:
+            return {
+                    "CellPhone": None,
+                    "Phone": None,
+                    "contact_resolution": data.get("result", [])
+                }      
+     
+        if data.get("record_count", 0) <= 10 and data.get("sufficient_criteria") is True:
             results = data.get("result", [])
             if results:
                 first = results[0]
