@@ -87,7 +87,7 @@ class DataIrisSession:
                         logger.error("Token missing or expired. Reauthenticating...")
                         self.authenticate()
             except Exception as e:
-                logger.error("Error reading token file. Reauthenticating...", str(e))
+                logger.error("Error reading token file: ", str(e))
         else:
             logger.error("Token missing or expired. Reauthenticating...")
             self.authenticate()
@@ -106,7 +106,7 @@ class DataIrisSession:
         response = httpx.put(url, headers={"TokenID": self.token_id}, json=filters)
         response.raise_for_status()
 
-    def get_results(self, database_type: str, start: int = 1, end: int = 5): 
+    def get_results(self, database_type: str, start: int = 1, end: int = 20): 
         self.ensure_authenticated()
         url = f"{BASE_URL}/search/{database_type}?Start={start}&End={end}"
         response = httpx.get(url, headers={"TokenID": self.token_id})
@@ -169,7 +169,7 @@ class DataIrisSession:
         city: Optional[str] = None,
         gender: Optional[str] = None,
         start: int = 1,
-        end: int = 10
+        end: int = 20
     ) -> List[Dict[str, str]]:
         """
         All 'null-like' values (e.g., 'null', 'NULL', '', ' ') are treated as None.
@@ -278,7 +278,7 @@ class DataIrisSession:
 
     def get_lookup_values(self, database_type: str, field: str, value: str = " ", start: int = 0, end: int = 100) -> list:
         """
-        Query valid values ​​for a search field (e.g. Physical_State, Physical_City).
+        Query valid values for a search field (e.g. Physical_State, Physical_City).
         """
         url = (
             f"{BASE_URL}/lookup/metadata/{database_type}"
@@ -303,7 +303,7 @@ class DataIrisSession:
         city: Optional[str] = None,
         gender: Optional[str] = None,
         start: int = 1,
-        end: int = 10
+        end: int = 20
     ) -> dict:
         """
         Performs a contact resolution search on the DataIRIS API and returns a summary result.
@@ -344,7 +344,17 @@ class DataIrisSession:
             start=start,
             end=end
         )
-        logger.info(result)
+        logger.info(f"Response get from api (all critere): {result}")
+
+        if not result or (isinstance(result, list) and len(result) == 0):
+            logger.warning("Empty or None result detected. Retrying with less criteria...")
+            result = self.search_person_by_name(
+                database_type=database_type,
+                first_name=first_name,
+                last_name=last_name,
+                middle_name=middle_name
+            )
+
         return {
             "record_count": len(result),
             "sufficient_criteria": sufficient_criteria,
@@ -361,7 +371,7 @@ class DataIrisSession:
         city: Optional[str] = None,
         gender: Optional[str] = None,
         start: int = 1,
-        end: int = 10) -> Optional[dict]:
+        end: int = 20) -> Optional[dict]:
 
         """
         Intenta ejecutar get_contact_resolution hasta max_retries veces con pausa entre intentos.
@@ -428,10 +438,11 @@ class DataIrisSession:
     @staticmethod
     def extract_phone_if_valid(data: dict) -> dict:
         """
-        Returns phone and cellphone from the first result if conditions are met:
+        Returns phone and cellphone from the result if conditions are met:
         - record_count <= 10
         - sufficient_criteria == True
         - result not empty
+        - logic varies if record_count < 10 or >= 10
         """
         if not data or not isinstance(data, dict):
             return {
@@ -440,31 +451,43 @@ class DataIrisSession:
                     "contact_resolution": None
                 }
         
-        if data.get("record_count") == 0:
+        record_count = data.get("record_count", 0)
+        sufficient = data.get("sufficient_criteria") is True
+        results = data.get("result", [])
+        
+        if record_count == 0:
             return {
                     "CellPhone": None,
                     "Phone": None,
                     "contact_resolution": "[]"
                 }
 
-        if data.get("record_count") == 1:
+        if record_count == 1:
             return {
                     "CellPhone": None,
                     "Phone": None,
-                    "contact_resolution": data.get("result", [])
-                }      
-     
-        if data.get("record_count", 0) <= 10 and data.get("sufficient_criteria") is True:
-            results = data.get("result", [])
-            if results:
+                    "contact_resolution": results
+                }     
+
+        if record_count <= 20:
+            if record_count < 10 and sufficient:
                 first = results[0]
                 return {
                     "CellPhone": first.get("Phone", ""),
                     "Phone": first.get("CellPhone", ""),
-                    "contact_resolution": data.get("result", [])
+                    "contact_resolution": results
                 }
-        return {
+            else:
+                subset = results[:10]
+                first = subset[0]
+                return {
                     "CellPhone": None,
                     "Phone": None,
-                    "contact_resolution": None
+                    "contact_resolution": subset
                 }
+        logger.error("Api contact there is no response return")
+        return {
+            "CellPhone": None,
+            "Phone": None,
+            "contact_resolution": None
+        }

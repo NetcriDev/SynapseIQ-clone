@@ -89,7 +89,7 @@ def rename_downloaded_file(download_dir, old_name, begin_date, end_date, abbrevi
 
 def load_csv_from_raw(path):
     df = pd.read_csv(path, skiprows=10)
-    logger.info(df.head())
+    #logger.info(df.head())
     return df
 
 def run_scraper(data_dir: str = None, home_dir: str = None):

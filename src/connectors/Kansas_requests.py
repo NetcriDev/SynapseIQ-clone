@@ -63,7 +63,7 @@ def insert_full_crash_data(df_expanded: pd.DataFrame, file_path: str, home_path:
             accident_dt = datetime.strptime(accident_dt_str, "%m/%d/%Y %H:%M")
         except ValueError:
             accident_dt = None
-            logger.error("Error in parse datetime")
+            logger.error("[66] Error in parse datetime")
 
         row_json = json.dumps(row.to_dict())
 
@@ -186,10 +186,9 @@ def insert_full_crash_data(df_expanded: pd.DataFrame, file_path: str, home_path:
                     last_name,
                     state,
                     city,
-                    phone1,
                     phone2,
                     contact_resolution
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """, (
                 vehicle_id,
                 "Driver" if license else "Occupant",
@@ -203,15 +202,14 @@ def insert_full_crash_data(df_expanded: pd.DataFrame, file_path: str, home_path:
                 driver_last,
                 state,
                 city,
-                info_contact.get("CellPhone"),
-                info_contact.get("Phone"),
+                str(info_contact.get("CellPhone")) + ", " + str(info_contact.get("Phone")),
                 str(info_contact.get("contact_resolution"))
             ))
 
     conn.commit()
     cur.close()
     conn.close()
-    logger.info("Data inserted successfully!: Kansas")
+    logger.info("[214] Data inserted successfully!: Kansas")
 
 
 def run_kansas_crash_scraper(path_dir: str, home_path: str = None):
@@ -306,7 +304,7 @@ def run_kansas_crash_scraper(path_dir: str, home_path: str = None):
                 proxies=proxies
                 )
         except Exception as e:
-            logger.error(e)
+            logger.error(f"[309]: {e}")
 
         # --------------------------------------------------- find main div ans scrap links and id -----------------------------------------------------------
         soup = BeautifulSoup(response.content, 'html.parser')
@@ -477,10 +475,10 @@ def run_kansas_crash_scraper(path_dir: str, home_path: str = None):
             # Converte a página para PDF
             try:
                 HTML(url).write_pdf(output_pdf)
-                logger.info(f"PDF generated correctly in: {output_pdf}")
+                #logger.info(f"PDF generated correctly in: {output_pdf}")
                 logger.info(f"Page saved as {output_pdf}")
             except Exception as e:
-                logger.error(f"Error generating PDF: {e}")
+                logger.error(f"[483] Error generating PDF: {e}")
 
         # DF for the current day in "days"
         df_temp = pd.DataFrame({
@@ -516,9 +514,10 @@ def run_kansas_crash_scraper(path_dir: str, home_path: str = None):
     df_expanded = df.explode(cols_to_explode, ignore_index=True)
     # info datafram
     try:
-        print_dataframe_info(df_expanded)
+        #print_dataframe_info(df_expanded)
+        logger.warning("[518] dataframe correct")
     except Exception as e:
-        logger.warning("Error in struct dataframe")
+        logger.warning("[521] Error in struct dataframe")
     #insert into DB
     insert_full_crash_data(df_expanded, kansas_dir, home_path)
     #add current date to file name ojo
@@ -528,7 +527,7 @@ def run_kansas_crash_scraper(path_dir: str, home_path: str = None):
     file_name=os.path.join(path_dir, "kansas",file_name)
 
     df_expanded.to_csv(file_name,index=False)
-    logger.info(f"File csv loaded!: {file_name}")
+    logger.info(f"[531] File csv loaded!: {file_name}")
 
 # Add src/ folder to sys.path to import scraper and parser modules
 #base_dir = os.path.dirname(os.path.abspath(__file__))

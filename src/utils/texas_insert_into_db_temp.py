@@ -89,14 +89,15 @@ def insert_crash_data_to_db_temp(df: pd.DataFrame, pdf_base_path: str):
             # Insert incident
             cur.execute("""
                 INSERT INTO incident_reports (
-                    report_number, accident_datetime, city, street, zip, crash_severity,
+                    report_number, internal_report_number, accident_datetime, city, street, zip, crash_severity,
                     source_url, original_document_location, generation_date, json, narrative,
                     nearest_center_d, number_of_units, state, original_format
                 )
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 RETURNING id
             """, (
                 report_number,
+                "tx" + str(report_number),
                 accident_datetime,
                 city,
                 street,
@@ -198,4 +199,4 @@ def insert_crash_data_to_db_temp(df: pd.DataFrame, pdf_base_path: str):
     conn.commit()
     cur.close()
     conn.close()
-    logger.info("Data inserted successfully.")
+    logger.info("Data inserted successfully in temporal DB.")

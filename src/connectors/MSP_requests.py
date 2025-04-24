@@ -47,7 +47,7 @@ def insert_dataframe_to_db(df: pd.DataFrame, pdf_base_path: str, home_path: str 
         try:
             accident_datetime = pd.to_datetime(row['Date']) if pd.notna(row['Date']) else None
         except Exception as e:
-            logger.error(e)
+            logger.error(f"[50]: {e}")
         city = row['City'].strip() if pd.notna(row['City']) else ''
         state = (lambda t: t.split(",")[1].strip() if len(t.split(",")) > 1 and len(t.split(",")[1].strip()) == 2 else "minnesota")(city)
         street = row['Location'].strip() if pd.notna(row['Location']) else ''
@@ -147,10 +147,9 @@ def insert_dataframe_to_db(df: pd.DataFrame, pdf_base_path: str, home_path: str 
                     last_name,
                     state,
                     city,
-                    phone1,
                     phone2,
                     contact_resolution   
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """, (
                 vehicle_id,
                 'Driver',
@@ -162,8 +161,7 @@ def insert_dataframe_to_db(df: pd.DataFrame, pdf_base_path: str, home_path: str 
                 driver_last,
                 state,
                 city,
-                info_contact.get("CellPhone"),
-                info_contact.get("Phone"),
+                str(info_contact.get("CellPhone")) + ", " + str(info_contact.get("Phone")),
                 str(info_contact.get("contact_resolution"))            
             ))
 
@@ -359,7 +357,7 @@ def run_msp_crash_scraper(output_dir, home_path: str = None):
         description_out.append(description)
 
         # Exibir os resultados
-        logger.info("Drivers: " + str(driver_names))
+        #logger.info("Drivers: " + str(driver_names))
         # print("City:", citys)
         # print("Age:", Age)
         # print("--------------------")

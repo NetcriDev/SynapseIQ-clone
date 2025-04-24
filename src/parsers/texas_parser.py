@@ -49,7 +49,7 @@ def insert_crash_and_passengers(df: pd.DataFrame):
             crash_date = pd.to_datetime(crash_date_raw, errors='coerce') if crash_date_raw else None
 
             if crash_id is None or crash_date is None:
-                print(f"Fila {idx} omitida: Crash ID o Crash Date nulo.")
+                #print(f"Fila {idx} omitida: Crash ID o Crash Date nulo.")
                 continue  # Saltar filas incompletas
 
             # Verificar si ya existe el registro
@@ -71,7 +71,6 @@ def insert_crash_and_passengers(df: pd.DataFrame):
             ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             RETURNING id;
             """
-
             crash_values = (
                 crash_id,
                 f"tx{crash_id}",  # Generar internal_crash_id basado en Crash ID
@@ -130,11 +129,11 @@ def insert_crash_and_passengers(df: pd.DataFrame):
             cur.execute(insert_passenger_query, passenger_values)
 
         conn.commit()
-        logger.info("Datos insertados exitosamente.")
+        logger.info("Datos insertados exitosamente into DB.")
 
     except Exception as e:
         conn.rollback()
-        print(f"Error insertando datos: {e}")
+        print(f"[136] Error insertando datos (crash and passaengers): {e}")
 
     finally:
         cur.close()
@@ -172,15 +171,14 @@ def read_and_save_recent_csv(raw_path: str = None, processed_path: str = None, m
                     output_path = os.path.join(processed_folder, output_name)
                     os.makedirs(processed_folder, exist_ok=True)
                     df.to_csv(output_path, index=False)
-                    #logger.info(df.columns)
-                    print_dataframe_info(df)
+                    #print_dataframe_info(df)
                     insert_crash_and_passengers(df)
                     try:
                         insert_crash_data_to_db_temp(df,output_name)
                     except Exception as e:
-                        logger.error(e)
+                        logger.error(f"[180] Temporal insert: {e}")
                 except Exception as e:
-                    logger.error(e)
+                    logger.error(f"[182]: {e}")
                 logger.info(f"Saved to: {output_path}")
                 return df
 

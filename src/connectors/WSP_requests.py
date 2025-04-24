@@ -158,10 +158,9 @@ def insert_dataframe_into_db(df: pd.DataFrame, file_path: str, home_path: str = 
                         state,
                         city,
                         street,
-                        phone1,
                         phone2,
                         contact_resolution
-                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """, (
                     vehicle_id,
                     'Driver',
@@ -175,8 +174,7 @@ def insert_dataframe_into_db(df: pd.DataFrame, file_path: str, home_path: str = 
                     state,
                     city,
                     street,
-                    info_contact.get("CellPhone"),
-                    info_contact.get("Phone"),
+                    str(info_contact.get("CellPhone")) + ", " + str(info_contact.get("Phone"),),
                     str(info_contact.get("contact_resolution"))
                 ))
 
@@ -517,7 +515,7 @@ def run_wsp_crash_scraper(output_dir, home_path: str = None):
                             pdf.write(chunk)
 
                 # Criar uma cópia do arquivo como "xx.pdf"
-                logger.warning(" list_report: " + str(list_report[k]))
+                logger.warning(" Axiliar list_report: " + str(list_report[k]))
                 with open(os.path.join(path_ws,'temp_file.pdf'), "rb") as temp_pdf, open(os.path.join(path_ws,list_report[k]+".pdf"), "wb") as copy_pdf:
                     copy_pdf.write(temp_pdf.read())
 
