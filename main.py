@@ -17,7 +17,7 @@ sys.path.insert(0, base_dir)
 #outputdata_dir = "/Users/cristianb/Documents/Python/rel8ed/SynapseIQ_staging/storage"
 #home_dir = "/Users/cristianb/Documents/Python/rel8ed/SynapseIQ_staging"
 outputdata_dir = "/home/data"
-home_dir="home/SynapseIQ"
+home_dir="/home/SynapseIQ"
 
 main_script_path = sys.path[0]
 logger= setup_logger("Scheduled_execution", main_script_path)
