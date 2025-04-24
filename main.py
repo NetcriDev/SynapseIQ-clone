@@ -17,7 +17,7 @@ sys.path.insert(0, base_dir)
 #outputdata_dir = "/Users/cristianb/Documents/Python/rel8ed/SynapseIQ_staging/storage"
 #home_dir = "/Users/cristianb/Documents/Python/rel8ed/SynapseIQ_staging"
 outputdata_dir = "/home/data"
-home_dir="home/data/SynapseIQ"
+home_dir="home/SynapseIQ"
 
 main_script_path = sys.path[0]
 logger= setup_logger("Scheduled_execution", main_script_path)
@@ -27,7 +27,7 @@ now = datetime.now()
 
 sched = BlockingScheduler()
 
-@sched.scheduled_job('interval', minutes=45, next_run_time=now)
+@sched.scheduled_job('interval', minutes=90, next_run_time=now)
 def kansas():
     logger.info(">>> Start script: Kansas")
     try:
@@ -36,7 +36,7 @@ def kansas():
     except Exception as e:
         logger.error(e)
 
-@sched.scheduled_job('interval', minutes=45, next_run_time=now + timedelta(minutes=5))
+@sched.scheduled_job('interval', minutes=90, next_run_time=now + timedelta(minutes=5))
 def WinstonSalem():
     logger.info(">>> Start script: WinstonSalem")
     try:
@@ -46,7 +46,7 @@ def WinstonSalem():
         logger.error(e)
 
 
-@sched.scheduled_job('interval', minutes=45, next_run_time=now + timedelta(minutes=10))
+@sched.scheduled_job('interval', minutes=180, next_run_time=now + timedelta(minutes=10))
 def Minnesota():
     logger.info(">>> Start script: Minnesota")
     try:
@@ -55,7 +55,7 @@ def Minnesota():
     except Exception as e:
         logger.error(e)
 
-@sched.scheduled_job('interval', minutes=45, next_run_time=now + timedelta(minutes=15))
+@sched.scheduled_job('interval', minutes=90, next_run_time=now + timedelta(minutes=15))
 def Texas():
     logger.info(">>> Start script: Texas")
     try:

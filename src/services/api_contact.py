@@ -49,9 +49,11 @@ class DataIrisSession:
         self.token_id = data["Response"]["responseDetails"]["TokenID"]
         self.token_expiration = datetime.now() + timedelta(hours=10)
 
-        logger.info("Token obtained:", self.token_id)
+        logger.info(f"Token obtained: {self.token_id}")
 
         if self.token_file_path:
+            # Crear el directorio si no existe
+            os.makedirs(os.path.dirname(self.token_file_path), exist_ok=True)
             with open(self.token_file_path, "w") as f:
                 json.dump({
                     "token_id": self.token_id,

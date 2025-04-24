@@ -18,6 +18,17 @@ from src.utils.utils_api_contact import DatabaseType
 main_script_path = sys.path[0]
 logger = setup_logger("Minnesota_execution", main_script_path)
 
+def safe_int(value):
+    if pd.isna(value):
+        return None
+    str_val = str(value).strip().lower()
+    if str_val in ("n/a", "null", "none", ""):
+        return None
+    try:
+        return int(float(value))
+    except ValueError:
+        return None
+
 def insert_dataframe_to_db(df: pd.DataFrame, pdf_base_path: str, home_path: str = None):
     """
     Insert crash report data from a DataFrame into the database.
@@ -43,6 +54,7 @@ def insert_dataframe_to_db(df: pd.DataFrame, pdf_base_path: str, home_path: str 
     cur = conn.cursor()
 
     for _, row in df.iterrows():
+        logger.info(f"[46] Row to insert into data base :{row}")
         report_number = str(row['ID']).strip()
         try:
             accident_datetime = pd.to_datetime(row['Date']) if pd.notna(row['Date']) else None
@@ -54,7 +66,7 @@ def insert_dataframe_to_db(df: pd.DataFrame, pdf_base_path: str, home_path: str 
         source_url = row['URL'].strip() if pd.notna(row['URL']) else ''
         narrative = row['Description'].strip() if pd.notna(row['Description']) else ''
         driver = row['Driver'].strip() if pd.notna(row['Driver']) else ''
-        age = int(row['Age']) if pd.notna(row['Age']) else None
+        age = safe_int(row["Age"])
         media_contact = row['Media Contact'].strip() if pd.notna(row['Media Contact']) else ''
         crash_severity = row['Type'].strip() if pd.notna(row['Type']) else ''
         original_document_location = os.path.join(pdf_base_path,"ms"+ report_number +".pdf")
