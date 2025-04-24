@@ -31,7 +31,7 @@ sched = BlockingScheduler()
 def kansas():
     logger.info(">>> Start script: Kansas")
     try:
-        run_kansas_crash_scraper(path_dir=outputdata_dir, home_dir=home_dir)
+        run_kansas_crash_scraper(path_dir=outputdata_dir, home_path=home_dir)
         logger.info("Finish script: kansas -----|")
     except Exception as e:
         logger.error(e)

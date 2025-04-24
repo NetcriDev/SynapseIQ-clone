@@ -1,7 +1,7 @@
 from src.services.api_contact import DataIrisSession
 from src.utils.utils_api_contact import DatabaseType
-sesion = DataIrisSession(token_file_path="/Users/cristianb/Documents/Python/rel8ed/SynapseIQ_staging/config/token.json")
-
+#sesion = DataIrisSession(token_file_path="/Users/cristianb/Documents/Python/rel8ed/SynapseIQ_staging/config/token.json")
+sesion = DataIrisSession(token_file_path="/home/SynapseIQ/config/token.json")
 
 ################ Test to Api Contact ################
 
