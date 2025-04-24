@@ -356,6 +356,7 @@ class DataIrisSession:
                 last_name=last_name,
                 middle_name=middle_name
             )
+            logger.info(f"Response get from api (less critere): {result}")
 
         return {
             "record_count": len(result),
