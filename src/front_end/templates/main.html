@@ -587,7 +587,8 @@
                 const policyNumber = veiculo.policy_number ? ` <br> Policy: ${veiculo.policy_number}` : "";
 
                 if (["Unknown", "--", "UNKNOWN", "N/A"].some(term => driverName.includes(term))) return;
-
+                if (["--"].some(term => insuranceDetails.includes(term))) return;
+                
                 incidentesFormatados.push({
                     id: incidente.report_number,
                     col2: incidente.accident_datetime.split("T")[0],
