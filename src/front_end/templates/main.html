@@ -509,7 +509,7 @@
         }
     }
 
-    // const API_URL = "https://990c-52-116-202-144.ngrok-free.app/incident/search?page=1&page_size=2000";
+    // const API_URL = "https://634a-52-116-202-144.ngrok-free.app/incident/search?page=1&page_size=2000";
     // let filteredData = [];         // Armazena os dados filtrados globalmente
     // const selectedItems = new Set(); // Armazena os itens selecionados globalmente
 
@@ -589,7 +589,7 @@
                     col9: veiculo.owner_address || "--",
                     col10: incidente.state || "--",
                     col11: incidente.city || "--",
-                    col12: `https://990c-52-116-202-144.ngrok-free.app/incident/pdf/view/${incidente.pdf_id || incidente.report_number}`,
+                    col12: `https://634a-52-116-202-144.ngrok-free.app/incident/pdf/view/${incidente.pdf_id || incidente.report_number}`,
                     col13: "--",
                     sourceFolder: folder,
                     original: incidente, // <-- isso aqui é essencial para recuperar os dados na hora de salvar
@@ -698,7 +698,7 @@
             return;
         }
 
-        const url = `https://990c-52-116-202-144.ngrok-free.app/passenger/${passengerId}/phones`;
+        const url = `https://634a-52-116-202-144.ngrok-free.app/passenger/${passengerId}/phones`;
 
         try {
             const res = await fetch(url, {
