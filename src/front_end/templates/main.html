@@ -351,6 +351,7 @@
         main {
             flex-direction: column;
             height: auto;
+            font-size: 12px;
         }
 
         .container {
@@ -380,19 +381,25 @@
             overflow-x: auto;
         }
 
+        /* save button not appearing */
+        button#saveButton {
+            display: none;
+        }
+
+
         /* Oculta todas as colunas exceto Data , Nome e Telefone */
         #dataTable th:nth-child(1),
         #dataTable td:nth-child(1),
         #dataTable th:nth-child(2),
         #dataTable td:nth-child(2),
-        /* #dataTable th:nth-child(3),
-        #dataTable td:nth-child(3), */
+        #dataTable th:nth-child(3),
+        #dataTable td:nth-child(3),
         /* #dataTable th:nth-child(4),
         #dataTable td:nth-child(4), */
         /* #dataTable th:nth-child(5),
         #dataTable td:nth-child(5), */
-        #dataTable th:nth-child(6),
-        #dataTable td:nth-child(6),
+        /* #dataTable th:nth-child(6),
+        #dataTable td:nth-child(6), */
         #dataTable th:nth-child(7),
         #dataTable td:nth-child(7),
         #dataTable th:nth-child(8),
@@ -409,6 +416,8 @@
         #dataTable td:nth-child(13),
         #dataTable th:nth-child(14),
         #dataTable td:nth-child(14),
+        #dataTable th:nth-child(15),
+        #dataTable td:nth-child(15),
         #export-excel {
             display: none;
         }
@@ -487,8 +496,8 @@
 </style>
 
 <script>
-    let filteredData = [];         // Armazena os dados filtrados globalmente
-    const selectedItems = new Set(); // Armazena os itens selecionados globalmente
+    let data = [];
+    let selectedItems = new Set();
 
     let currentPage = 1;
     const rowsPerPage = 20;
@@ -539,7 +548,9 @@
         let incidentesFormatados = [];
 
         dados.forEach(incidente => {
-            const folder = incidente.original_document_location?.split("/")[3] || "--";
+            const caminho = incidente.original_document_location?.replace(/\\/g, "/"); // substitui \ por /
+            const partes = caminho?.split("/");
+            const folder = partes?.[3] || "--"; // pega a pasta do caminho, se existir
             
             // const motorista = veiculo.passengers?.find(p => p.role === "Driver") || {
             //         name: veiculo.driver_name,
@@ -556,7 +567,7 @@
                     first_name: veiculo.driver_first_name,
                     middle_name: veiculo.driver_middle_name,
                     last_name: veiculo.driver_last_name,
-                    phone1: null,
+                    phone2: null,
                     age: "--",
                     gender: "--"
                 };
@@ -581,7 +592,7 @@
                     id: incidente.report_number,
                     col2: incidente.accident_datetime.split("T")[0],
                     col3: driverName,
-                    col4: motorista.phone1 || "--",
+                    col4: motorista.phone2 || "--",
                     col5: (insuranceDetails + driverLicense + policyNumber) || "--",
                     col6: incidente.crash_severity || "--",
                     col7: motorista.age || "--",
@@ -645,7 +656,7 @@
                             class="phoneInput" 
                             style="width: 120px; padding: 4px;"
                             />
-                        <button onclick="savePhoneNumber(this)" style="cursor: pointer;border:none;background:none;">💾</button>
+                        <button id="saveButton" onclick="savePhoneNumber(this)" style="cursor: pointer;border:none;background:none;">💾</button>
                     </div>
                 </td>
                 <td>${item.col5}</td>
@@ -707,7 +718,7 @@
                     'Content-Type': 'application/json',
                     'accept': 'application/json'
                 },
-                body: JSON.stringify({ phone1: phone, phone2: "string" })
+                body: JSON.stringify({ phone2: phone, phone2: "string" })  // phone1:
             });
 
             if (!res.ok) throw new Error("Error saving phone number");
@@ -718,7 +729,6 @@
             alert("Error to update phone number.");
         }
     }
-
 
     function escapeHtml(unsafe) {
         return unsafe
@@ -1125,8 +1135,6 @@
 
             return html;
         }
-
-
 
 
     document.addEventListener("DOMContentLoaded", () => {
