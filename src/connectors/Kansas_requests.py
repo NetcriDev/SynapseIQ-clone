@@ -38,7 +38,7 @@ def insert_full_crash_data(df_expanded: pd.DataFrame, file_path: str, home_path:
         file_path (str): 
             The file path (carpet storage/kansas) where the original document (PDF) is stored. 
             This is saved along with each incident report.
-        home_path: is the root carpet where the main script is (/home/home/SynapseIq/)
+        home_path: is the root carpet where the main script is (/home/SynapseIq/)
 
     """
     sesion = DataIrisSession(token_file_path= os.path.join(home_path ,"config/token.json"))
