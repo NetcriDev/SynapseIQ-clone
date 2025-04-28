@@ -23,6 +23,7 @@
     - [Annexes: databaseType](#annexes-databasetype)
     - [Annexes: Search criteria in consumer](#annexes-search-criteria-in-consumer)
     - [Annexes: Field of databaseType cellphone](#annexes-field-of-databasetype-cellphone)
+- [Api Distance](#api-distance)
 # Introduction
 Repository layout (under construction)
 
@@ -640,3 +641,31 @@ Possible Fields
 | `State / City`    | Geographic location                                     |
 | `Ind_Age`, `Gender` | Demographic characteristics (if applicable)          |
 
+# Api Distance
+**Provider**: OpenRouteService
+
+**API Key Registration**: You must create an account and obtain a free API Key from
+
+https://account.heigit.org/manage/key
+
+*API Usage*:
+
+The class sends a location in free-text format (e.g., "575 Andrea Ct, Dayton, Ohio, USA").
+The API returns the corresponding coordinates in [longitude, latitude] format.
+
+**The API has consumption limits per minute, per day, and per month (see documentation for more details).**
+
+
+Geocode textual addresses using the OpenRouteService API to obtain geographic coordinates (longitude and latitude).
+Compare these coordinates against a list of "Hope" centers stored in a PostgreSQL database.
+Calculate the geodesic distance (the shortest distance between two points on the Earth's surface, also known as great-circle distance).
+Identify the nearest Hope center based on linear distance.
+
+The src.services.HopeCenterLocator class allows you to:
+
+Geocode textual addresses using the OpenRouteService API to obtain geographic coordinates (longitude and latitude).
+Compare these coordinates against a list of "Hope" centers stored in a PostgreSQL database.
+Calculate the geodesic distance (the shortest distance between two points on the Earth's surface, also known as great-circle distance).
+Identify the nearest Hope center based on linear distance.
+
+`If the first key (api_key1) fails or exceeds its usage limits, the system will automatically retry using a secondary key (api_key2) if provided.`

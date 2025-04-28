@@ -75,6 +75,7 @@ def create_crash_report_schema():
         narrative TEXT,
         nearest_center_d NUMERIC(10,2),
         nearest_hope_d NUMERIC(10,2),
+        name_nearest_hope TEXT,
         notes TEXT,
         technical_notes TEXT,
         json JSONB
@@ -86,6 +87,7 @@ def create_crash_report_schema():
     CREATE TABLE IF NOT EXISTS vehicles (
         id SERIAL PRIMARY KEY,
         incident_report_id INTEGER REFERENCES incident_reports(id) ON DELETE CASCADE,
+        report_number TEXT,
         unit_number INTEGER,
         make TEXT,
         model TEXT,
@@ -122,6 +124,7 @@ def create_crash_report_schema():
     CREATE TABLE IF NOT EXISTS passengers (
         id SERIAL PRIMARY KEY,
         vehicle_id INTEGER REFERENCES vehicles(id) ON DELETE CASCADE,
+        report_number TEXT,
         role TEXT,
         name TEXT,
         first_name TEXT,

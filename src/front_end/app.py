@@ -42,7 +42,7 @@ def requires_auth(f):
 def main_page():
     return render_template('main.html')
 
-SEARCH_API_URL = "https://990c-52-116-202-144.ngrok-free.app/incident/search?page=1&page_size=2000"
+SEARCH_API_URL = "https://634a-52-116-202-144.ngrok-free.app/incident/search?page=1&page_size=2000"
 @app.route('/incident_search')
 @requires_auth
 def incident_search():
@@ -81,4 +81,4 @@ def callback_handling():
     return redirect('/')
 
 if __name__ == '__main__':
-    app.run(host='localhost', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=True)

@@ -1,7 +1,2 @@
-ID,Date,Time,Type,Driver,Age,Gender,License,Insurance,State,City,URL
-004384,04/07/2025,07:40,Injury,"Rosa Gutierrez, Tono Leonel",52,M,1AGX31,Traders Insurance,Missouri,Kansas City,https://www.kansas.gov//khp-crashlogs/search/viewDetail/2025-004384
-004384,04/07/2025,07:40,Injury,"Matutemazariegos, Gabriela Jackeline",28,F,A138B0,Self Insured,California,Los Angeles,https://www.kansas.gov//khp-crashlogs/search/viewDetail/2025-004384
-004384,04/07/2025,07:40,Injury,"Bachani, Digant",38,M,829MXL,All State,Kansas,Olathe,https://www.kansas.gov//khp-crashlogs/search/viewDetail/2025-004384
-004422,04/07/2025,22:50,Injury,"Greninger, Leslie L.",75,M,N/A,N/A,Kansas,Galena,https://www.kansas.gov//khp-crashlogs/search/viewDetail/2025-004422
-004414,04/07/2025,19:59,Injury,"Bonilla, Jose S",50,M,0717AJA,Traders Insurance Company,New Mexico,Albuquerque,https://www.kansas.gov//khp-crashlogs/search/viewDetail/2025-004414
-004370,04/06/2025,18:47,Injury,"Pflughoeft, Benjamin Ryan",16,M,2319AGN,American Family Insurance,Kansas,Claflin,https://www.kansas.gov//khp-crashlogs/search/viewDetail/2025-004370
+ID,Date,Time,Type,Driver,Age,License,Insurance,State,City,URL
+004370,04/06/2025,18:47,Injury,"Pflughoeft, Benjamin Ryan",16,2319AGN,American Family Insurance,Kansas,Claflin,https://www.kansas.gov//khp-crashlogs/search/viewDetail/2025-004370

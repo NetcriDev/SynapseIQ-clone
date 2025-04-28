@@ -13,24 +13,21 @@ try:
     cursor = conexion.cursor()
 
     # 1. Agregar columnas state, city, street
-    alter_table_sql = """
-    ALTER TABLE passengers
-    ADD COLUMN contact_resolution TEXT,
-    ADD COLUMN state TEXT,
-    ADD COLUMN city TEXT,
-    ADD COLUMN street TEXT;
-
-    """
-    cursor.execute(alter_table_sql)
-
-    # 2. Agregar columna adicional opcional (descomenta si se requiere)
-    # alter_table_sql_p = """
+    # alter_table_sql = """
     # ALTER TABLE passengers
-    # ADD COLUMN number_occupant INTEGER;
+    # ADD COLUMN contact_resolution TEXT,
+    # ADD COLUMN state TEXT,
+    # ADD COLUMN city TEXT,
+    # ADD COLUMN street TEXT;
     # """
-    # cursor.execute(alter_table_sql_p)
 
-    # Confirmar cambios
+    #2. Agregar name_nearest hope in incident_reports
+    alter_table_sql = """ 
+    ALTER TABLE incident_reports
+    ADD COLUMN name_nearest_hope TEXT
+    """
+
+    cursor.execute(alter_table_sql)
     conexion.commit()
 
 except Exception as e:
