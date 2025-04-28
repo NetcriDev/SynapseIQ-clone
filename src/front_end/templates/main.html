@@ -508,41 +508,15 @@
 </style>
 
 <script>
-    // let data = [];
-    // let selectedItems = new Set();
-
-    // let currentPage = 1;
-    // const rowsPerPage = 20;
-
-    // async function searchIncidents() {
-    //     try {
-    //         const resposta = await fetch('/incident_search')
-    //         if (!resposta.ok) throw new Error(`Erro: ${resposta.status}`);
-
-    //         const dados = await resposta.json();
-    //         data = transformData(dados);
-    //         updateRelationStateCity(dados); // <-- ESSENCIAL!
-    //         loadFilters();
-    //         renderTable();
-
-    //     } catch (erro) {
-    //         console.error("Erro ao buscar incidentes:", erro);
-    //     }
-    // }
-
-    const API_URL = "https://8162-52-116-202-144.ngrok-free.app/incident/search?page=1&page_size=2000";
-    let filteredData = [];         // Armazena os dados filtrados globalmente
-    const selectedItems = new Set(); // Armazena os itens selecionados globalmente
+    let data = [];
+    let selectedItems = new Set();
 
     let currentPage = 1;
     const rowsPerPage = 20;
 
     async function searchIncidents() {
         try {
-            const resposta = await fetch(API_URL, {
-                headers: { "ngrok-skip-browser-warning": "true" }
-            });
-
+            const resposta = await fetch('/incident_search')
             if (!resposta.ok) throw new Error(`Erro: ${resposta.status}`);
 
             const dados = await resposta.json();
@@ -555,6 +529,32 @@
             console.error("Erro ao buscar incidentes:", erro);
         }
     }
+
+    // const API_URL = "https://8162-52-116-202-144.ngrok-free.app/incident/search?page=1&page_size=2000";
+    // let filteredData = [];         // Armazena os dados filtrados globalmente
+    // const selectedItems = new Set(); // Armazena os itens selecionados globalmente
+
+    // let currentPage = 1;
+    // const rowsPerPage = 20;
+
+    // async function searchIncidents() {
+    //     try {
+    //         const resposta = await fetch(API_URL, {
+    //             headers: { "ngrok-skip-browser-warning": "true" }
+    //         });
+
+    //         if (!resposta.ok) throw new Error(`Erro: ${resposta.status}`);
+
+    //         const dados = await resposta.json();
+    //         data = transformData(dados);
+    //         updateRelationStateCity(dados); // <-- ESSENCIAL!
+    //         loadFilters();
+    //         renderTable();
+
+    //     } catch (erro) {
+    //         console.error("Erro ao buscar incidentes:", erro);
+    //     }
+    // }
 
     function transformData(dados) {
         let incidentesFormatados = [];
