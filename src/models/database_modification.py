@@ -22,9 +22,21 @@ try:
     # """
 
     #2. Agregar name_nearest hope in incident_reports
+    # alter_table_sql = """ 
+    # ALTER TABLE incident_reports
+    # ADD COLUMN name_nearest_hope TEXT
+    # """
+
+    #3. Agregar report_number TEXT in table vehicules
+    # alter_table_sql = """ 
+    # ALTER TABLE vehicules
+    # ADD COLUMN report_number TEXT
+    # """
+
+    #4. Agregar report_number TEXT in table passengers
     alter_table_sql = """ 
-    ALTER TABLE incident_reports
-    ADD COLUMN name_nearest_hope TEXT
+    ALTER TABLE passengers
+    ADD COLUMN report_number TEXT
     """
 
     cursor.execute(alter_table_sql)
