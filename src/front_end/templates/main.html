@@ -100,6 +100,18 @@
 </body>
 
 <style>
+    .hot-lead {
+        /* background-color: 57e0e02f ; */
+        color:#43aad3a6;
+        font-weight: bold;
+    }
+
+    /* hot lead - texto do telefone tambem em vermelho */
+    .hot-lead .phoneInput {
+        color: #43aad3a6;
+        font-weight: bold;
+    }
+    
     * {
         box-sizing: border-box;
         font-family: Arial, sans-serif;
@@ -496,41 +508,15 @@
 </style>
 
 <script>
-    let data = [];
-    let selectedItems = new Set();
-
-    let currentPage = 1;
-    const rowsPerPage = 20;
-
-    async function searchIncidents() {
-        try {
-            const resposta = await fetch('/incident_search')
-            if (!resposta.ok) throw new Error(`Erro: ${resposta.status}`);
-
-            const dados = await resposta.json();
-            data = transformData(dados);
-            updateRelationStateCity(dados); // <-- ESSENCIAL!
-            loadFilters();
-            renderTable();
-
-        } catch (erro) {
-            console.error("Erro ao buscar incidentes:", erro);
-        }
-    }
-
-    // const API_URL = "https://634a-52-116-202-144.ngrok-free.app/incident/search?page=1&page_size=2000";
-    // let filteredData = [];         // Armazena os dados filtrados globalmente
-    // const selectedItems = new Set(); // Armazena os itens selecionados globalmente
+    // let data = [];
+    // let selectedItems = new Set();
 
     // let currentPage = 1;
     // const rowsPerPage = 20;
 
     // async function searchIncidents() {
     //     try {
-    //         const resposta = await fetch(API_URL, {
-    //             headers: { "ngrok-skip-browser-warning": "true" }
-    //         });
-
+    //         const resposta = await fetch('/incident_search')
     //         if (!resposta.ok) throw new Error(`Erro: ${resposta.status}`);
 
     //         const dados = await resposta.json();
@@ -544,22 +530,39 @@
     //     }
     // }
 
+    const API_URL = "https://8162-52-116-202-144.ngrok-free.app/incident/search?page=1&page_size=2000";
+    let filteredData = [];         // Armazena os dados filtrados globalmente
+    const selectedItems = new Set(); // Armazena os itens selecionados globalmente
+
+    let currentPage = 1;
+    const rowsPerPage = 20;
+
+    async function searchIncidents() {
+        try {
+            const resposta = await fetch(API_URL, {
+                headers: { "ngrok-skip-browser-warning": "true" }
+            });
+
+            if (!resposta.ok) throw new Error(`Erro: ${resposta.status}`);
+
+            const dados = await resposta.json();
+            data = transformData(dados);
+            updateRelationStateCity(dados); // <-- ESSENCIAL!
+            loadFilters();
+            renderTable();
+
+        } catch (erro) {
+            console.error("Erro ao buscar incidentes:", erro);
+        }
+    }
+
     function transformData(dados) {
         let incidentesFormatados = [];
 
         dados.forEach(incidente => {
-            const caminho = incidente.original_document_location?.replace(/\\/g, "/"); // substitui \ por /
+            const caminho = incidente.original_document_location?.replace(/\\/g, "/");
             const partes = caminho?.split("/");
-            const folder = partes?.[3] || "--"; // pega a pasta do caminho, se existir
-            
-            // const motorista = veiculo.passengers?.find(p => p.role === "Driver") || {
-            //         name: veiculo.driver_name,
-            //         phone1: null,
-            //         age: "--",
-            //         gender: "--"
-            //     };
-
-            //     const driverName = motorista.name || veiculo.driver_name || "--";
+            const folder = partes?.[3] || "--";
 
             incidente.vehicles.forEach(veiculo => {
                 const motorista = veiculo.passengers?.find(p => p.role === "Driver") || {
@@ -572,28 +575,32 @@
                     gender: "--"
                 };
 
-                // Concatena os nomes em ordem, ignorando os que não existem
+                const phones = (motorista.phone2 || "").split(",").map(p => p.trim());
+                const phoneA = phones[0] || "";
+                const phoneB = phones[1] || "";
+
                 const nameParts = [
                     motorista.first_name,
                     motorista.middle_name,
                     motorista.last_name
-                ].filter(part => part && part.trim() !== ""); // Filtra partes vazias
+                ].filter(part => part && part.trim() !== "");
 
                 const driverName = nameParts.length > 0 
                     ? nameParts.join(" ") 
-                    : motorista.name ||  "--"; // veiculo.driver_name ||
+                    : motorista.name || "--";
+
                 const insuranceDetails = veiculo.insurance_company ? `Insurance Company: ${veiculo.insurance_company}` : "--";
                 const driverLicense = veiculo.driver_license ? ` <br> License: ${veiculo.driver_license}` : "";
                 const policyNumber = veiculo.policy_number ? ` <br> Policy: ${veiculo.policy_number}` : "";
 
                 if (["Unknown", "--", "UNKNOWN", "N/A"].some(term => driverName.includes(term))) return;
-                if (["--"].some(term => insuranceDetails.includes(term))) return;
-                
+
                 incidentesFormatados.push({
                     id: incidente.report_number,
                     col2: incidente.accident_datetime.split("T")[0],
                     col3: driverName,
-                    col4: motorista.phone2 || "--",
+                    phoneA: phoneA,  
+                    phoneB: phoneB,  
                     col5: (insuranceDetails + driverLicense + policyNumber) || "--",
                     col6: incidente.crash_severity || "--",
                     col7: motorista.age || "--",
@@ -601,17 +608,43 @@
                     col9: veiculo.owner_address || "--",
                     col10: incidente.state || "--",
                     col11: incidente.city || "--",
-                    col12: `https://634a-52-116-202-144.ngrok-free.app/incident/pdf/view/${incidente.pdf_id || incidente.report_number}`,
+                    col12: `https://8162-52-116-202-144.ngrok-free.app/incident/pdf/view/${incidente.pdf_id || incidente.report_number}`,
                     col13: "--",
                     sourceFolder: folder,
-                    original: incidente, // <-- isso aqui é essencial para recuperar os dados na hora de salvar
-                    passengerId: motorista.id,  // <-- adiciona aqui!
-                });
+                    original: incidente,
+                    passengerId: motorista.id,
+                }); 
+
             });
         });
 
-        return incidentesFormatados.sort((a, b) => new Date(b.col2) - new Date(a.col2));
+        return incidentesFormatados.sort((a, b) => {
+            const aPhoneValid = 
+                ((a.phoneA && a.phoneA !== "--" && a.phoneA.replace(/[, ]/g, '') !== "") || 
+                (a.phoneB && a.phoneB !== "--" && a.phoneB.replace(/[, ]/g, '') !== ""));
+            const bPhoneValid = 
+                ((b.phoneA && b.phoneA !== "--" && b.phoneA.replace(/[, ]/g, '') !== "") || 
+                (b.phoneB && b.phoneB !== "--" && b.phoneB.replace(/[, ]/g, '') !== ""));
+
+            // 1st sort by phone validity
+            if (aPhoneValid !== bPhoneValid) {
+                return bPhoneValid - aPhoneValid;
+            }
+            
+            // 2nd sort by insurance validity
+            const aHasInsurance = a.col5 !== "--";
+            const bHasInsurance = b.col5 !== "--";
+
+            if (aHasInsurance !== bHasInsurance) {
+                return bHasInsurance - aHasInsurance;
+            }
+
+            // 3rd sort by date
+            return new Date(b.col2) - new Date(a.col2);
+        });
+
     }
+
 
     // Modificar a função de renderTable para usar os filtros corretamente
     function renderTable() {
@@ -641,25 +674,45 @@
             const itemString = escapeHtml(JSON.stringify(item));
             const linkIcon = item.col12 ? `<a href="#" onclick="viewPDF('${item.col12}', '${item.id}')">🔗</a>` : "";
 
-            tableBody.innerHTML += `
-            <tr class="main-row" data-id="${item.id}">
+            // Verifica se a linha é um "hot lead"
+            const isHotLead = 
+                (
+                    (item.phoneA && item.phoneA !== "--" && item.phoneA.replace(/[, ]/g, '') !== "") || 
+                    (item.phoneB && item.phoneB !== "--" && item.phoneB.replace(/[, ]/g, '') !== "")
+                ) && // Verifica telefone A ou B
+                item.col5 && item.col5 !== "--" && item.col5 !== "" && // Verifica insurance details
+                item.col7 && item.col7 !== "--"; // Verifica idade
+
+            tableBody.innerHTML += 
+            `<tr class="main-row ${isHotLead ? 'hot-lead' : ''}" data-id="${item.id}">
                 <td><input type="checkbox" class="rowCheckbox" data-id="${item.id}" data-item='${itemString}'></td>
                 <td class="expand-icon" onclick="toggleDetails('${item.id}')">▶</td>
                 <td>${item.id}</td>
                 <td>${item.col2}</td>
                 <td>${item.col3}</td>
                 <td>
-                    <div style="display: flex; align-items: center; gap: 4px;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <div style="display: flex; flex-direction: column; gap: 4px;">
                         <input 
                             type="text" 
-                            value="${item.col4}" 
+                            value="${item.phoneA}" 
                             data-passenger-id="${item.passengerId}" 
-                            class="phoneInput" 
-                            style="width: 120px; padding: 4px;"
-                            />
-                        <button id="saveButton" onclick="savePhoneNumber(this)" style="cursor: pointer;border:none;background:none;">💾</button>
+                            class="phoneInput phoneInputA" 
+                            style="width: 110px; padding: 4px;"
+                        />
+                        <input 
+                            type="text" 
+                            value="${item.phoneB}" 
+                            data-passenger-id="${item.passengerId}" 
+                            class="phoneInput phoneInputB" 
+                            style="width: 110px; padding: 4px;"
+                        />
+                        </div>
+                        <button id="saveButton" onclick="savePhoneNumber(this)" style="cursor: pointer; border: none; background: none;">
+                        💾
+                        </button>
                     </div>
-                </td>
+                    </td>
                 <td>${item.col5}</td>
                 <td>${item.col6}</td>
                 <td>${item.col7}</td>
@@ -701,16 +754,27 @@
 
     async function savePhoneNumber(button) {
         const row = button.closest("tr");
-        const input = row.querySelector(".phoneInput");
-        const phone = input.value;
-        const passengerId = input.getAttribute("data-passenger-id");
+        const inputA = row.querySelector(".phoneInputA");
+        const inputB = row.querySelector(".phoneInputB");
+
+        if (!inputA && !inputB) {
+            alert("Inputs not found");
+            return;
+        }
+
+        const phoneA = inputA ? inputA.value.trim() : "";
+        const phoneB = inputB ? inputB.value.trim() : "";
+
+        const phone = [phoneA, phoneB].filter(p => p !== "").join(", ");
+        
+        const passengerId = (inputA || inputB).getAttribute("data-passenger-id");
 
         if (!passengerId) {
             alert("Passenger ID not found");
             return;
         }
 
-        const url = `https://634a-52-116-202-144.ngrok-free.app/passenger/${passengerId}/phones`;
+        const url = `https://8162-52-116-202-144.ngrok-free.app/passenger/${passengerId}/phones`;
 
         try {
             const res = await fetch(url, {
@@ -719,7 +783,10 @@
                     'Content-Type': 'application/json',
                     'accept': 'application/json'
                 },
-                body: JSON.stringify({ phone2: phone, phone2: "string" })  // phone1:
+                body: JSON.stringify({
+                    phone1: "", // <- forçando phone1 a ser vazio
+                    phone2: phone
+                })
             });
 
             if (!res.ok) throw new Error("Error saving phone number");
@@ -730,6 +797,7 @@
             alert("Error to update phone number.");
         }
     }
+
 
     function escapeHtml(unsafe) {
         return unsafe
@@ -944,14 +1012,17 @@
         const selectedData = Array.from(selectedItems).map(i => JSON.parse(i));  // <- CORREÇÃO
 
         const headers = [
-            "Report Number", "Date", "Driver Name", "Phone", "Insurance Details", 
-            "Age", "Gender", "Owner Address", "State", "City", "Report URL", "Additional Info"
+            "Report Number", "Date", "Driver Name", "Phone A", "Phone B", "Insurance Details", 
+            "Age", "Gender", "Owner Address", "State", "City",
         ];
+        //  "Report URL" , "Additional Info"
 
         const csvRows = selectedData.map(item => [
-            item.id, item.col2, item.col3, item.col4, item.col5, item.col6,
-            item.col7, item.col8, item.col9, item.col10, item.col11, item.col12
+            item.id, item.col2, item.col3, item.phoneA, item.phoneB || "--", item.col5, 
+            item.col7, item.col8, item.col9, item.col10, item.col11
         ].map(value => `"${value}"`).join(','));
+
+        // item.col6,, item.col12
 
         const csvContent = [headers.join(','), ...csvRows].join('\n');
 
@@ -964,6 +1035,7 @@
         link.click();
         document.body.removeChild(link);
     }
+
 
     // Função para selecionar/deselecionar todos os checkboxes
     function toggleSelectAll(masterCheckbox) {
