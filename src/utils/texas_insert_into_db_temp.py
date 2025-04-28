@@ -188,7 +188,7 @@ def insert_crash_data_to_db_temp(df: pd.DataFrame, pdf_base_path: str):
                 """, (
                     vehicle_id,
                     role,
-                    location,
+                    "",
                     clean_integer(row.get('Person Age')),
                     gender,
                     clean_text(row.get('Person Injury Severity')),

@@ -174,7 +174,7 @@ def insert_dataframe_into_db(df: pd.DataFrame, file_path: str, home_path: str = 
                     state,
                     city,
                     street,
-                    str(info_contact.get("CellPhone")) + ", " + str(info_contact.get("Phone"),),
+                    (info_contact.get("CellPhone") or "") + ", " + (info_contact.get("Phone") or ""),
                     str(info_contact.get("contact_resolution"))
                 ))
 

@@ -54,7 +54,7 @@ def insert_dataframe_to_db(df: pd.DataFrame, pdf_base_path: str, home_path: str 
     cur = conn.cursor()
 
     for _, row in df.iterrows():
-        logger.info(f"[46] Row to insert into data base :{row}")
+        #logger.info(f"[46] Row to insert into data base :{row}")
         report_number = str(row['ID']).strip()
         try:
             accident_datetime = pd.to_datetime(row['Date']) if pd.notna(row['Date']) else None
@@ -173,7 +173,7 @@ def insert_dataframe_to_db(df: pd.DataFrame, pdf_base_path: str, home_path: str 
                 driver_last,
                 state,
                 city,
-                str(info_contact.get("CellPhone")) + ", " + str(info_contact.get("Phone")),
+                (info_contact.get("CellPhone") or "") + ", " + (info_contact.get("Phone") or ""),
                 str(info_contact.get("contact_resolution"))            
             ))
 

@@ -202,7 +202,7 @@ def insert_full_crash_data(df_expanded: pd.DataFrame, file_path: str, home_path:
                 driver_last,
                 state,
                 city,
-                str(info_contact.get("CellPhone")) + ", " + str(info_contact.get("Phone")),
+                (info_contact.get("CellPhone") or "") + ", " + (info_contact.get("Phone") or ""),
                 str(info_contact.get("contact_resolution"))
             ))
 
