@@ -14,6 +14,7 @@ from src.utils.info_dataframe import print_dataframe_info
 from src.utils.split_name import split_driver_name
 from src.services.api_contact import DataIrisSession
 from src.utils.utils_api_contact import DatabaseType
+from src.services.api_geocode_distance import HopeCenterDistancer
 
 main_script_path = sys.path[0]
 logger = setup_logger("Winstonsalem_execution", main_script_path)
@@ -44,6 +45,7 @@ def insert_dataframe_into_db(df: pd.DataFrame, file_path: str, home_path: str = 
     sesion = DataIrisSession(token_file_path= os.path.join(home_path ,"config/token.json"))
     conn = get_connection()
     cur = conn.cursor()
+    api_distance = HopeCenterDistancer()
 
     for _, row in df.iterrows():
         report_number = str(row['REPORT']).strip()
@@ -74,12 +76,17 @@ def insert_dataframe_into_db(df: pd.DataFrame, file_path: str, home_path: str = 
         if res:
             incident_id = res[0]
         else:
+            hope_center = api_distance.find_nearest_center(country="USA", 
+                                                state=state, 
+                                                city=city, 
+                                                street=street)
+            
             cur.execute("""
                 INSERT INTO incident_reports (
                     report_number, internal_report_number, source_url, accident_datetime, city, state, street,
                     technical_notes, json, original_document_location, generation_date,
-                    original_format
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    original_format, nearest_hope_d, name_nearest_hope
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 RETURNING id
             """, (
                 report_number,
@@ -93,7 +100,9 @@ def insert_dataframe_into_db(df: pd.DataFrame, file_path: str, home_path: str = 
                 row_json,
                 original_document_location,
                 generation_date,
-                "pdf"
+                "pdf",
+                hope_center[1] if hope_center else None,
+                hope_center[0] if hope_center else None  
             ))
             incident_id = cur.fetchone()[0]
 

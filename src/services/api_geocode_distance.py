@@ -2,6 +2,7 @@ import psycopg2
 import requests
 from typing import List, Tuple, Optional
 from geopy.distance import geodesic
+from config.config import get_connection
 
 API_KEY_1 = "5b3ce3597851110001cf6248d00b6552c19b4cf0b097ade3c0908959" 
 API_KEY_2 = "5b3ce3597851110001cf6248dfb20be472f14bae85fb58b843205878" #(jhon)
@@ -12,13 +13,7 @@ class HopeCenterDistancer:
         self.api_key2 = API_KEY_2 
         self.conn = conn
         if not conn:
-            self.conn = psycopg2.connect(
-                dbname="crash_records_001",
-                user="synapseiq",
-                password="SynapseIQ$2025",
-                host="localhost",
-                port="5432"
-            )
+            self.conn = get_connection()
 
     def try_geocode_address(self, address: str, api_key: str = None) -> Optional[List[float]]:
         if api_key:
@@ -181,4 +176,5 @@ class HopeCenterDistancer:
 # api_distance = HopeCenterDistancer()
 # a = api_distance.find_nearest_center(country="USA", state="Ohio", city="Dayton", street="575 Andrea Ct")
 # print(a)
+#print(a[0])
 ## >> Fish Test

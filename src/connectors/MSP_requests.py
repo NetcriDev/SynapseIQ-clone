@@ -14,6 +14,7 @@ from src.utils.info_dataframe import print_dataframe_info
 from src.utils.split_name import split_driver_name
 from src.services.api_contact import DataIrisSession
 from src.utils.utils_api_contact import DatabaseType
+from src.services.api_geocode_distance import HopeCenterDistancer
 
 main_script_path = sys.path[0]
 logger = setup_logger("Minnesota_execution", main_script_path)
@@ -52,6 +53,7 @@ def insert_dataframe_to_db(df: pd.DataFrame, pdf_base_path: str, home_path: str 
     sesion = DataIrisSession(token_file_path= os.path.join(home_path ,"config/token.json"))
     conn = get_connection()
     cur = conn.cursor()
+    api_distance = HopeCenterDistancer()
 
     for _, row in df.iterrows():
         #logger.info(f"[46] Row to insert into data base :{row}")
@@ -63,6 +65,7 @@ def insert_dataframe_to_db(df: pd.DataFrame, pdf_base_path: str, home_path: str 
         city = row['City'].strip() if pd.notna(row['City']) else ''
         state = (lambda t: t.split(",")[1].strip() if len(t.split(",")) > 1 and len(t.split(",")[1].strip()) == 2 else "minnesota")(city)
         street = row['Location'].strip() if pd.notna(row['Location']) else ''
+        location = row.get("Location", "").strip()
         source_url = row['URL'].strip() if pd.notna(row['URL']) else ''
         narrative = row['Description'].strip() if pd.notna(row['Description']) else ''
         driver = row['Driver'].strip() if pd.notna(row['Driver']) else ''
@@ -82,12 +85,20 @@ def insert_dataframe_to_db(df: pd.DataFrame, pdf_base_path: str, home_path: str 
         if result:
             incident_id = result[0]
         else:
+            hope_center = api_distance.find_nearest_center(country="USA", 
+                                                            state=state, 
+                                                            city=city, 
+                                                            street=street, 
+                                                            address=location)
+
+
             cur.execute("""
                 INSERT INTO incident_reports (
                     report_number, internal_report_number, accident_datetime, city, street,
                     state, source_url, narrative, original_document_location,
-                    generation_date, original_format, notes, crash_severity, json
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    generation_date, original_format, notes, crash_severity, json,
+                    nearest_hope_d, name_nearest_hope
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 RETURNING id
             """, (
                 report_number,
@@ -103,7 +114,9 @@ def insert_dataframe_to_db(df: pd.DataFrame, pdf_base_path: str, home_path: str 
                 "pdf",                         # original_format
                 "Case Number: " + case_number + ". " + media_contact,                # notes
                 crash_severity,               # crash_severity
-                row_json
+                row_json,
+                hope_center[1] if hope_center else None,
+                hope_center[0] if hope_center else None  
             ))
             incident_id = cur.fetchone()[0]
 
@@ -160,7 +173,7 @@ def insert_dataframe_to_db(df: pd.DataFrame, pdf_base_path: str, home_path: str 
                     state,
                     city,
                     phone2,
-                    contact_resolution   
+                    contact_resolution, 
                 ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """, (
                 vehicle_id,
@@ -174,7 +187,7 @@ def insert_dataframe_to_db(df: pd.DataFrame, pdf_base_path: str, home_path: str 
                 state,
                 city,
                 (info_contact.get("CellPhone") or "") + ", " + (info_contact.get("Phone") or ""),
-                str(info_contact.get("contact_resolution"))            
+                str(info_contact.get("contact_resolution"))         
             ))
 
     conn.commit()

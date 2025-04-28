@@ -16,6 +16,7 @@ from config.config import get_connection
 from src.utils.split_name import split_driver_name
 from src.services.api_contact import DataIrisSession
 from src.utils.utils_api_contact import DatabaseType
+from src.services.api_geocode_distance import HopeCenterDistancer
 
 main_script_path = sys.path[0]
 logger = setup_logger("Kansas_execution", main_script_path)
@@ -44,6 +45,8 @@ def insert_full_crash_data(df_expanded: pd.DataFrame, file_path: str, home_path:
     sesion = DataIrisSession(token_file_path= os.path.join(home_path ,"config/token.json"))
     conn = get_connection()
     cur = conn.cursor()
+    api_distance = HopeCenterDistancer()
+
     logger.info("Start insert into DB: Kansas")
     for _, row in df_expanded.iterrows():
         report_number = str(row["ID"]).strip()
@@ -82,13 +85,18 @@ def insert_full_crash_data(df_expanded: pd.DataFrame, file_path: str, home_path:
         existing_incident = cur.fetchone()
 
         if not existing_incident:
+            hope_center = api_distance.find_nearest_center(country="USA", 
+                                                state=state, 
+                                                city=city)
             # Insert incident only if it does not already exist
             cur.execute("""
                 INSERT INTO incident_reports (
-                    report_number, internal_report_number, source_url, accident_datetime, city, state, crash_severity, 
-                    technical_notes, json, original_document_location, generation_date, original_format
+                    report_number, internal_report_number, source_url, 
+                    accident_datetime, city, state, crash_severity, 
+                    technical_notes, json, original_document_location, 
+                    generation_date, original_format, nearest_hope_d, name_nearest_hope
                 )
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """, (
                 report_number,
                 "ks"+str(report_number),
@@ -101,7 +109,9 @@ def insert_full_crash_data(df_expanded: pd.DataFrame, file_path: str, home_path:
                 row_json,
                 os.path.join(file_path,str(report_number)+".pdf"),
                 generation_date,
-                "pdf"
+                "pdf",
+                hope_center[1] if hope_center else None,
+                hope_center[0] if hope_center else None  
             ))
 
         # Get incident ID

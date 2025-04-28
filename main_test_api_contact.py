@@ -1,5 +1,7 @@
 from src.services.api_contact import DataIrisSession
 from src.utils.utils_api_contact import DatabaseType
+from config.config import get_connection
+from src.services.api_geocode_distance import HopeCenterDistancer
 #sesion = DataIrisSession(token_file_path="/Users/cristianb/Documents/Python/rel8ed/SynapseIQ_staging/config/token.json")
 sesion = DataIrisSession(token_file_path="/home/SynapseIQ/config/token.json")
 
@@ -39,3 +41,11 @@ a= sesion.safe_get_contact_resolution(
         age="64",
         state="KS")
 print(a)
+
+
+
+
+########## test api distance ##########
+# api_distance = HopeCenterDistancer()
+# a = api_distance.find_nearest_center(country="USA", state="Ohio", city="Dayton", street="575 Andrea Ct")
+# print(a)
