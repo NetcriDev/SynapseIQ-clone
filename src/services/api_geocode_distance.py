@@ -178,7 +178,7 @@ class HopeCenterDistancer:
 
 
 ## Test basic
-api_distance = HopeCenterDistancer()
-a = api_distance.find_nearest_center(country="USA", state="Ohio", city="Dayton", street="575 Andrea Ct")
-print(a)
+# api_distance = HopeCenterDistancer()
+# a = api_distance.find_nearest_center(country="USA", state="Ohio", city="Dayton", street="575 Andrea Ct")
+# print(a)
 ## >> Fish Test
