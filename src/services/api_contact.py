@@ -467,13 +467,13 @@ class DataIrisSession:
 
         if record_count == 1:
             return {
-                    "CellPhone": None,
-                    "Phone": None,
+                    "CellPhone": results[0].get("Phone", ""),
+                    "Phone": results[0].get("CellPhone", ""),
                     "contact_resolution": results
                 }     
 
         if record_count <= 20:
-            if record_count < 10 and sufficient:
+            if record_count < 10:
                 first = results[0]
                 return {
                     "CellPhone": first.get("Phone", ""),

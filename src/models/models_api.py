@@ -6,18 +6,22 @@ from datetime import datetime
 # Pydantic models
 class Passenger(BaseModel):
     id: int
+    report_number: Optional[str]
     vehicle_id: int
     role: Optional[str]
     name: Optional[str]
     first_name: Optional[str]
     middle_name: Optional[str]
     last_name: Optional[str]
+    state: Optional[str]
+    city: Optional[str]
     age: Optional[int]
     gender: Optional[str]
     license_number: Optional[str]
     injury_severity: Optional[str]
     phone1: Optional[str]
     phone2: Optional[str]
+    contact_resolution: Optional[str]
     notes: Optional[str]
 
 class PassengerUpdatePhones(BaseModel):
@@ -56,6 +60,7 @@ class Vehicle(BaseModel):
 class IncidentReport(BaseModel):
     id: int
     report_number: str
+    internal_report_number: Optional[str]
     version_json: Optional[str]
     source_url: Optional[str]
     original_format: Optional[str]
@@ -75,7 +80,11 @@ class IncidentReport(BaseModel):
     crash_severity: Optional[str]
     number_of_units: Optional[int]
     narrative: Optional[str]
+    nearest_center_d: Optional[float]
+    nearest_hope_d: Optional[float]
+    name_nearest_hope: Optional[str]
     notes: Optional[str]
+    technical_notes: Optional[str]
     vehicles: Optional[List[Vehicle]] = []
 
 #texas
@@ -83,6 +92,7 @@ class PassengerReport(BaseModel):
     id: int
     crash_report_id: Optional[int]
     crash_id: Optional[str]
+    report_number: Optional[str]
     amount_damage: Optional[str]
     contributing_factors: Optional[str]
     fatal_crash_flag: Optional[str]
@@ -102,12 +112,16 @@ class PassengerReport(BaseModel):
     person_non_suspected_serious_injury_count: Optional[int]
     person_count_number: Optional[int]
     physical_location_of_an_occupant: Optional[str]
+    state: Optional[str]
+    city: Optional[str]
+    street: Optional[str]
 
 #Texas
 class CrashReportWithPassengers(BaseModel):
     id: int
     crash_id: str
     internal_crash_id: str
+    report_number: Optional[str]
     agency: Optional[str]
     case_id: Optional[str]
     state: Optional[str]

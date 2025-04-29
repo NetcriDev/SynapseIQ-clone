@@ -27,6 +27,8 @@ class HopeCenterDistancer:
             response.raise_for_status()
             data = response.json()
             if data.get("features"):
+                ax=data["features"][0]["geometry"]["coordinates"]
+                print(f">>>>>{ax} ")
                 return data["features"][0]["geometry"]["coordinates"]
             else:
                 print(f"No coordinates found for the address: {address}")
@@ -120,7 +122,11 @@ class HopeCenterDistancer:
         return None
 
     def linear_distance(self, coord1: Tuple[float, float], coord2: Tuple[float, float]) -> float:
-        return geodesic(coord1, coord2).miles
+        # Invertir (lon, lat) -> (lat, lon) para geopy
+        coord1_latlon = (coord1[1], coord1[0])
+        coord2_latlon = (coord2[1], coord2[0])
+        print(f"Coordenadas convertidas: {coord1_latlon} -- {coord2_latlon}")
+        return geodesic(coord1_latlon, coord2_latlon).miles
 
     def find_nearest_center_by_linear_distance(self, origin: Tuple[float, float]) -> Tuple[str, float, Tuple[float, float]]:
         min_distance = float("inf")
@@ -130,7 +136,7 @@ class HopeCenterDistancer:
         with self.conn.cursor() as cur:
             cur.execute("SELECT name, latitude, longitude FROM hope_center")
             for name, lat, lon in cur.fetchall():
-                center_coords = (lat, lon)
+                center_coords = (lon, lat)
                 dist = self.linear_distance(origin, center_coords)
                 if dist < min_distance:
                     min_distance = dist

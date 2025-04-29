@@ -89,7 +89,7 @@ def insert_dataframe_to_db(df: pd.DataFrame, pdf_base_path: str, home_path: str 
                                                             state=state, 
                                                             city=city, 
                                                             street=street, 
-                                                            address=location)
+                                                            adress=location)
 
 
             cur.execute("""
@@ -163,7 +163,7 @@ def insert_dataframe_to_db(df: pd.DataFrame, pdf_base_path: str, home_path: str 
                     age=age,
                     state=state,
                     city=city.split(",")[0].strip()))
-
+            logger.info(info_contact)  
             cur.execute("""
                 INSERT INTO passengers (
                     vehicle_id, role, name, age, notes,
@@ -173,7 +173,7 @@ def insert_dataframe_to_db(df: pd.DataFrame, pdf_base_path: str, home_path: str 
                     state,
                     city,
                     phone2,
-                    contact_resolution, 
+                    contact_resolution 
                 ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """, (
                 vehicle_id,

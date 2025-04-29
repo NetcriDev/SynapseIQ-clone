@@ -35,14 +35,17 @@ print(a)
 filters={'First_Name': 'Martin', 'Last_Name': 'Wells', 'Middle_Initial': 'S', 'Physical_State': 'KS', 'Ind_Age': '60,61,62,63'}
 a= sesion.safe_get_contact_resolution(
         database_type=DatabaseType(1).name,
-        first_name="Curk", 
-        last_name="Creed",
-        middle_name="Bradley",
-        age="64",
-        state="KS")
-print(a)
+        first_name="Troy", 
+        last_name="Rutz",
+        middle_name="R",
+        age="",
+        state="")
+# print(f"retonro resultado: a = {a}")
+# b=a.get("result", 0)
+# c=b[0].get("Phone", 0)
+# print(f"resultado telefono: b = {c}")
 
-
+print(DataIrisSession.extract_phone_if_valid(a))
 
 
 ########## test api distance ##########
