@@ -623,7 +623,7 @@
                     col6: incidente.crash_severity || "--",
                     col7: motorista.age || "--",
                     col8: motorista.gender || "--",
-                    col9: veiculo.owner_address || "--",
+                    col9: veiculo.owner_address || "--",  // incidente.street || 
                     col10: incidente.state || "--",
                     col11: incidente.city || "--",
                     col12: `https://8162-52-116-202-144.ngrok-free.app/incident/pdf/view/${incidente.pdf_id || incidente.report_number}`,
@@ -690,7 +690,11 @@
 
         filteredData.slice(start, end).forEach((item, index) => {
             const itemString = escapeHtml(JSON.stringify(item));
-            const linkIcon = item.col12 ? `<a href="#" onclick="viewPDF('${item.col12}', '${item.id}')">🔗</a>` : "";
+            // const linkIcon = item.col12 ? `<a href="#" onclick="viewPDF('${item.col12}', '${item.id}')">🔗</a>` : "";
+            const linkIcon = item.col12 && item.col10?.toLowerCase() !== "minnesota"
+                ? `<a href="#" onclick="viewPDF('${item.col12}', '${item.id}')">🔗</a>`
+                : `<span style="color: gray;">--</span>`;
+
 
             // Verifica se a linha é um "hot lead"
             const isHotLead = 
