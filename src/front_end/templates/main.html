@@ -66,7 +66,7 @@
         </div>
     </main>
 
-    <div class="chatbot-button" onclick="alert('Under development - Watson AI Chatbot')">
+    <!-- <div class="chatbot-button" onclick="alert('Under development - Watson AI Chatbot')">
         <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiIgdmlld0JveD0iMCAwIDE2IDE2Ij48cGF0aCBmaWxsPSIjZmZmIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiIGQ9Ik0xLjUgNEExLjUgMS41IDAgMCAxIDMgMi41aDEwQTEuNSAxLjUgMCAwIDEgMTQuNSA0djMuMjVhLjc1Ljc1IDAgMCAwIDEuNSAwVjRhMyAzIDAgMCAwLTMtM0gzYTMgMyAwIDAgMC0zIDN2MTEuMjVhLjc1Ljc1IDAgMCAwIDEuMjguNTNMNC4wNjMgMTNIOC4yNWEuNzUuNzUgMCAwIDAgMC0xLjVIMy40NDNsLS4yMi4yMkwxLjUgMTMuNDR6TTEzIDE0YS43NS43NSAwIDAgMS0uNzUtLjc1di0xLjVoLTEuNWEuNzUuNzUgMCAwIDEgMC0xLjVoMS41di0xLjVhLjc1Ljc1IDAgMCAxIDEuNSAwdjEuNWgxLjVhLjc1Ljc1IDAgMCAxIDAgMS41aC0xLjV2MS41QS43NS43NSAwIDAgMSAxMyAxNCIgY2xpcC1ydWxlPSJldmVub2RkIi8+PC9zdmc+" width="20" height="20" alt="Abrir" />
     </div>
     <style>
@@ -96,7 +96,7 @@
             height: 20px;
             filter: brightness(1000%); /* força o ícone branco mesmo se for preto */
             }
-    </style>
+    </style> -->
 </body>
 
 <style>
@@ -508,6 +508,21 @@
 </style>
 
 <script>
+    window.watsonAssistantChatOptions = {
+      integrationID: "aa6251d5-7615-46fd-9a89-dcce1a75b536", // The ID of this integration.
+      region: "us-south", // The region your integration is hosted in.
+      serviceInstanceID: "1fe70761-3293-40e8-94d4-3dab7c3a289a", // The ID of your service instance.
+      onLoad: async (instance) => { await instance.render(); }
+    };
+    setTimeout(function(){
+      const t=document.createElement('script');
+      t.src="https://web-chat.global.assistant.watson.appdomain.cloud/versions/" + (window.watsonAssistantChatOptions.clientVersion || 'latest') + "/WatsonAssistantChatEntry.js";
+      document.head.appendChild(t);
+    });
+  </script>
+
+
+<script>
     let data = [];
     let selectedItems = new Set();
 
@@ -593,6 +608,9 @@
                 const driverLicense = veiculo.driver_license ? ` <br> License: ${veiculo.driver_license}` : "";
                 const policyNumber = veiculo.policy_number ? ` <br> Policy: ${veiculo.policy_number}` : "";
 
+                const nearestHopeMiles = incidente.nearest_hope_d ? ` Miles: ${incidente.nearest_hope_d}` : "";
+                const nearesHopeCenter = incidente.name_nearest_hope ? ` <br> Center: ${incidente.name_nearest_hope}` : "";
+
                 if (["Unknown", "--", "UNKNOWN", "N/A"].some(term => driverName.includes(term))) return;
 
                 incidentesFormatados.push({
@@ -609,7 +627,7 @@
                     col10: incidente.state || "--",
                     col11: incidente.city || "--",
                     col12: `https://8162-52-116-202-144.ngrok-free.app/incident/pdf/view/${incidente.pdf_id || incidente.report_number}`,
-                    col13: "--",
+                    col13: (nearestHopeMiles + nearesHopeCenter) || "--",
                     sourceFolder: folder,
                     original: incidente,
                     passengerId: motorista.id,
