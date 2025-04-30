@@ -89,7 +89,7 @@ def insert_dataframe_to_db(df: pd.DataFrame, pdf_base_path: str, home_path: str 
                                                             state=state, 
                                                             city=city, 
                                                             street=street, 
-                                                            adress=location)
+                                                            address=location)
 
 
             cur.execute("""

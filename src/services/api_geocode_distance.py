@@ -85,7 +85,7 @@ class HopeCenterDistancer:
                        state: Optional[str] = None, 
                        city: Optional[str] = None, 
                        street: Optional[str] = None, 
-                       adress: Optional[str] = None, 
+                       address: Optional[str] = None, 
                        api_key1: str = None, 
                        api_key2: str = None ) -> Optional[Tuple[float, float]]:
         if api_key1:
@@ -93,8 +93,8 @@ class HopeCenterDistancer:
         if api_key2:
             self.api_key2 = api_key2
         
-        if adress:
-            result = self.geocode_address(f"{adress}")
+        if address:
+            result = self.geocode_address(f"{address}")
             if result:
                 return result
 
@@ -114,8 +114,8 @@ class HopeCenterDistancer:
             if result:
                 return result
 
-        if adress and city:
-            result = self.geocode_address(f"{adress}, {city}")
+        if address and city:
+            result = self.geocode_address(f"{address}, {city}")
             if result:
                 return result
 
@@ -151,7 +151,7 @@ class HopeCenterDistancer:
                             state: Optional[str] = None,
                             city: Optional[str] = None,
                             street: Optional[str] = None,
-                            adress: Optional[str] = None,
+                            address: Optional[str] = None,
                             api_key1: str = None,
                             api_key2: str = None
                         ) -> Optional[Tuple[str, float]]:
@@ -167,7 +167,7 @@ class HopeCenterDistancer:
             state=state,
             city=city,
             street=street,
-            adress=adress
+            address=address
         )
 
         if not coords:

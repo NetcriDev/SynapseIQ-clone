@@ -26,12 +26,12 @@ logger= setup_logger("Scheduled_execution", home_dir)
 
 
 
-# def kansas():
-#     logger.info(">>> Start script: Kansas")
-#     run_kansas_crash_scraper(path_dir=outputdata_dir, home_path=home_dir )
-#     logger.info("Finish script: kansas -----|")
+def kansas():
+    logger.info(">>> Start script: Kansas")
+    run_kansas_crash_scraper(path_dir=outputdata_dir, home_path=home_dir )
+    logger.info("Finish script: kansas -----|")
 
-# kansas()
+kansas()
 
 
 # def WinstonSalem():
@@ -45,12 +45,12 @@ logger= setup_logger("Scheduled_execution", home_dir)
 # WinstonSalem()
 
 
-def Minnesota():
-    logger.info(">>> Start script: Minnesota")
-    run_msp_crash_scraper(outputdata_dir, home_path=home_dir)
-    logger.info("Finish script: Minnesota -----|")
+# def Minnesota():
+#     logger.info(">>> Start script: Minnesota")
+#     run_msp_crash_scraper(outputdata_dir, home_path=home_dir)
+#     logger.info("Finish script: Minnesota -----|")
 
-Minnesota()
+# Minnesota()
 
 
 # def Texas():

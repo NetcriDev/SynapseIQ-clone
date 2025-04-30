@@ -181,7 +181,7 @@ def search_incidents(
     offset = (page - 1) * page_size
     select_query = f"""
         SELECT * {base_query}
-        ORDER BY generation_date DESC
+        ORDER BY accident_datetime DESC
         LIMIT %s OFFSET %s
     """
     cur.execute(select_query, tuple(params + [page_size, offset]))
