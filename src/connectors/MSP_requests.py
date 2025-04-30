@@ -106,14 +106,14 @@ def insert_dataframe_to_db(df: pd.DataFrame, pdf_base_path: str, home_path: str 
                 accident_datetime,
                 city,
                 street,
-                "Minnesota",                   # state
+                "MN",                                                    # state
                 source_url,
                 narrative,
                 original_document_location,
                 generation_date,
-                "pdf",                         # original_format
-                "Case Number: " + case_number + ". " + media_contact,                # notes
-                crash_severity,               # crash_severity
+                "pdf",                                                          # original_format
+                "Case Number: " + case_number + ". " + media_contact,           # notes
+                crash_severity,                                                 # crash_severity
                 row_json,
                 hope_center[1] if hope_center else None,
                 hope_center[0] if hope_center else None  
