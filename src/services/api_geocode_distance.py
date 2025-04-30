@@ -1,8 +1,13 @@
 import psycopg2
 import requests
+import sys
 from typing import List, Tuple, Optional
 from geopy.distance import geodesic
 from config.config import get_connection
+from src.utils.logger_config import setup_logger
+
+main_script_path = sys.path[0]
+logger = setup_logger("Api_geo_distance", main_script_path)
 
 API_KEY_1 = "5b3ce3597851110001cf6248d00b6552c19b4cf0b097ade3c0908959" 
 API_KEY_2 = "5b3ce3597851110001cf6248dfb20be472f14bae85fb58b843205878" #(jhon)
@@ -49,12 +54,14 @@ class HopeCenterDistancer:
         
         coords = self.try_geocode_address(address, self.api_key1)
         if coords:
+            logger.info(f"Coordinates found: {coords}")
             return coords
 
         if self.api_key2:
             print("Retrying with secondary API key...")
             coords = self.try_geocode_address(address, self.api_key2)
-
+        
+        logger.info(f"Coordinates found: {coords}")
         return coords
 
     def get_distance_by_road(self, origin_coords: List[float], destination_coords: List[float]) -> Optional[Tuple[float, float]]:
@@ -155,7 +162,7 @@ class HopeCenterDistancer:
                             api_key1: str = None,
                             api_key2: str = None
                         ) -> Optional[Tuple[str, float]]:
-        
+        logger.info(f"state: {state}, city: {city}, street: {street}, address: {address}")
         if api_key1:
             self.api_key1 = api_key1
         if api_key2:
@@ -174,7 +181,7 @@ class HopeCenterDistancer:
             return None
 
         center_name, distance, _ = self.find_nearest_center_by_linear_distance(coords)
-
+        logger.info(f"Center, distance: {center_name}, {distance} miles")
         return center_name, distance
 
 
