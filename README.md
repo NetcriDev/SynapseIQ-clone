@@ -661,7 +661,7 @@ Compare these coordinates against a list of "Hope" centers stored in a PostgreSQ
 Calculate the geodesic distance (the shortest distance between two points on the Earth's surface, also known as great-circle distance).
 Identify the nearest Hope center based on linear distance.
 
-The src.services.HopeCenterLocator class allows you to:
+The `src.services.HopeCenterLocator` class allows you to:
 
 Geocode textual addresses using the OpenRouteService API to obtain geographic coordinates (longitude and latitude).
 Compare these coordinates against a list of "Hope" centers stored in a PostgreSQL database.
