@@ -28,7 +28,7 @@ class HopeCenterDistancer:
             data = response.json()
             if data.get("features"):
                 ax=data["features"][0]["geometry"]["coordinates"]
-                print(f">>>>>{ax} ")
+                #print(f">>>>>{ax} ")
                 return data["features"][0]["geometry"]["coordinates"]
             else:
                 print(f"No coordinates found for the address: {address}")
@@ -125,7 +125,7 @@ class HopeCenterDistancer:
         # Invertir (lon, lat) -> (lat, lon) para geopy
         coord1_latlon = (coord1[1], coord1[0])
         coord2_latlon = (coord2[1], coord2[0])
-        print(f"Coordenadas convertidas: {coord1_latlon} -- {coord2_latlon}")
+        #print(f"Coordenadas convertidas: {coord1_latlon} -- {coord2_latlon}")
         return geodesic(coord1_latlon, coord2_latlon).miles
 
     def find_nearest_center_by_linear_distance(self, origin: Tuple[float, float]) -> Tuple[str, float, Tuple[float, float]]:
