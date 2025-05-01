@@ -669,3 +669,5 @@ Calculate the geodesic distance (the shortest distance between two points on the
 Identify the nearest Hope center based on linear distance.
 
 `If the first key (api_key1) fails or exceeds its usage limits, the system will automatically retry using a secondary key (api_key2) if provided.`
+
+.
