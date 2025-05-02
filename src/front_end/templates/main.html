@@ -61,7 +61,9 @@
             <div class="free-space" id="freeSpace" style="display: none;">
                 <button onclick="hidePDF()" style="float:right;background:red;color:white;border:none;padding:5px 10px;cursor:pointer;">X</button>
                 <p><strong>ID:</strong> <span id="pdfId"></span></p>
-                <object id="pdfViewer" type="application/pdf" width="100%" height="100%" data=""></object>
+                <!-- <object id="pdfViewer" type="application/pdf" width="100%" height="100%" data=""></object> -->
+                <div id="pdfViewerContainer" style="width: 100%; height: 100%;"></div>
+
             </div>
         </div>
     </main>
@@ -100,17 +102,17 @@
 </body>
 
 <style>
-    .hot-lead {
+    .hot-lead { 
         /* background-color: 57e0e02f ; */
-        color:#43aad3a6;
+        /* color: #43aad3a6; */
         font-weight: bold;
     }
 
     /* hot lead - texto do telefone tambem em vermelho */
-    .hot-lead .phoneInput {
-        color: #43aad3a6;
-        font-weight: bold;
-    }
+    /* .hot-lead .phoneInput { */
+        /* color: #43aad3a6; */
+        /* font-weight: bold; */
+    /* } */
     
     * {
         box-sizing: border-box;
@@ -574,6 +576,20 @@
     function transformData(dados) {
         let incidentesFormatados = [];
 
+        const stateAbbreviations = {
+            "OH": "Ohio",
+            "IL": "Illinois",
+            "MI": "Michigan",
+            "NC": "North Carolina",
+            "TN": "Tennessee",
+            "MN": "Minnesota",
+            // ...adicione os que faltar
+        };
+
+        // Obtém a data atual e calcula a data de 48 horas atrás
+        const now = new Date();
+        const fortyEightHoursAgo = new Date(now.getTime() - (48 * 60 * 60 * 1000));
+
         dados.forEach(incidente => {
             const caminho = incidente.original_document_location?.replace(/\\/g, "/");
             const partes = caminho?.split("/");
@@ -613,6 +629,15 @@
 
                 if (["Unknown", "--", "UNKNOWN", "N/A"].some(term => driverName.includes(term))) return;
 
+                // Calcula se é hot lead
+                const crashDate = new Date(incidente.accident_datetime);
+                const isRecentCrash = crashDate >= fortyEightHoursAgo;
+                const hasValidPhone = (phoneA && phoneA !== "--" && phoneA.replace(/[, ]/g, '') !== "") || 
+                                    (phoneB && phoneB !== "--" && phoneB.replace(/[, ]/g, '') !== "");
+                const hasInsurance = insuranceDetails !== "--";
+                const isNearHopeCenter = incidente.nearest_hope_d && parseFloat(incidente.nearest_hope_d) < 30;
+                const isHotLead = hasValidPhone && hasInsurance && isNearHopeCenter && isRecentCrash;
+
                 incidentesFormatados.push({
                     id: incidente.report_number,
                     col2: incidente.accident_datetime.split("T")[0],
@@ -624,47 +649,59 @@
                     col7: motorista.age || "--",
                     col8: motorista.gender || "--",
                     col9: veiculo.owner_address || "--",  // incidente.street || 
-                    col10: incidente.state || "--",
+                    // col10: incidente.state || "--",
+                    col10: stateAbbreviations[incidente.state?.trim()] || incidente.state || "--",
                     col11: incidente.city || "--",
-                    col12: `https://8162-52-116-202-144.ngrok-free.app/incident/pdf/view/${incidente.pdf_id || incidente.report_number}`,
+                    // col12: `https://8162-52-116-202-144.ngrok-free.app/incident/pdf/view/${incidente.pdf_id || incidente.report_number}`,
+                    col12: folder?.toLowerCase() === "minnesota"
+                        ? incidente.source_url
+                        : `https://8162-52-116-202-144.ngrok-free.app/incident/pdf/view/${incidente.pdf_id || incidente.report_number}`,
                     col13: (nearestHopeMiles + nearesHopeCenter) || "--",
                     sourceFolder: folder,
                     original: incidente,
                     passengerId: motorista.id,
+                    isHotLead: isHotLead  // Adicionamos esta propriedade
                 }); 
 
             });
         });
 
         return incidentesFormatados.sort((a, b) => {
-            const aPhoneValid = 
-                ((a.phoneA && a.phoneA !== "--" && a.phoneA.replace(/[, ]/g, '') !== "") || 
-                (a.phoneB && a.phoneB !== "--" && a.phoneB.replace(/[, ]/g, '') !== ""));
-            const bPhoneValid = 
-                ((b.phoneA && b.phoneA !== "--" && b.phoneA.replace(/[, ]/g, '') !== "") || 
-                (b.phoneB && b.phoneB !== "--" && b.phoneB.replace(/[, ]/g, '') !== ""));
+            function getPriority(item) {
+                const hasPhone = ((item.phoneA && item.phoneA !== "--" && item.phoneA.replace(/[, ]/g, '') !== "") || 
+                                (item.phoneB && item.phoneB !== "--" && item.phoneB.replace(/[, ]/g, '') !== ""));
+                const hasInsurance = item.col5 !== "--";
 
-            // 1st sort by phone validity
-            if (aPhoneValid !== bPhoneValid) {
-                return bPhoneValid - aPhoneValid;
+                // Hot lead sempre prioridade máxima
+                if (item.isHotLead) return 300;
+
+                // Tem telefone + tem seguro
+                if (hasPhone && hasInsurance) return 200;
+
+                // Tem telefone, sem seguro
+                if (hasPhone) return 100;
+
+                // Sem telefone, mas tem seguro
+                if (hasInsurance) return 50;
+
+                // Sem nada
+                return 0;
             }
-            
-            // 2nd sort by insurance validity
-            const aHasInsurance = a.col5 !== "--";
-            const bHasInsurance = b.col5 !== "--";
 
-            if (aHasInsurance !== bHasInsurance) {
-                return bHasInsurance - aHasInsurance;
+            const priorityA = getPriority(a);
+            const priorityB = getPriority(b);
+
+            if (priorityA !== priorityB) {
+                return priorityB - priorityA;
             }
 
-            // 3rd sort by date
+            // Mesma prioridade: ordena por data mais recente
             return new Date(b.col2) - new Date(a.col2);
         });
 
     }
 
 
-    // Modificar a função de renderTable para usar os filtros corretamente
     function renderTable() {
         const tableBody = document.getElementById("tableBody");
         const filterFolder = document.getElementById("filterSourceFolder").value;
@@ -690,51 +727,49 @@
 
         filteredData.slice(start, end).forEach((item, index) => {
             const itemString = escapeHtml(JSON.stringify(item));
+            // const linkIcon = item.col12 && item.col10?.toLowerCase() !== "minnesota"
+            //     ? `<a href="#" onclick="viewPDF('${item.col12}', '${item.id}')">🔗</a>`
+            //     : `<span style="color: gray;">--</span>`;
+
             // const linkIcon = item.col12 ? `<a href="#" onclick="viewPDF('${item.col12}', '${item.id}')">🔗</a>` : "";
-            const linkIcon = item.col12 && item.col10?.toLowerCase() !== "minnesota"
-                ? `<a href="#" onclick="viewPDF('${item.col12}', '${item.id}')">🔗</a>`
-                : `<span style="color: gray;">--</span>`;
 
+            const isMinnesota = item.sourceFolder?.toLowerCase() === "minnesota";
+            const icon = isMinnesota ? "🌐" : "🔗";
+            const linkIcon = item.col12 
+                ? `<a href="#" onclick="viewPDF('${item.col12}', '${item.id}', ${isMinnesota})" title="${isMinnesota ? 'Open on New Window' : 'View PDF'}">${icon}</a>`
+                : "";
 
-            // Verifica se a linha é um "hot lead"
-            const isHotLead = 
-                (
-                    (item.phoneA && item.phoneA !== "--" && item.phoneA.replace(/[, ]/g, '') !== "") || 
-                    (item.phoneB && item.phoneB !== "--" && item.phoneB.replace(/[, ]/g, '') !== "")
-                ) && // Verifica telefone A ou B
-                item.col5 && item.col5 !== "--" && item.col5 !== "" && // Verifica insurance details
-                item.col7 && item.col7 !== "--"; // Verifica idade
-
+            // <td>${isHotLead ? '<img src="./images/fire-dolar-icon.ico" alt="Hot Lead" title="Hot Lead" style="width: 18px; vertical-align: middle; margin-right: 4px;">' : ''}${item.id}</td>
             tableBody.innerHTML += 
-            `<tr class="main-row ${isHotLead ? 'hot-lead' : ''}" data-id="${item.id}">
+            `<tr class="main-row ${item.isHotLead ? 'hot-lead' : ''}" data-id="${item.id}">
                 <td><input type="checkbox" class="rowCheckbox" data-id="${item.id}" data-item='${itemString}'></td>
                 <td class="expand-icon" onclick="toggleDetails('${item.id}')">▶</td>
-                <td>${item.id}</td>
+                <td>${item.isHotLead ? '<span title="Hot Lead" style="color: red;">💰</span><br><br>' : ''}${item.id}</td>
                 <td>${item.col2}</td>
                 <td>${item.col3}</td>
                 <td>
                     <div style="display: flex; align-items: center; gap: 8px;">
                         <div style="display: flex; flex-direction: column; gap: 4px;">
-                        <input 
-                            type="text" 
-                            value="${item.phoneA}" 
-                            data-passenger-id="${item.passengerId}" 
-                            class="phoneInput phoneInputA" 
-                            style="width: 110px; padding: 4px;"
-                        />
-                        <input 
-                            type="text" 
-                            value="${item.phoneB}" 
-                            data-passenger-id="${item.passengerId}" 
-                            class="phoneInput phoneInputB" 
-                            style="width: 110px; padding: 4px;"
-                        />
+                            <input 
+                                type="text" 
+                                value="${item.phoneA}" 
+                                data-passenger-id="${item.passengerId}" 
+                                class="phoneInput phoneInputA" 
+                                style="width: 110px; padding: 4px;"
+                            />
+                            <input 
+                                type="text" 
+                                value="${item.phoneB}" 
+                                data-passenger-id="${item.passengerId}" 
+                                class="phoneInput phoneInputB" 
+                                style="width: 110px; padding: 4px;"
+                            />
                         </div>
                         <button id="saveButton" onclick="savePhoneNumber(this)" style="cursor: pointer; border: none; background: none;">
-                        💾
+                            💾
                         </button>
                     </div>
-                    </td>
+                </td>
                 <td>${item.col5}</td>
                 <td>${item.col6}</td>
                 <td>${item.col7}</td>
@@ -753,6 +788,7 @@
                 </td>
             </tr>`;
         });
+
         renderPagination(totalPages);
 
         // Sincroniza checkboxes com seleção global
@@ -773,6 +809,7 @@
 
         updateSelectAllCheckbox();
     }
+
 
     async function savePhoneNumber(button) {
         const row = button.closest("tr");
@@ -1098,12 +1135,49 @@
         selectAll.indeterminate = !allChecked && someChecked;
     }
 
-    function viewPDF(url, id) {
-        event.preventDefault(); // Previne o comportamento padrão do link
-        event.stopPropagation(); // Evita que o clique propague para a linha
+    // function viewPDF(url, id) {
+    //     event.preventDefault(); // Previne o comportamento padrão do link
+    //     event.stopPropagation(); // Evita que o clique propague para a linha
         
-        document.getElementById("pdfViewer").data = url;
-        document.getElementById("pdfId").textContent = id;
+    //     document.getElementById("pdfViewer").data = url;
+    //     document.getElementById("pdfId").textContent = id;
+
+    //     const freeSpace = document.getElementById("freeSpace");
+    //     const tableContainer = document.querySelector(".table-container");
+
+    //     freeSpace.style.display = "block";
+    //     freeSpace.style.width = "30%";
+    //     tableContainer.style.width = "70%";
+    //     freeSpace.style.opacity = "1";
+    //     freeSpace.style.transition = "width 0.3s ease, opacity 0.3s ease";
+    //     tableContainer.style.transition = "width 0.3s ease";
+    // }
+
+    function viewPDF(url, id, isMinnesota) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        if (isMinnesota) {
+            window.open(url, '_blank');
+            return;
+        }
+
+        const pdfContainer = document.getElementById("pdfViewerContainer");
+        const pdfLabel = document.getElementById("pdfId");
+
+        pdfContainer.innerHTML = "";
+
+        const isPDF = url.endsWith(".pdf") || url.includes(".pdf?");
+
+        if (isPDF) {
+            pdfContainer.innerHTML = `<object id="pdfViewer" data="${url}" type="application/pdf" width="100%" height="100%">
+                <p>Este navegador não suporta visualização de PDF. <a href="${url}" target="_blank">Clique aqui para abrir</a>.</p>
+            </object>`;
+        } else {
+            pdfContainer.innerHTML = `<iframe src="${url}" width="100%" height="100%" style="border: none;"></iframe>`;
+        }
+
+        pdfLabel.textContent = id;
 
         const freeSpace = document.getElementById("freeSpace");
         const tableContainer = document.querySelector(".table-container");
@@ -1115,6 +1189,8 @@
         freeSpace.style.transition = "width 0.3s ease, opacity 0.3s ease";
         tableContainer.style.transition = "width 0.3s ease";
     }
+
+
 
     function hidePDF() {
         const freeSpace = document.getElementById("freeSpace");
