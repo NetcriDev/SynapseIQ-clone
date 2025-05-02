@@ -734,7 +734,7 @@
             // const linkIcon = item.col12 ? `<a href="#" onclick="viewPDF('${item.col12}', '${item.id}')">🔗</a>` : "";
 
             const isMinnesota = item.sourceFolder?.toLowerCase() === "minnesota";
-            const icon = isMinnesota ? "🌐" : "🔗";
+            const icon = isMinnesota ? "🌐" : "📄";
             const linkIcon = item.col12 
                 ? `<a href="#" onclick="viewPDF('${item.col12}', '${item.id}', ${isMinnesota})" title="${isMinnesota ? 'Open on New Window' : 'View PDF'}">${icon}</a>`
                 : "";
@@ -744,7 +744,10 @@
             `<tr class="main-row ${item.isHotLead ? 'hot-lead' : ''}" data-id="${item.id}">
                 <td><input type="checkbox" class="rowCheckbox" data-id="${item.id}" data-item='${itemString}'></td>
                 <td class="expand-icon" onclick="toggleDetails('${item.id}')">▶</td>
-                <td>${item.isHotLead ? '<span title="Hot Lead" style="color: red;">💰</span><br><br>' : ''}${item.id}</td>
+                <td style="white-space: nowrap;">
+                ${item.isHotLead ? '<span title="Hot Lead" style="color: red;">💰</span>' : ''}
+                ${item.id}
+                </td>
                 <td>${item.col2}</td>
                 <td>${item.col3}</td>
                 <td>
