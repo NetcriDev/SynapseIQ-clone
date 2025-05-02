@@ -593,7 +593,7 @@
         dados.forEach(incidente => {
             const caminho = incidente.original_document_location?.replace(/\\/g, "/");
             const partes = caminho?.split("/");
-            const folder = partes?.[3] || "--";
+            const folder = partes?.[3] || "Texas";
 
             incidente.vehicles.forEach(veiculo => {
                 const motorista = veiculo.passengers?.find(p => p.role === "Driver") || {
@@ -627,7 +627,7 @@
                 const nearestHopeMiles = incidente.nearest_hope_d ? ` Miles: ${incidente.nearest_hope_d}` : "";
                 const nearesHopeCenter = incidente.name_nearest_hope ? ` <br> Center: ${incidente.name_nearest_hope}` : "";
 
-                if (["Unknown", "--", "UNKNOWN", "N/A"].some(term => driverName.includes(term))) return;
+                if (["Unknown",  "UNKNOWN", "N/A"].some(term => driverName.includes(term))) return;
 
                 // Calcula se é hot lead
                 const crashDate = new Date(incidente.accident_datetime);
@@ -733,11 +733,26 @@
 
             // const linkIcon = item.col12 ? `<a href="#" onclick="viewPDF('${item.col12}', '${item.id}')">🔗</a>` : "";
 
+            // const isMinnesota = item.sourceFolder?.toLowerCase() === "minnesota";
+            // const icon = isMinnesota ? "🌐" : "📄";
+            // const linkIcon = item.col12 
+            //     ? `<a href="#" onclick="viewPDF('${item.col12}', '${item.id}', ${isMinnesota})" title="${isMinnesota ? 'Open on New Window' : 'View PDF'}">${icon}</a>`
+            //     : "";
+
             const isMinnesota = item.sourceFolder?.toLowerCase() === "minnesota";
+            const isTexas = item.sourceFolder?.toLowerCase() === "texas";
+            const hasLink = !!item.col12;
             const icon = isMinnesota ? "🌐" : "📄";
-            const linkIcon = item.col12 
-                ? `<a href="#" onclick="viewPDF('${item.col12}', '${item.id}', ${isMinnesota})" title="${isMinnesota ? 'Open on New Window' : 'View PDF'}">${icon}</a>`
-                : "";
+
+            let linkIcon = "";
+
+            if (isTexas) {
+                linkIcon = `<span title="Link desabilitado para Texas" style="color: gray;">❌</span>`;
+            } else if (hasLink) {
+                linkIcon = `<a href="#" onclick="viewPDF('${item.col12}', '${item.id}', ${isMinnesota})" title="${isMinnesota ? 'Open on New Window' : 'View PDF'}">${icon}</a>`;
+            } else {
+                linkIcon = `<span title="Sem link disponível" style="color: gray;">🚫</span>`;
+            }
 
             // <td>${isHotLead ? '<img src="./images/fire-dolar-icon.ico" alt="Hot Lead" title="Hot Lead" style="width: 18px; vertical-align: middle; margin-right: 4px;">' : ''}${item.id}</td>
             tableBody.innerHTML += 
@@ -860,7 +875,6 @@
         }
     }
 
-
     function escapeHtml(unsafe) {
         return unsafe
             .replace(/&/g, "&amp;")
@@ -903,46 +917,79 @@
         container.innerHTML = "";
 
         const groupSize = 10;
+        const currentBlock = Math.floor((currentPage - 1) / groupSize);
+        const pageGroupStart = currentBlock * groupSize + 1;
         const groupEnd = Math.min(pageGroupStart + groupSize - 1, totalPages);
 
-        // Botões "Ver X" ANTES do grupo atual
-        for (let i = 1; i < pageGroupStart; i += groupSize) {
-            const jumpBackBtn = document.createElement("button");
-            jumpBackBtn.textContent = `◀ (${i})`;
-            jumpBackBtn.classList.add("special");
-            jumpBackBtn.onclick = () => {
-                pageGroupStart = i;
-                currentPage = i;
+        // Botão "Primeira" se não está no primeiro bloco
+        if (currentBlock > 0) {
+            const btnFirst = document.createElement("button");
+            btnFirst.textContent = "« First";
+            btnFirst.classList.add("special");
+            btnFirst.onclick = () => {
+                currentPage = 1;
+                renderPagination(totalPages);
                 renderTable();
             };
-            container.appendChild(jumpBackBtn);
+            container.appendChild(btnFirst);
         }
 
-        // Botões do grupo atual
+        // Bloco anterior (◀X)
+        if (currentBlock > 0) {
+            const prevBlockStart = (currentBlock - 1) * groupSize + 1;
+            const btn = document.createElement("button");
+            btn.textContent = `« ${prevBlockStart}`;
+            btn.classList.add("special");
+            btn.onclick = () => {
+                currentPage = prevBlockStart;
+                renderPagination(totalPages);
+                renderTable();
+            };
+            container.appendChild(btn);
+        }
+
+        // Páginas do grupo atual
         for (let i = pageGroupStart; i <= groupEnd; i++) {
             const btn = document.createElement("button");
             btn.textContent = i;
             btn.style.fontWeight = i === currentPage ? "bold" : "normal";
             btn.onclick = () => {
                 currentPage = i;
+                renderPagination(totalPages);
                 renderTable();
             };
             container.appendChild(btn);
         }
 
-        // Botões "Ver X" DEPOIS do grupo atual
-        for (let i = groupEnd + 1; i <= totalPages; i += groupSize) {
-            const jumpNextBtn = document.createElement("button");
-            jumpNextBtn.textContent = `(${i}) ▶`;
-            jumpNextBtn.classList.add("special");
-            jumpNextBtn.onclick = () => {
-                pageGroupStart = i;
-                currentPage = i;
+        // Próximo bloco (X▶)
+        const nextBlockStart = (currentBlock + 1) * groupSize + 1;
+        if (nextBlockStart <= totalPages) {
+            const btn = document.createElement("button");
+            btn.textContent = `${nextBlockStart} »`;
+            btn.classList.add("special");
+            btn.onclick = () => {
+                currentPage = nextBlockStart;
+                renderPagination(totalPages);
                 renderTable();
             };
-            container.appendChild(jumpNextBtn);
+            container.appendChild(btn);
+        }
+
+        // Botão "Última"
+        const lastBlockStart = Math.floor((totalPages - 1) / groupSize) * groupSize + 1;
+        if (nextBlockStart < lastBlockStart) {
+            const btn = document.createElement("button");
+            btn.textContent = `Last »`;
+            btn.classList.add("special");
+            btn.onclick = () => {
+                currentPage = totalPages;
+                renderPagination(totalPages);
+                renderTable();
+            };
+            container.appendChild(btn);
         }
     }
+
 
     // Função para carregar todos os filtros de forma interdependente
     function loadFilters() {
@@ -1098,7 +1145,6 @@
         document.body.removeChild(link);
     }
 
-
     // Função para selecionar/deselecionar todos os checkboxes
     function toggleSelectAll(masterCheckbox) {
         const isChecked = masterCheckbox.checked;
@@ -1192,8 +1238,6 @@
         freeSpace.style.transition = "width 0.3s ease, opacity 0.3s ease";
         tableContainer.style.transition = "width 0.3s ease";
     }
-
-
 
     function hidePDF() {
         const freeSpace = document.getElementById("freeSpace");
