@@ -42,7 +42,7 @@
                                 <th>Driver Name</th>
                                 <th>Phone N°</th>
                                 <th>Insurance Details</th>
-                                <th>Crash Severity</th>
+                                <th>Severity</th>
                                 <th>Age</th>
                                 <th>Gender</th>
                                 <th>Address</th>
@@ -54,6 +54,9 @@
                         </thead>
                         <tbody id="tableBody"></tbody>
                     </table>
+                </div>
+                <div id="loading" style="text-align: center; padding: 100px; ">
+                    <span style="font-size: 20px;">🔄 Loading Data...</span>
                 </div>
                 <div id="pagination"></div>
             </div>
@@ -538,16 +541,19 @@
 
             const dados = await resposta.json();
             data = transformData(dados);
-            updateRelationStateCity(dados); // <-- ESSENCIAL!
+            updateRelationStateCity(dados);
             loadFilters();
             renderTable();
 
         } catch (erro) {
             console.error("Erro ao buscar incidentes:", erro);
-        }
+                document.getElementById("loading").innerText = "Erro ao carregar os dados.";
+            } finally {
+                document.getElementById("loading").style.display = "none"; // esconde loading
+            }
     }
 
-    // const API_URL = "https://8162-52-116-202-144.ngrok-free.app/incident/search?page=1&page_size=2000";
+    // const API_URL = "https://8162-52-116-202-144.ngrok-free.app/incident/search?page=1&page_size=1000";
     // let filteredData = [];         // Armazena os dados filtrados globalmente
     // const selectedItems = new Set(); // Armazena os itens selecionados globalmente
 
@@ -570,6 +576,9 @@
 
     //     } catch (erro) {
     //         console.error("Erro ao buscar incidentes:", erro);
+    //         document.getElementById("loading").innerText = "Erro ao carregar os dados.";
+    //     } finally {
+    //         document.getElementById("loading").style.display = "none"; // esconde loading
     //     }
     // }
 
@@ -586,7 +595,6 @@
             // ...adicione os que faltar
         };
 
-        // Obtém a data atual e calcula a data de 48 horas atrás
         const now = new Date();
         const fortyEightHoursAgo = new Date(now.getTime() - (48 * 60 * 60 * 1000));
 
@@ -596,95 +604,93 @@
             const folder = partes?.[3] || "Texas";
 
             incidente.vehicles.forEach(veiculo => {
-                const motorista = veiculo.passengers?.find(p => p.role === "Driver") || {
-                    name: veiculo.driver_name,
-                    first_name: veiculo.driver_first_name,
-                    middle_name: veiculo.driver_middle_name,
-                    last_name: veiculo.driver_last_name,
-                    phone2: null,
-                    age: "--",
-                    gender: "--"
-                };
+                const passageiros = veiculo.passengers && veiculo.passengers.length > 0
+                    ? veiculo.passengers
+                    : [{
+                        id: null,
+                        name: veiculo.driver_name,
+                        first_name: veiculo.driver_first_name,
+                        middle_name: veiculo.driver_middle_name,
+                        last_name: veiculo.driver_last_name,
+                        phone2: null,
+                        age: "--",
+                        gender: "--"
+                    }];
 
-                const phones = (motorista.phone2 || "").split(",").map(p => p.trim());
-                const phoneA = phones[0] || "";
-                const phoneB = phones[1] || "";
+                passageiros.forEach(motorista => {
+                    const phones = (motorista.phone2 || "").split(",").map(p => p.trim());
+                    const phoneA = phones[0] || "";
+                    const phoneB = phones[1] || "";
 
-                const nameParts = [
-                    motorista.first_name,
-                    motorista.middle_name,
-                    motorista.last_name
-                ].filter(part => part && part.trim() !== "");
+                    const nameParts = [
+                        motorista.first_name,
+                        motorista.middle_name,
+                        motorista.last_name
+                    ].filter(part => part && part.trim() !== "");
 
-                const driverName = nameParts.length > 0 
-                    ? nameParts.join(" ") 
-                    : motorista.name || "--";
+                    const driverName = nameParts.length > 0
+                        ? nameParts.join(" ")
+                        : motorista.name || "--";
 
-                const insuranceDetails = veiculo.insurance_company ? `Insurance Company: ${veiculo.insurance_company}` : "--";
-                const driverLicense = veiculo.driver_license ? ` <br> License: ${veiculo.driver_license}` : "";
-                const policyNumber = veiculo.policy_number ? ` <br> Policy: ${veiculo.policy_number}` : "";
+                    if (["Unknown", "UNKNOWN", "N/A"].some(term => driverName.includes(term))) return;
 
-                const nearestHopeMiles = incidente.nearest_hope_d ? ` Miles: ${incidente.nearest_hope_d}` : "";
-                const nearesHopeCenter = incidente.name_nearest_hope ? ` <br> Center: ${incidente.name_nearest_hope}` : "";
+                    const insuranceDetails = veiculo.insurance_company
+                        ? `Insurance Company: ${veiculo.insurance_company}`
+                        : "--";
+                    const driverLicense = veiculo.driver_license ? ` <br> License: ${veiculo.driver_license}` : "";
+                    const policyNumber = veiculo.policy_number ? ` <br> Policy: ${veiculo.policy_number}` : "";
 
-                if (["Unknown",  "UNKNOWN", "N/A"].some(term => driverName.includes(term))) return;
+                    const crashSeverity = incidente.crash_severity ? `Crash: ${incidente.crash_severity}` : "--";
+                    const injurySeverity = motorista.injury_severity ? ` <br> Type: ${motorista.injury_severity}` : "";
 
-                // Calcula se é hot lead
-                const crashDate = new Date(incidente.accident_datetime);
-                const isRecentCrash = crashDate >= fortyEightHoursAgo;
-                const hasValidPhone = (phoneA && phoneA !== "--" && phoneA.replace(/[, ]/g, '') !== "") || 
-                                    (phoneB && phoneB !== "--" && phoneB.replace(/[, ]/g, '') !== "");
-                const hasInsurance = insuranceDetails !== "--";
-                const isNearHopeCenter = incidente.nearest_hope_d && parseFloat(incidente.nearest_hope_d) < 30;
-                const isHotLead = hasValidPhone && hasInsurance && isNearHopeCenter && isRecentCrash;
+                    const nearestHopeMiles = incidente.nearest_hope_d ? ` Miles: ${incidente.nearest_hope_d}` : "";
+                    const nearesHopeCenter = incidente.name_nearest_hope ? ` <br> Center: ${incidente.name_nearest_hope}` : "";
 
-                incidentesFormatados.push({
-                    id: incidente.report_number,
-                    col2: incidente.accident_datetime.split("T")[0],
-                    col3: driverName,
-                    phoneA: phoneA,  
-                    phoneB: phoneB,  
-                    col5: (insuranceDetails + driverLicense + policyNumber) || "--",
-                    col6: incidente.crash_severity || "--",
-                    col7: motorista.age || "--",
-                    col8: motorista.gender || "--",
-                    col9: veiculo.owner_address || "--",  // incidente.street || 
-                    // col10: incidente.state || "--",
-                    col10: stateAbbreviations[incidente.state?.trim()] || incidente.state || "--",
-                    col11: incidente.city || "--",
-                    // col12: `https://8162-52-116-202-144.ngrok-free.app/incident/pdf/view/${incidente.pdf_id || incidente.report_number}`,
-                    col12: folder?.toLowerCase() === "minnesota"
-                        ? incidente.source_url
-                        : `https://8162-52-116-202-144.ngrok-free.app/incident/pdf/view/${incidente.pdf_id || incidente.report_number}`,
-                    col13: (nearestHopeMiles + nearesHopeCenter) || "--",
-                    sourceFolder: folder,
-                    original: incidente,
-                    passengerId: motorista.id,
-                    isHotLead: isHotLead  // Adicionamos esta propriedade
-                }); 
+                    // Hot lead logic
+                    const crashDate = new Date(incidente.accident_datetime);
+                    const isRecentCrash = crashDate >= fortyEightHoursAgo;
+                    const hasValidPhone = (phoneA && phoneA !== "--" && phoneA.replace(/[, ]/g, '') !== "") ||
+                                        (phoneB && phoneB !== "--" && phoneB.replace(/[, ]/g, '') !== "");
+                    const hasInsurance = insuranceDetails !== "--";
+                    const isNearHopeCenter = incidente.nearest_hope_d && parseFloat(incidente.nearest_hope_d) < 30;
+                    const isHotLead = hasValidPhone && hasInsurance && isNearHopeCenter && isRecentCrash;
 
+                    incidentesFormatados.push({
+                        id: incidente.report_number,
+                        col2: incidente.accident_datetime.split("T")[0],
+                        col3: driverName,
+                        phoneA: phoneA,
+                        phoneB: phoneB,
+                        col5: (insuranceDetails + driverLicense + policyNumber) || "--",
+                        col6: (crashSeverity+injurySeverity) || "--",
+                        col7: motorista.age || "--",
+                        col8: motorista.gender || "--",
+                        col9: veiculo.owner_address || "--",
+                        col10: stateAbbreviations[incidente.state?.trim()] || incidente.state || "--",
+                        col11: incidente.city || "--",
+                        col12: folder?.toLowerCase() === "minnesota"
+                            ? incidente.source_url
+                            : `https://8162-52-116-202-144.ngrok-free.app/incident/pdf/view/${incidente.pdf_id || incidente.report_number}`,
+                        col13: (nearestHopeMiles + nearesHopeCenter) || "--",
+                        sourceFolder: folder,
+                        original: incidente,
+                        passengerId: motorista.id,
+                        isHotLead: isHotLead
+                    });
+                });
             });
         });
 
         return incidentesFormatados.sort((a, b) => {
             function getPriority(item) {
-                const hasPhone = ((item.phoneA && item.phoneA !== "--" && item.phoneA.replace(/[, ]/g, '') !== "") || 
+                const hasPhone = ((item.phoneA && item.phoneA !== "--" && item.phoneA.replace(/[, ]/g, '') !== "") ||
                                 (item.phoneB && item.phoneB !== "--" && item.phoneB.replace(/[, ]/g, '') !== ""));
                 const hasInsurance = item.col5 !== "--";
 
-                // Hot lead sempre prioridade máxima
                 if (item.isHotLead) return 300;
-
-                // Tem telefone + tem seguro
                 if (hasPhone && hasInsurance) return 200;
-
-                // Tem telefone, sem seguro
                 if (hasPhone) return 100;
-
-                // Sem telefone, mas tem seguro
                 if (hasInsurance) return 50;
-
-                // Sem nada
                 return 0;
             }
 
@@ -695,10 +701,8 @@
                 return priorityB - priorityA;
             }
 
-            // Mesma prioridade: ordena por data mais recente
             return new Date(b.col2) - new Date(a.col2);
         });
-
     }
 
 
