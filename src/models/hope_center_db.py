@@ -71,6 +71,15 @@ hope_centers_data = [
         "latitude": 32.36670516111531,
         "longitude": -106.73747488252057,
         "state_abbreviation": "NM"
+    },
+    {
+        "state": "North Carolina",
+        "city": "Winston Salem",
+        "name": "Winston-Salem Center",
+        "address": "1255 Creekshire Way, Unit 220, Winston-Salem, NC 27103",
+        "latitude": 36.066557,
+        "longitude": -80.325126,
+        "state_abbreviation": "NC"
     }
 ]
 
