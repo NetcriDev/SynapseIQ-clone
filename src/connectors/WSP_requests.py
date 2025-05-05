@@ -63,6 +63,8 @@ def insert_dataframe_into_db(df: pd.DataFrame, file_path: str, home_path: str = 
         vin = str(row.get('VIN', '')).strip()
         insurance = str(row.get('Insurance', '')).strip()
         policy = str(row.get('Policy', '')).strip()
+        severity = str(row.get('Severity', '')).strip()
+        cost = str(row.get('Costs', '')).strip()
         generation_date = datetime.now()
         age = int(row['Age']) if pd.notnull(row.get('Age')) and str(row.get('Age')).strip().isdigit() else None
         date_birth = int(row['Date of Birth']) if pd.notnull(row.get('Date of Birth')) and str(row.get('Date of Birth')).strip().isdigit() else None
@@ -85,8 +87,8 @@ def insert_dataframe_into_db(df: pd.DataFrame, file_path: str, home_path: str = 
                 INSERT INTO incident_reports (
                     report_number, internal_report_number, source_url, accident_datetime, city, state, street,
                     technical_notes, json, original_document_location, generation_date,
-                    original_format, nearest_hope_d, name_nearest_hope
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    original_format, nearest_hope_d, name_nearest_hope, crash_severity
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 RETURNING id
             """, (
                 report_number,
@@ -102,7 +104,8 @@ def insert_dataframe_into_db(df: pd.DataFrame, file_path: str, home_path: str = 
                 generation_date,
                 "pdf",
                 hope_center[1] if hope_center else None,
-                hope_center[0] if hope_center else None  
+                hope_center[0] if hope_center else None,
+                severity  
             ))
             incident_id = cur.fetchone()[0]
 
@@ -123,8 +126,9 @@ def insert_dataframe_into_db(df: pd.DataFrame, file_path: str, home_path: str = 
                         driver_name, technical_notes,
                         driver_first_name, 
                         driver_middle_name, 
-                        driver_last_name
-                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                        driver_last_name,
+                        estimated_cost
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                     RETURNING id
                 """, (
                     incident_id,
@@ -135,7 +139,8 @@ def insert_dataframe_into_db(df: pd.DataFrame, file_path: str, home_path: str = 
                     "Inserted from WSP Daily DataFrame",
                     driver_first,
                     driver_middle,
-                    driver_last
+                    driver_last,
+                    cost
                 ))
                 vehicle_id = cur.fetchone()[0]
 
@@ -299,12 +304,13 @@ def run_wsp_crash_scraper(output_dir, home_path: str = None):
     list_States=[]
     list_Addresses=[]
     list_DOB=[]
+    list_costs=[]
 
     # Creating Date Variable
-    days=2 #2
+    days=4 #2
     # (-1) from today
     desired_date = datetime.now() - timedelta(days)
-    logger.info(desired_date)
+    #print(desired_date)
     # Format 1: 2024.11.6 (NOV)
     format1 = desired_date.strftime('%Y.%m.%d')
     # Format 2: 11/06/2024 (NOV)
@@ -386,22 +392,20 @@ def run_wsp_crash_scraper(output_dir, home_path: str = None):
         pages = 0
     logger.info('pages total:' + str(pages))
 
+
     # Update data info in response to get other page details
     for page in range(pages):
-        logger.info('running page' + str(page))
+        #print('running page',page)
         data = ('''__EVENTTARGET=&__EVENTARGUMENT=&__VIEWSTATE='''+viewstate.replace('/','%2F')+'''&__VIEWSTATEGENERATOR=0C6A3359&ob_iDdlob_grid1PageSizeSelectorTB=10&ASPxRoundPanel2%24grid1%24ob_grid1FooterContainer%24ob_grid1PageSizeSelector=10&ob_iDdlob_grid1PageSizeSelectorSIS=1&ASPxRoundPanel2%24grid1%24ob_grid1EditControl1=&ASPxRoundPanel2%24grid1%24ob_grid1EditControl2=&ASPxRoundPanel2%24grid1%24ob_grid1EditControl3=&ASPxRoundPanel2%24grid1%24ob_grid1EditControl4=&ASPxRoundPanel2%24grid1%24ob_grid1ViewstateContainer='''+
                 viewstateContainer
                 +'''&ASPxRoundPanel2%24grid1%24ob_grid1EMRC=&ASPxRoundPanel2%24grid1%24ob_grid1PageSelector='''+
                 str(1+page)+'''&ASPxRoundPanel2%24grid1%24ob_grid1TotalRecords=32&ASPxRoundPanel2%24grid1%24ob_grid1CellDivsWidthContainer=&ASPxRoundPanel2%24grid1%24ob_grid1ColumnsWidthContainer=0%2C110%2C90%2C50%25%2C50%25&ASPxRoundPanel2%24grid1%24ob_grid1VSC=&ASPxRoundPanel2%24grid1%24ob_grid1FBConfC=1&ASPxRoundPanel2%24grid1%24ob_grid1CFEC=&ASPxRoundPanel2%24grid1%24ob_grid1SerializedCols=key_crash*_o_osep_*None*_o_osep_*0*_o_osep_*false*_o_osep_*0*_o_osep_*false*_o_osep_*0*_o_osep_*key_crash*_o_asep_*LocalUse*_o_osep_*Desc*_o_osep_*0*_o_osep_*false*_o_osep_*0*_o_osep_*true*_o_osep_*1*_o_osep_*LocalUse*_o_asep_*DateOfCrash*_o_osep_*None*_o_osep_*0*_o_osep_*false*_o_osep_*0*_o_osep_*true*_o_osep_*2*_o_osep_*DateOfCrash*_o_asep_*LastName*_o_osep_*None*_o_osep_*0*_o_osep_*false*_o_osep_*0*_o_osep_*true*_o_osep_*3*_o_osep_*LastName*_o_asep_*RoadOn*_o_osep_*None*_o_osep_*0*_o_osep_*false*_o_osep_*0*_o_osep_*true*_o_osep_*4*_o_osep_*RoadOn&ASPxRoundPanel2%24grid1%24ob_grid1SortExpression=&ASPxRoundPanel2%24grid1%24ob_grid1SortOrder=&&__ob_gridgrid1IsCallback=1&__CALLBACKID=ASPxRoundPanel2%24grid1&__CALLBACKPARAM=&__EVENTVALIDATION='''+eventvalidation.replace('/','%2F')
                 )
-        try:
-            response = requests.post(
-                'https://winston-salem.ecrash.interplat.com/SearchReports.aspx',
-                headers=headers,
-                data=data,
-            )
-        except Exception as e:
-            logger.error(e)
+        response = requests.post(
+            'https://winston-salem.ecrash.interplat.com/SearchReports.aspx',
+            headers=headers,
+            data=data,
+        )
         # Update html and scrap each page remaining
         soup = BeautifulSoup(response.content, 'html.parser')
         trs_table = soup.find("table", class_="ob_gBody").find("tbody").find_all("tr")
@@ -419,8 +423,9 @@ def run_wsp_crash_scraper(output_dir, home_path: str = None):
         report_id = list_url[k].split("id=")[1].split("'")[0]
         list_url_final.append(f"{base_url}{report_id}")
 
+
     # PDF Scrapping ---------------------------------------------------------------------------------
-    logger.info("List Driver: " + str(list_driver))
+    #print(list_driver)
     for k in range(len(list_url)):
         attempts=0
         while attempts<10:
@@ -524,7 +529,6 @@ def run_wsp_crash_scraper(output_dir, home_path: str = None):
                             pdf.write(chunk)
 
                 # Criar uma cópia do arquivo como "xx.pdf"
-                logger.warning(" Axiliar list_report: " + str(list_report[k]))
                 with open(os.path.join(path_ws,'temp_file.pdf'), "rb") as temp_pdf, open(os.path.join(path_ws,list_report[k]+".pdf"), "wb") as copy_pdf:
                     copy_pdf.write(temp_pdf.read())
 
@@ -637,6 +641,24 @@ def run_wsp_crash_scraper(output_dir, home_path: str = None):
                     else:
                         policies.append('')
 
+            # Extract Estimated cost
+            cost = []
+            if "eated $" in texto:
+                cost_parts = texto.split("eated $")
+                for part in cost_parts[1:]:  # ignora a primeira parte
+                    part = part.strip()  # remove espaços em branco
+                    # print(part)
+                    if part:  # verifica se a parte não está vazia
+                        costs = part.partition("eated $")[2].strip() # Passo 1: Dividir a string após "eated $"
+                        costs = part.partition("Insurance")[0].strip() # Passo 2: Dividir novamente, agora antes do "Insurance"
+                        # Verifica se o número da apólice é válido (não é "20" e é um número)
+                        if costs:
+                            cost.append(costs)
+                        else:
+                            costs.append('')
+                    else:
+                        costs.append('')
+
         # Save content in list
         list_insurance.append(insurance)
         list_vin.append(vins)
@@ -646,12 +668,12 @@ def run_wsp_crash_scraper(output_dir, home_path: str = None):
         list_States.append(States)
         list_Addresses.append(Addresses)
         list_DOB.append(DOB)
+        list_costs.append(cost)
         
         # Deleta o arquivo após a leitura
         os.remove(os.path.join(path_ws,'temp_file.pdf'))
 
     # print(texto)
-
     # DF Creation -----------------------------------------------------------------------------------
     df = pd.DataFrame({
         "REPORT": list_report,
@@ -665,10 +687,11 @@ def run_wsp_crash_scraper(output_dir, home_path: str = None):
         "Cities": list_cities,
         "States": list_States,
         "DOB": list_DOB,
+        "Costs": list_costs,
     })
 
     # Colunas que precisam ser expandidas
-    cols_to_explode = ["DRIVERS", "Insurances", "VINs", "Policies", "Cities", "States","STREET","DOB"]
+    cols_to_explode = ["DRIVERS", "Insurances", "VINs", "Policies", "Cities", "States","STREET","DOB", "Costs"]
 
     # Garantir que todas as colunas tenham listas com o mesmo tamanho por linha
     max_len = df[cols_to_explode].applymap(len).max(axis=1)
@@ -696,6 +719,46 @@ def run_wsp_crash_scraper(output_dir, home_path: str = None):
     df_expanded['Driver']=df_expanded['Driver'].apply(lambda x: 'UNKNOWN' if x.strip()=='' else x)
     df_expanded['Date of Birth']=df_expanded['Date of Birth'].apply(lambda x: '' if len(x)<4 else x)
     df_expanded['Age'] = df_expanded['Date of Birth'].apply(lambda x: datetime.now().year - int(x) if x.isdigit() and len(x) == 4 else '')
+    df_expanded['Costs'] = df_expanded['Costs'].str.split(' 43 ').str[0]
+
+    df_expanded['Costs'] = (
+        df_expanded['Costs']
+        .str.replace(",", "")  # Remove a vírgula (2,000.00 → 2000.00)
+        .str.replace(".00", "")  # Remove .00 (2000.00 → 2000)
+        .str.strip()  # Remove espaços extras
+    )
+
+    # Converte para float, forçando valores não numéricos a se tornarem NaN
+    df_expanded['Costs'] = pd.to_numeric(df_expanded['Costs'], errors='coerce')
+
+    def classify_severity(cost):
+        if pd.isna(cost):  # Caso o valor seja NaN (não numérico)
+            return "Invalid"  # Ou outro valor de sua escolha
+        elif cost < 1500:
+            return "Low"
+        elif 1500 <= cost < 5000:
+            return "High"
+        elif 5000 <= cost < 10000:
+            return "Severe"
+        else:
+            return "Critical"
+        
+    df_expanded['Severity'] = df_expanded['Costs'].apply(classify_severity)
+    # Substitui valores NaN por 0 ou outro valor adequado
+    df_expanded['Costs'] = df_expanded['Costs'].fillna(0)
+    # Agora converte para int sem erro
+    df_expanded['Costs'] = df_expanded['Costs'].astype(int)
+    # df_expanded = df_expanded.dropna(subset=['Costs'], how='all')
+
+    def mover_para_ultima_coluna(df, coluna):
+        if coluna in df.columns:
+            colunas = [c for c in df.columns if c != coluna] + [coluna]
+            return df[colunas]
+        else:
+            return df
+
+    # Uso:
+    df_expanded = mover_para_ultima_coluna(df_expanded, "Costs")
 
     #add current date to file name
     file_name= os.path.join(path_ws,'Data_Crashes_WSP_Daily_'+format1+'.csv')    #datetime.now().strftime('%Y%m%d')+'.csv'
