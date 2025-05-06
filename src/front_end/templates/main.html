@@ -571,8 +571,8 @@
             renderTable();
 
         } catch (erro) {
-            console.error("Erro ao buscar incidentes:", erro);
-            document.getElementById("loading").innerText = "Erro ao carregar os dados.";
+            console.error("Errr loading incidents:", erro);
+            document.getElementById("loading").innerText = "Errr loading data.";
         } finally {
             document.getElementById("loading").style.display = "none"; // esconde loading
         }
@@ -622,8 +622,6 @@
             // ...adicione os que faltar
         };
 
-        const now = new Date();
-        const fortyEightHoursAgo = new Date(now.getTime() - (48 * 60 * 60 * 1000));
 
         dados.forEach(incidente => {
             const caminho = incidente.original_document_location?.replace(/\\/g, "/");
@@ -675,11 +673,19 @@
 
                     // Hot lead logic
                     const crashDate = new Date(incidente.accident_datetime);
-                    const isRecentCrash = crashDate >= fortyEightHoursAgo;
+                    crashDate.setHours(0, 0, 0, 0);
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    const daysAgo = (today - crashDate) / (1000 * 60 * 60 * 24);
+                    const isRecentCrash = daysAgo <= 2;
+
                     const hasValidPhone = (phoneA && phoneA !== "--" && phoneA.replace(/[, ]/g, '') !== "") ||
                                         (phoneB && phoneB !== "--" && phoneB.replace(/[, ]/g, '') !== "");
                     const hasInsurance = insuranceDetails !== "--";
-                    const isNearHopeCenter = incidente.nearest_hope_d && parseFloat(incidente.nearest_hope_d) < 30;
+
+                    const nearestMiles = parseFloat(incidente.nearest_hope_d);
+                    const isNearHopeCenter = !isNaN(nearestMiles) && nearestMiles <= 20;
+                    
                     const isHotLead = hasValidPhone && hasInsurance && isNearHopeCenter && isRecentCrash;
 
                     incidentesFormatados.push({
@@ -787,9 +793,9 @@
 
             // <td>${isHotLead ? '<img src="./images/fire-dolar-icon.ico" alt="Hot Lead" title="Hot Lead" style="width: 18px; vertical-align: middle; margin-right: 4px;">' : ''}${item.id}</td>
             tableBody.innerHTML += 
-            `<tr class="main-row ${item.isHotLead ? 'hot-lead' : ''}" data-id="${item.id}">
+            `<tr class="main-row ${item.isHotLead ? 'hot-lead' : ''}" data-id="${item.id}" data-uid="${index}">
                 <td><input type="checkbox" class="rowCheckbox" data-id="${item.id}" data-item='${itemString}'></td>
-                <td class="expand-icon" onclick="toggleDetails('${item.id}')">▶</td>
+                <td class="expand-icon" onclick="toggleDetails('${item.id}', ${index})">▶</td>
                 <td style="white-space: nowrap;">
                 ${item.isHotLead ? '<span title="Hot Lead" style="color: red;">💰</span>' : ''}
                 ${item.id}
@@ -838,9 +844,9 @@
                 <td>${linkIcon}</td>    
                 <td style="${getMilesCellStyle(item.col13)}">${item.col13}</td>
             </tr>
-            <tr class="details-row" id="details-${item.id}" style="display: none;">
+            <tr class="details-row" id="details-${index}" style="display: none;">
                 <td colspan="15">
-                    <div class="details-content" id="details-content-${item.id}">
+                    <div class="details-content" id="details-content-${index}">
                         <!-- Conteúdo será carregado dinamicamente -->
                     </div>
                 </td>
@@ -1320,51 +1326,47 @@
         }, 300);
     }
 
-    function toggleDetails(reportId) {
-        const detailsRow = document.getElementById(`details-${reportId}`);
-        const expandIcon = document.querySelector(`tr.main-row[data-id="${reportId}"] .expand-icon`);
-        
+    function toggleDetails(reportId, index) {
+        const detailsRow = document.getElementById(`details-${index}`);
+        const expandIcon = document.querySelector(`tr.main-row[data-uid="${index}"] .expand-icon`);
+
         if (detailsRow.style.display === 'none') {
-            // Se estiver recolhido, expande e carrega os detalhes
             detailsRow.style.display = 'table-row';
             expandIcon.textContent = '▼';
-            
-            // Carrega os detalhes apenas se ainda não foram carregados
+
             if (!detailsRow.dataset.loaded) {
-                loadReportDetails(reportId);
+                loadReportDetails(reportId, index);
                 detailsRow.dataset.loaded = 'true';
             }
         } else {
-            // Se estiver expandido, recolhe
             detailsRow.style.display = 'none';
             expandIcon.textContent = '▶';
         }
     }
 
-    async function loadReportDetails(reportId) {
-        
-        const detailsContent = document.getElementById(`details-content-${reportId}`);
+
+
+    async function loadReportDetails(reportId, index) {
+        const detailsContent = document.getElementById(`details-content-${index}`);
         detailsContent.innerHTML = '<p>Loading details...</p>';
-        
+
         try {
-            // Encontra o item completo nos dados filtrados
             const incident = filteredData.find(item => item.id === reportId);
-            
+
             if (!incident) {
                 detailsContent.innerHTML = '<p>Error: Report not found</p>';
                 return;
             }
-            
+
             const originalData = incident.original;
-            
-            // Renderiza os detalhes baseado na cidade/estado
             detailsContent.innerHTML = renderGenericDetails(originalData);
-            
+
         } catch (error) {
             console.error('Error loading report details:', error);
             detailsContent.innerHTML = '<p>Error loading details</p>';
         }
     }
+
 
     function renderGenericDetails(incident) {
         const city = incident.city || '';
