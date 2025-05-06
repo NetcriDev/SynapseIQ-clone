@@ -15,34 +15,32 @@ from src.models.texas_db import create_tables_texas
 base_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, base_dir)
 
-#outputdata_dir = "/Users/cristianb/Documents/Python/rel8ed/SynapseIQ_staging/storage"
-#home_dir = "/Users/cristianb/Documents/Python/rel8ed/SynapseIQ_staging"
-outputdata_dir = "/home/data"
-home_dir="home/SynapseIQ"
+outputdata_dir = "/Users/cristianb/Documents/Python/rel8ed/SynapseIQ_staging/storage"
+home_dir = "/Users/cristianb/Documents/Python/rel8ed/SynapseIQ_staging"
+#outputdata_dir = "/home/data"
+#home_dir="home/SynapseIQ"
 
 logger= setup_logger("Scheduled_execution", home_dir)
 # now
 
 
+# def kansas():
+#     logger.info(">>> Start script: Kansas")
+#     run_kansas_crash_scraper(path_dir=outputdata_dir, home_path=home_dir )
+#     logger.info("Finish script: kansas -----|")
+
+# kansas()
 
 
-def kansas():
-    logger.info(">>> Start script: Kansas")
-    run_kansas_crash_scraper(path_dir=outputdata_dir, home_path=home_dir )
-    logger.info("Finish script: kansas -----|")
+def WinstonSalem():
+    logger.info(">>> Start script: WinstonSalem")
+    try:
+        run_wsp_crash_scraper(output_dir=outputdata_dir, home_path=home_dir)
+        logger.info("Finish script: WinstonSalem -----|")
+    except Exception as e:
+        logger.error(e)
 
-kansas()
-
-
-# def WinstonSalem():
-#     logger.info(">>> Start script: WinstonSalem")
-#     try:
-#         run_wsp_crash_scraper(output_dir=outputdata_dir, home_path=home_dir)
-#         logger.info("Finish script: WinstonSalem -----|")
-#     except Exception as e:
-#         logger.error(e)
-
-# WinstonSalem()
+WinstonSalem()
 
 
 # def Minnesota():
