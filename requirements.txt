@@ -23,3 +23,4 @@ httpx==0.28.1
 asyncio==3.4.3
 redis==5.2.1
 geopy==2.4.1
+ibm-cos-sdk==2.14.0

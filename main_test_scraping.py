@@ -24,8 +24,6 @@ logger= setup_logger("Scheduled_execution", home_dir)
 # now
 
 
-
-
 # def kansas():
 #     logger.info(">>> Start script: Kansas")
 #     run_kansas_crash_scraper(path_dir=outputdata_dir, home_path=home_dir )

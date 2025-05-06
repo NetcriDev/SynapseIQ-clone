@@ -10,6 +10,7 @@ from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
 from weasyprint import HTML
 from weasyprint.urls import URLFetchingError
+from io import BytesIO
 from src.utils.logger_config import setup_logger
 from src.utils.info_dataframe import print_dataframe_info
 from config.config import get_connection
@@ -17,6 +18,9 @@ from src.utils.split_name import split_driver_name
 from src.services.api_contact import DataIrisSession
 from src.utils.utils_api_contact import DatabaseType
 from src.services.api_geocode_distance import HopeCenterDistancer
+from src.services.ibm_cos import IBMCOSManager
+from config.config_ibm import COS_API_KEY_ID, COS_INSTANCE_CRN, COS_ENDPOINT, bucket
+
 
 main_script_path = sys.path[0]
 logger = setup_logger("Kansas_execution", main_script_path)
@@ -237,6 +241,8 @@ def run_kansas_crash_scraper(path_dir: str, home_path: str = None):
     -------
     None
     """
+    cos = IBMCOSManager(api_key=COS_API_KEY_ID, service_crn=COS_INSTANCE_CRN,endpoint=COS_ENDPOINT)
+
     username = 'rrel8ed'
     password = 'zFfUPRWH6q'
     country = 'US'
@@ -485,6 +491,18 @@ def run_kansas_crash_scraper(path_dir: str, home_path: str = None):
             # Converte a página para PDF
             try:
                 HTML(url).write_pdf(output_pdf)
+
+                # insert into IBM COS
+                pdf_buffer = BytesIO()
+                HTML(url).write_pdf(pdf_buffer)
+                pdf_buffer.seek(0)
+                resultado = cos.upload_file_stream(stream=pdf_buffer, 
+                                                   bucket=bucket, 
+                                                   filename=crash_number[i] + ".pdf", 
+                                                   year=str(datetime.now().year), 
+                                                   folder="kansas", 
+                                                   overwrite=True)
+
                 #logger.info(f"PDF generated correctly in: {output_pdf}")
                 logger.info(f"Page saved as {output_pdf}")
             except Exception as e:
@@ -532,6 +550,11 @@ def run_kansas_crash_scraper(path_dir: str, home_path: str = None):
     insert_full_crash_data(df_expanded, kansas_dir, home_path)
     #add current date to file name ojo
     file_name='Data_Crashes_Kansas_24H_'+desired_date.strftime('%Y%m%d')+'.csv'
+
+    cos.upload_dataframe_to_cos_csv(df_expanded, bucket=bucket, 
+                                    filename=file_name, 
+                                    year=str(datetime.now().year), 
+                                    folder="kansas", overwrite=True)
 
     #save file in saved_files/ folder
     file_name=os.path.join(path_dir, "kansas",file_name)

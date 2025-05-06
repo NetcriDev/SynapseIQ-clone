@@ -24,6 +24,11 @@
     - [Annexes: Search criteria in consumer](#annexes-search-criteria-in-consumer)
     - [Annexes: Field of databaseType cellphone](#annexes-field-of-databasetype-cellphone)
 - [Api Distance](#api-distance)
+- [IBM Cloud Object Storage Manager](#ibm-cloud-object-storage-manager)
+  - [Features](#features)
+  - [Requirements](#requirements)
+  - [Environment Variables (Optional)](#environment-variables-optional)
+  - [Initialization](#initialization)
 # Introduction
 Repository layout (under construction)
 
@@ -670,4 +675,40 @@ Identify the nearest Hope center based on linear distance.
 
 `If the first key (api_key1) fails or exceeds its usage limits, the system will automatically retry using a secondary key (api_key2) if provided.`
 
-.
+# IBM Cloud Object Storage Manager
+
+This module provides a singleton class `IBMCOSManager` that wraps around the IBM Cloud Object Storage (COS) API using `ibm_boto3`, simplifying common tasks such as uploading, downloading, listing, and deleting files.
+
+## Features
+
+- Singleton instance management
+- Upload files from disk or memory (`BytesIO`)
+- List objects in a bucket
+- Retrieve files as streams
+- Delete objects
+- Structured key formatting using folder/year/report-style paths
+
+## Requirements
+
+- `ibm_boto3`
+- IBM Cloud COS credentials (`api_key`, `service_crn`, `endpoint`)
+- Python 3.11+
+
+## Environment Variables (Optional)
+
+These can be set to avoid passing credentials explicitly:
+
+- `COS_API_KEY_ID`
+- `COS_INSTANCE_CRN`
+- `COS_ENDPOINT`
+
+## Initialization
+
+```python
+from ibm_cos_manager import IBMCOSManager
+
+cos = IBMCOSManager(
+    api_key="your_api_key",
+    service_crn="your_service_crn",
+    endpoint="your_cos_endpoint"
+)

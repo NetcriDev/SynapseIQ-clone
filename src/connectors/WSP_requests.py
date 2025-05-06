@@ -15,6 +15,8 @@ from src.utils.split_name import split_driver_name
 from src.services.api_contact import DataIrisSession
 from src.utils.utils_api_contact import DatabaseType
 from src.services.api_geocode_distance import HopeCenterDistancer
+from src.services.ibm_cos import IBMCOSManager
+from config.config_ibm import COS_API_KEY_ID, COS_INSTANCE_CRN, COS_ENDPOINT, bucket
 
 main_script_path = sys.path[0]
 logger = setup_logger("Winstonsalem_execution", main_script_path)
@@ -39,7 +41,7 @@ def insert_dataframe_into_db(df: pd.DataFrame, file_path: str, home_path: str = 
             The file path (carpet storage/winstonsalem) where the original document (PDF) is stored. 
             This is saved along with each incident report.
         home_path (str):
-            is the root carpet where the main script is (/home/home/SynapseIq/)
+            is the root carpet where the main script is (/home/SynapseIq/)
 
     """
     sesion = DataIrisSession(token_file_path= os.path.join(home_path ,"config/token.json"))
@@ -282,13 +284,18 @@ def run_wsp_crash_scraper(output_dir, home_path: str = None):
 
     Parameters
     ----------
-    path_dir : str
+    output_dir : str
         Path to the directory where downloaded files, storage folder (storage) or results should be stored.
+    home_path : str
+        directory of main scriping (/home/SynapseIQ/)
 
     Returns
     -------
     None
     """
+
+    cos = IBMCOSManager(api_key=COS_API_KEY_ID, service_crn=COS_INSTANCE_CRN,endpoint=COS_ENDPOINT)
+
     # Creating lists for scrapping table content
     list_report=[]
     list_date=[]
@@ -505,16 +512,23 @@ def run_wsp_crash_scraper(output_dir, home_path: str = None):
             }
 
             #now download pdf from link
-            response = requests.get(new_url, headers=headers,stream=True) #verify=False
+            response = requests.get(new_url, headers=headers, stream=True) #verify=False
             with open(os.path.join(path_ws,"temp_file.pdf"), "wb") as pdf:
                 for chunk in response.iter_content(chunk_size=4096):
                     if chunk:
                         pdf.write(chunk)
 
             # Criar uma cópia do arquivo como "xx.pdf"
-            file_path_data=os.path.join(path_ws,"WSP-"+str(datetime.now().year)+"-"+list_report[k]+".pdf")
+            name_pdf_wsp = "WSP-"+str(datetime.now().year)+"-"+list_report[k]+".pdf"
+            file_path_data=os.path.join(path_ws, name_pdf_wsp)
             with open(os.path.join(path_ws,"temp_file.pdf"), "rb") as temp_pdf, open(file_path_data, "wb") as copy_pdf:
                 copy_pdf.write(temp_pdf.read())
+                
+                #insert into IBM COS
+                cos.upload_file_stream(temp_pdf,bucket=bucket,
+                                       filename=name_pdf_wsp, 
+                                       year=str(datetime.now().year),
+                                       folder="winstonsalem")                
 
             try:
                 with pdfplumber.open(os.path.join(path_ws,'temp_file.pdf')) as pdf:
