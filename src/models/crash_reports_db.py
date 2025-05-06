@@ -13,7 +13,7 @@ def create_database_if_not_exists():
             port="5432"
         )
         
-        # Necesario para crear bases de datos
+        # Para crear bases de datos
         conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
         
         cur = conn.cursor()
@@ -132,12 +132,16 @@ def create_crash_report_schema():
         last_name TEXT,
         age INTEGER,
         gender TEXT,
+        state TEXT,
+        city TEXT,
+        street TEXT
         license_number TEXT,
         injury_severity TEXT,
         number_occupant INTEGER,
         year_birth INTEGER,
         phone1 TEXT,
         phone2 TEXT,
+        contact_resolution TEXT,
         notes TEXT,
         technical_notes TEXT
     )

@@ -12,7 +12,8 @@ try:
     )
     cursor = conexion.cursor()
 
-    # 1. Agregar columnas state, city, street
+    # !!!!Ya Implementado!!!
+    # 1. Agregar columnas state, city, street  
     # alter_table_sql = """
     # ALTER TABLE passengers
     # ADD COLUMN contact_resolution TEXT,
@@ -21,6 +22,7 @@ try:
     # ADD COLUMN street TEXT;
     # """
 
+    # !!! Ya Implementado!!!
     #2. Agregar name_nearest hope in incident_reports
     # alter_table_sql = """ 
     # ALTER TABLE incident_reports
@@ -33,10 +35,22 @@ try:
     # ADD COLUMN report_number TEXT
     # """
 
+    #!!! Ya Implementado!!!
     #4. Agregar report_number TEXT in table passengers
+    # alter_table_sql = """ 
+    # ALTER TABLE passengers
+    # ADD COLUMN report_number TEXT
+    # """
+
+    # 
+    # alter_table_sql = """ 
+    # ALTER TABLE incident_reports
+    # ADD COLUMN is_external  TEXT
+    # """
+
     alter_table_sql = """ 
-    ALTER TABLE passengers
-    ADD COLUMN report_number TEXT
+    ALTER TABLE incident_reports
+    ADD COLUMN document_location_ibm TEXT
     """
 
     cursor.execute(alter_table_sql)

@@ -85,6 +85,8 @@ class IncidentReport(BaseModel):
     name_nearest_hope: Optional[str]
     notes: Optional[str]
     technical_notes: Optional[str]
+    document_location_ibm: Optional[str]
+    is_external: Optional[str]
     vehicles: Optional[List[Vehicle]] = []
 
 #texas
