@@ -1407,11 +1407,12 @@
                     ? nameParts.join(" ") 
                     : (vehicle.driver_name || "--");
 
-                html += `
+                    html += `
                     <li>
-                        <strong>Unit ${idx + 1} driver:</strong> ${driverName}<br>
+                        ${driverName}<br>
                     </li>
                 `;
+                // <strong>Unit ${idx + 1} driver:</strong> ${driverName}<br>
             });
 
             html += `</ul></div>`;
