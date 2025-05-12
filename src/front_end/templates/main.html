@@ -55,8 +55,13 @@
                         <tbody id="tableBody"></tbody>
                     </table>
                 </div>
-                <div id="loading" style="text-align: center; padding: 100px; ">
-                    <span style="font-size: 20px;">🔄 Loading Data...</span>
+                <div id="loading">
+                    <br>
+                    <br>
+                    <br>
+                    <br>
+                    <div class="spinner"></div>
+                    <span>Loading Data...</span>
                 </div>
                 <div id="pagination"></div>
             </div>
@@ -105,6 +110,22 @@
 </body>
 
 <style>
+
+    :root {
+        --primary-color: #007bff; /* Azul vibrante (ajuste conforme sua identidade) */
+        --secondary-color: #6c757d; /* Cinza secundário */
+        --success-color: #28a745; /* Verde para sucesso/exportar */
+        --danger-color: #dc3545; /* Vermelho para fechar/alerta */
+        --light-bg: #ffffff;
+        --medium-bg: #f8f9fa; /* Fundo um pouco mais escuro que branco */
+        --dark-bg: #e9ecef; /* Fundo para áreas como o PDF viewer */
+        --text-color: #212529; /* Cor de texto principal */
+        --text-color-muted: #6c757d; /* Cor de texto secundária */
+        --border-color: #dee2e6;
+        --border-radius: 0.375rem; /* Raio de borda padrão */
+        --box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.075);
+        --font-family-sans-serif: 'Roboto', 'Poppins', Arial, sans-serif;
+    }
     .hot-lead { 
         /* background-color: 57e0e02f ; */
         /* color: #43aad3a6; */
@@ -116,6 +137,39 @@
         /* color: #43aad3a6; */
         /* font-weight: bold; */
     /* } */
+
+    /* --- :::::::::::::::: LOADING :::::::::::::::: --- */
+    #loading {
+        display: flex; /* none por padrão, controlado por JS */
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        padding: 2rem;
+        text-align: center;
+        /* Para sobrepor a tabela enquanto carrega: */
+        /* position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); */
+        /* background: rgba(255, 255, 255, 0.8); width: 100%; height: 100%; */
+    }
+
+    .spinner {
+        width: 40px;
+        height: 40px;
+        border: 4px solid rgba(0, 0, 0, 0.1);
+        border-left-color: var(--primary-color);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-bottom: 1rem;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    #loading span {
+        font-size: 1rem;
+        color: var(--text-color-muted);
+    }
     
     * {
         box-sizing: border-box;
@@ -189,11 +243,35 @@
         height: calc(100% - 40px); /* ajusta para o botão de fechar */
     }
 
+    .filters-title {
+        font-size: 1rem; /* Um pouco maior para o título dos filtros */
+        margin-bottom: 0.75rem;
+    }
+
     .filters {
         display: flex;
-        gap: 10px;
+        gap: 0.75rem;
         flex-wrap: wrap;
-        margin-bottom: 10px;
+        margin-bottom: 1.5rem;
+        align-items: center;
+    }
+
+    .filters select,
+    .filters input[type="date"] {
+        padding: 0.5rem 0.75rem;
+        border-radius: var(--border-radius);
+        border: 1px solid var(--border-color);
+        background-color: var(--light-bg);
+        font-size: var(--font-size-xs);
+        text-transform: uppercase;
+        transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    }
+
+    .filters select:focus,
+    .filters input[type="date"]:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+        outline: none;
     }
 
     select, input {
@@ -337,7 +415,7 @@
         color: black;
         padding: 6px 14px;
         border: none;
-        border-radius: 12px;
+        border-radius: 8px;
         cursor: pointer;
         font-weight: bold;
     }
@@ -553,44 +631,15 @@
 
 
 <script>
-    let data = [];
-    let selectedItems = new Set();
-
-    let currentPage = 1;
-    const rowsPerPage = 20;
-
-    async function searchIncidents() {
-        try {
-            const resposta = await fetch('/incident_search')
-            if (!resposta.ok) throw new Error(`Erro: ${resposta.status}`);
-
-            const dados = await resposta.json();
-            data = transformData(dados);
-            updateRelationStateCity(dados); // <-- ESSENCIAL!
-            loadFilters();
-            renderTable();
-
-        } catch (erro) {
-            console.error("Errr loading incidents:", erro);
-            document.getElementById("loading").innerText = "Errr loading data.";
-        } finally {
-            document.getElementById("loading").style.display = "none"; // esconde loading
-        }
-    }
-
-    // const API_URL = "https://8162-52-116-202-144.ngrok-free.app/incident/search?page=1&page_size=2000";
-    // let filteredData = [];         // Armazena os dados filtrados globalmente
-    // const selectedItems = new Set(); // Armazena os itens selecionados globalmente
+    // let data = [];
+    // let selectedItems = new Set();
 
     // let currentPage = 1;
     // const rowsPerPage = 20;
 
     // async function searchIncidents() {
     //     try {
-    //         const resposta = await fetch(API_URL, {
-    //             headers: { "ngrok-skip-browser-warning": "true" }
-    //         });
-
+    //         const resposta = await fetch('/incident_search')
     //         if (!resposta.ok) throw new Error(`Erro: ${resposta.status}`);
 
     //         const dados = await resposta.json();
@@ -601,11 +650,37 @@
 
     //     } catch (erro) {
     //         console.error("Erro ao buscar incidentes:", erro);
-    //         document.getElementById("loading").innerText = "Erro ao carregar os dados.";
-    //     } finally {
-    //         document.getElementById("loading").style.display = "none"; // esconde loading
     //     }
     // }
+
+    const API_URL = "https://8162-52-116-202-144.ngrok-free.app/incident/search?page=1&page_size=2000";
+    let filteredData = [];         // Armazena os dados filtrados globalmente
+    const selectedItems = new Set(); // Armazena os itens selecionados globalmente
+
+    let currentPage = 1;
+    const rowsPerPage = 20;
+
+    async function searchIncidents() {
+        try {
+            const resposta = await fetch(API_URL, {
+                headers: { "ngrok-skip-browser-warning": "true" }
+            });
+
+            if (!resposta.ok) throw new Error(`Erro: ${resposta.status}`);
+
+            const dados = await resposta.json();
+            data = transformData(dados); // Corrigido aqui
+            updateRelationStateCity(dados); // <-- ESSENCIAL!
+            loadFilters();
+            renderTable();
+
+        } catch (erro) {
+            console.error("Erro ao buscar incidentes:", erro);
+            document.getElementById("loading").innerText = "Error loading data.";
+        } finally {
+            document.getElementById("loading").style.display = "none"; // esconde loading
+        }
+    }
 
     function transformData(dados) {
         let incidentesFormatados = [];
@@ -671,13 +746,15 @@
                     const nearestHopeMiles = incidente.nearest_hope_d ? ` Miles: ${incidente.nearest_hope_d}` : "";
                     const nearesHopeCenter = incidente.name_nearest_hope ? ` <br> Center: ${incidente.name_nearest_hope}` : "";
 
-                    // Hot lead logic
-                    const crashDate = new Date(incidente.accident_datetime);
-                    crashDate.setHours(0, 0, 0, 0);
-                    const today = new Date();
-                    today.setHours(0, 0, 0, 0);
-                    const daysAgo = (today - crashDate) / (1000 * 60 * 60 * 24);
-                    const isRecentCrash = daysAgo <= 2;
+                    // Hot lead logic (CORRIGIDA)
+                    const crashDateTime = new Date(incidente.accident_datetime); // Data e hora completas do acidente
+                    const now = new Date(); // Data e hora atuais
+                    
+                    // Calcula a diferença em horas
+                    const hoursDifference = (now - crashDateTime) / (1000 * 60 * 60); 
+                    
+                    // Considera recente se tiver até 48 horas (ou menos)
+                    const isRecentCrash = hoursDifference <= 48;
 
                     const hasValidPhone = (phoneA && phoneA !== "--" && phoneA.replace(/[, ]/g, '') !== "") ||
                                         (phoneB && phoneB !== "--" && phoneB.replace(/[, ]/g, '') !== "");
@@ -708,7 +785,7 @@
                         sourceFolder: folder,
                         original: incidente,
                         passengerId: motorista.id,
-                        isHotLead: isHotLead
+                        isHotLead: isHotLead // Flag de hot lead atualizada
                     });
                 });
             });
@@ -737,8 +814,7 @@
             return new Date(b.col2) - new Date(a.col2);
         });
     }
-
-
+   
     function renderTable() {
         const tableBody = document.getElementById("tableBody");
         const filterFolder = document.getElementById("filterSourceFolder").value;
@@ -1407,7 +1483,7 @@
                     ? nameParts.join(" ") 
                     : (vehicle.driver_name || "--");
 
-                    html += `
+                html += `
                     <li>
                         ${driverName}<br>
                     </li>
