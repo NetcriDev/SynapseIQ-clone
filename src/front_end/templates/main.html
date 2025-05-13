@@ -813,9 +813,9 @@
             if (e.target && e.target.classList.contains("sendReportToChat")) {
                 const reportNumber = e.target.getAttribute("data-id");
                 if (window.g_wa_instance) {
-                    sendToChat(`Report N°: ${reportNumber}`, window.g_wa_instance);
+                    sendToChat(`${reportNumber}`, window.g_wa_instance);
                 } else {
-                    console.warn("Erro ao carregar a instância do Watson Assistant.");
+                    console.warn("Error loading Watson Assistant instance.");
                 }
             }
         });
