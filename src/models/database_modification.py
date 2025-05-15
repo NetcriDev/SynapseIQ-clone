@@ -49,20 +49,16 @@ try:
     # """
 
 
-    # alter_table_sql = """ 
-    # ALTER TABLE incident_reports
-    # ADD COLUMN website  TEXT
-    # """
+    alter_table_sql = """ 
+    ALTER TABLE incident_reports
+    ADD COLUMN website  TEXT
+    """
+
 
     # alter_table_sql = """ 
     # ALTER TABLE incident_reports
     # ADD COLUMN document_location_ibm TEXT
     # """
-
-    alter_table_sql = """ 
-    ALTER TABLE incident_reports 
-    ADD COLUMN text_from_pdf TEXT
-    """
 
     cursor.execute(alter_table_sql)
     conexion.commit()
