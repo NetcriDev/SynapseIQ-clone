@@ -48,10 +48,18 @@ try:
     # ADD COLUMN is_external  TEXT
     # """
 
+
     alter_table_sql = """ 
     ALTER TABLE incident_reports
-    ADD COLUMN document_location_ibm TEXT
+    ADD COLUMN website  TEXT
     """
+
+
+
+    # alter_table_sql = """ 
+    # ALTER TABLE incident_reports
+    # ADD COLUMN document_location_ibm TEXT
+    # """
 
     cursor.execute(alter_table_sql)
     conexion.commit()
