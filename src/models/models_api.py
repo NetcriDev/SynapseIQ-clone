@@ -135,3 +135,19 @@ class CrashReportWithPassengers(BaseModel):
     crash_date: Optional[datetime]
     crash_severity: Optional[str]
     passengers: List[PassengerReport] = []
+
+
+# ------------- ChatApi Models --------------
+class ChatRequest(BaseModel):
+    report_number: str
+    state: str
+    question: str
+
+class ChatResponse(BaseModel):
+    response: str
+    session_id: int
+
+class MessageRecord(BaseModel):
+    role: str
+    content: str
+    created_at: datetime

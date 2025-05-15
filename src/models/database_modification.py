@@ -8,7 +8,7 @@ try:
         user="synapseiq",
         password="SynapseIQ$2025",
         host="localhost",
-        port="5432"
+        port="5433"
     )
     cursor = conexion.cursor()
 
@@ -48,9 +48,20 @@ try:
     # ADD COLUMN is_external  TEXT
     # """
 
+
+    # alter_table_sql = """ 
+    # ALTER TABLE incident_reports
+    # ADD COLUMN website  TEXT
+    # """
+
+    # alter_table_sql = """ 
+    # ALTER TABLE incident_reports
+    # ADD COLUMN document_location_ibm TEXT
+    # """
+
     alter_table_sql = """ 
-    ALTER TABLE incident_reports
-    ADD COLUMN document_location_ibm TEXT
+    ALTER TABLE incident_reports 
+    ADD COLUMN text_from_pdf TEXT
     """
 
     cursor.execute(alter_table_sql)

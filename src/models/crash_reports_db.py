@@ -78,7 +78,8 @@ def create_crash_report_schema():
         name_nearest_hope TEXT,
         notes TEXT,
         technical_notes TEXT,
-        json JSONB
+        json JSONB,
+        text_from_pdf TEXT
     )
     """)
 

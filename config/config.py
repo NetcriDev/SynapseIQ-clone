@@ -7,5 +7,5 @@ def get_connection():
         user="synapseiq",
         password="SynapseIQ$2025",
         host="localhost",
-        port="5432"
+        port="5433"
     )

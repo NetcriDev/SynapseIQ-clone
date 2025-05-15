@@ -2,9 +2,9 @@ import psycopg2
 import os
 import psycopg2.extras
 from fastapi import FastAPI, Query, HTTPException, Response, Depends, WebSocket, WebSocketDisconnect
-from typing import List, Optional
+from typing import List, Optional, Dict
 from datetime import datetime, time
-from src.models.models_api import Passenger, PassengerUpdatePhones, Vehicle, IncidentReport
+from src.models.models_api import Passenger, PassengerUpdatePhones, Vehicle, IncidentReport, ChatRequest, ChatResponse
 from config.config import get_connection
 from src.utils.util_pagination import paginate
 from src.utils.parse_date import parse_date
@@ -14,6 +14,29 @@ from fastapi.responses import FileResponse
 from psycopg2.extras import RealDictCursor
 from src.models.models_api import CrashReportWithPassengers  # Define este modelo pydantic si no existe aún
 from src.api.notification_manager import connected_clients
+from src.services.ibm_fundational_models import WatsonXModelHandler
+from dotenv import load_dotenv
+from pathlib import Path
+
+# Ruta absoluta o relativa al archivo .env
+dotenv_path = Path("/Users/cristianb/Documents/Python/rel8ed/SynapseIQ_staging/.env")
+
+# Cargar el archivo .env desde la ruta específica
+load_dotenv(dotenv_path=dotenv_path)
+
+# Leer valores
+api_key = os.getenv("API_KEY")
+project_id = os.getenv("PROJECT_ID")
+url = os.getenv("URL")
+
+
+# Global instance (reusable)
+watson_handler = WatsonXModelHandler(
+    api_key=api_key,
+    project_id=project_id,
+    url=url,
+    default_model_id="meta-llama/llama-3-2-11b-vision-instruct"
+)
 
 app = FastAPI()
 
@@ -389,6 +412,119 @@ def search_crash_reports(
         response.headers["Access-Control-Allow-Origin"] = "*"
 
     return crashes
+
+
+def get_text_from_pdf(report_number: str, state: str) -> str:
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT text_from_pdf FROM incident_reports
+            WHERE report_number = %s AND state = %s
+            ORDER BY id DESC LIMIT 1
+        """, (report_number, state))
+        result = cur.fetchone()
+        conn.close()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+
+    if not result:
+        return "No incident report found for this report number and state"
+
+    text = result[0]
+    if not text or str(text).strip().lower() in [""," ", "none", "null"]:
+        return "There is no text obtained from the crash report"
+    print(".>>>>>>>>",text)
+    return text
+
+
+# Endpoint principal de chat
+@app.post("/chat", response_model=ChatResponse)
+async def chat_with_model(request: ChatRequest):
+    conn = get_connection()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+    # Obtener texto si no se proporciona
+    text_content = get_text_from_pdf(request.report_number, request.state)
+
+    # Buscar sesión activa o crear una nueva
+    cur.execute("""
+        SELECT * FROM chat_session 
+        WHERE report_number = %s AND state = %s AND status = 'active'
+        ORDER BY started_at DESC LIMIT 1
+    """, (request.report_number, request.state))
+    session = cur.fetchone()
+
+    if not session:
+        cur.execute("""
+            INSERT INTO chat_session (report_number, state, status, model_id) 
+            VALUES (%s, %s ,'active', %s) RETURNING id
+        """, (request.report_number, request.state, watson_handler.default_model_id))
+        session_id = cur.fetchone()["id"]
+        conn.commit()
+    else:
+        session_id = session["id"]
+
+    # Guardar Pregunta
+    cur.execute("""
+        INSERT INTO chat_messages (report_number, state ,session_id, role, content) 
+        VALUES (%s, %s, %s, 'user', %s)
+    """, (request.report_number, request.state ,session_id, request.question))
+    conn.commit()
+
+    # Enviar a modelo
+    try:
+        result = await watson_handler.query(
+            question=request.question,
+            text_content=text_content
+        )
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+    # Guardar respuesta
+    cur.execute("""
+        INSERT INTO chat_messages (report_number, state, session_id, role, content) 
+        VALUES (%s, %s, %s, 'assistant', %s)
+    """, (request.report_number, request.state, session_id, result["response"]))
+    conn.commit()
+    conn.close()
+
+    return ChatResponse(response=result["response"], session_id=session_id)
+
+
+@app.get("/chat/history", response_model=Dict)
+def get_chat_history(report_number: str, state: str):
+    conn = get_connection()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+    cur.execute("""
+        SELECT id, report_number, state FROM chat_session
+        WHERE report_number = %s AND state = %s AND status = 'active'
+        ORDER BY started_at DESC LIMIT 1
+    """, (report_number, state))
+    session = cur.fetchone()
+
+    if not session:
+        raise HTTPException(status_code=404, detail="No active session found")
+
+    session_id = session["id"]
+
+    cur.execute("""
+        SELECT role, content, created_at FROM chat_messages
+        WHERE session_id = %s
+        ORDER BY created_at ASC
+    """, (session_id,))
+    messages = cur.fetchall()
+    conn.close()
+
+    return {
+        "session_id": session_id,
+        "report_number": session["report_number"],
+        "state": session["state"],
+        "history": messages
+    }
+
 
 
 # @app.websocket("/ws/notifications")
