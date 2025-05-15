@@ -19,7 +19,8 @@ from dotenv import load_dotenv
 from pathlib import Path
 
 # Ruta absoluta o relativa al archivo .env
-dotenv_path = Path("/Users/cristianb/Documents/Python/rel8ed/SynapseIQ_staging/.env")
+#dotenv_path = Path("/Users/cristianb/Documents/Python/rel8ed/SynapseIQ_staging/.env")
+dotenv_path = Path("/home/SynapseIQ/.env")
 
 # Cargar el archivo .env desde la ruta específica
 load_dotenv(dotenv_path=dotenv_path)
