@@ -25,7 +25,14 @@ class DataIrisSession:
 
     def __init__(self, token: str = None, token_file_path: str = None):
         """
-        token_file_path: is path a file. For example, '/home/SynapseIQ/config/json_token.json'
+        Initializes the DataIrisSession instance.
+        This method is called only once, even if multiple instances are created.
+        
+        arguments:
+            token: is the token string. For example, '1234567890abcdef'
+            token_file_path: is path a file. For example, '/home/SynapseIQ/config/json_token.json'
+        return:
+            None
         """
         if hasattr(self, '_initialized') and self._initialized:
             return

@@ -29,9 +29,9 @@ try:
     # ADD COLUMN name_nearest_hope TEXT
     # """
 
-    #3. Agregar report_number TEXT in table vehicules
+    # #3. Agregar report_number TEXT in table vehicules
     # alter_table_sql = """ 
-    # ALTER TABLE vehicules
+    # ALTER TABLE vehicles
     # ADD COLUMN report_number TEXT
     # """
 
@@ -49,16 +49,40 @@ try:
     # """
 
 
-    alter_table_sql = """ 
-    ALTER TABLE incident_reports
-    ADD COLUMN website  TEXT
-    """
+    # alter_table_sql = """ 
+    # ALTER TABLE incident_reports
+    # ADD COLUMN website  TEXT
+    # """
 
 
     # alter_table_sql = """ 
     # ALTER TABLE incident_reports
     # ADD COLUMN document_location_ibm TEXT
     # """
+
+    #Agregar sitio web, en lugar de state
+    # alter_table_sql = """ 
+    # ALTER TABLE passengers
+    # ADD COLUMN website TEXT
+    # """
+
+    #Agregar sitio web, en lugar de state
+    # alter_table_sql = """ 
+    # ALTER TABLE vehicles
+    # ADD COLUMN website TEXT
+    # """
+
+    #Agregar address
+    # alter_table_sql = """ 
+    # ALTER TABLE passengers
+    # ADD COLUMN address TEXT
+    # """
+
+    #Agregar address
+    alter_table_sql = """ 
+    ALTER TABLE incident_reports
+    ADD COLUMN address TEXT
+    """
 
     cursor.execute(alter_table_sql)
     conexion.commit()

@@ -3,8 +3,17 @@ import logging
 import os
 from datetime import datetime
 
-def setup_logger(name: str, path_home: str):
-    log_dir = os.path.join(path_home, "logs")
+def setup_logger(name: str, log_folder: str) -> logging.Logger:
+    """
+    Configura un logger para registrar mensajes en un archivo y en la consola.
+    Args:
+        name (str): Nombre del logger.
+        log_folder (str): Ruta base donde se creara la carpeta 'log' y su logs: '/home/data'
+    Returns:
+        logging.Logger: Instancia del logger configurado.
+    """
+    # Crear el directorio de logs si no existe
+    log_dir = os.path.join(log_folder, "logs")
     os.makedirs(log_dir, exist_ok=True)
 
     log_filename = os.path.join(

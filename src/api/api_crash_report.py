@@ -466,14 +466,14 @@ async def chat_with_model(request: ChatRequest):
     else:
         session_id = session["id"]
 
-    # Guardar Pregunta
+    # Save Question
     cur.execute("""
         INSERT INTO chat_messages (report_number, state ,session_id, role, content) 
         VALUES (%s, %s, %s, 'user', %s)
     """, (request.report_number, request.state ,session_id, request.question))
     conn.commit()
 
-    # Enviar a modelo
+    # Send to model
     try:
         result = await watson_handler.query(
             question=request.question,

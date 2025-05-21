@@ -2,6 +2,7 @@ from apscheduler.schedulers.blocking import BlockingScheduler
 from src.connectors.Kansas_requests import run_kansas_crash_scraper
 from src.connectors.WSP_requests import run_wsp_crash_scraper
 from src.connectors.MSP_requests import run_msp_crash_scraper
+from src.connectors.MSP_w_functions import pipeline_minnesota
 from src.connectors.texas_scrapper import run_scraper               #Texas
 from src.parsers.texas_parser import read_and_save_recent_csv       #Texas
 from src.utils.logger_config import setup_logger
@@ -15,7 +16,7 @@ from src.models.texas_db import create_tables_texas
 base_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, base_dir)
 
-outputdata_dir = "/Users/cristianb/Documents/Python/rel8ed/SynapseIQ_staging/storage"
+outputdata_dir = "/Users/cristianb/Documents/Python/rel8ed/Data"
 home_dir = "/Users/cristianb/Documents/Python/rel8ed/SynapseIQ_staging"
 #outputdata_dir = "/home/data"
 #home_dir="home/SynapseIQ"
@@ -32,23 +33,24 @@ logger= setup_logger("Scheduled_execution", home_dir)
 # kansas()
 
 
-def WinstonSalem():
-    logger.info(">>> Start script: WinstonSalem")
-    try:
-        run_wsp_crash_scraper(output_dir=outputdata_dir, home_path=home_dir)
-        logger.info("Finish script: WinstonSalem -----|")
-    except Exception as e:
-        logger.error(e)
+# def WinstonSalem():
+#     logger.info(">>> Start script: WinstonSalem")
+#     try:
+#         run_wsp_crash_scraper(output_dir=outputdata_dir, home_path=home_dir)
+#         logger.info("Finish script: WinstonSalem -----|")
+#     except Exception as e:
+#         logger.error(e)
 
-WinstonSalem()
+# WinstonSalem()
 
 
-# def Minnesota():
-#     logger.info(">>> Start script: Minnesota")
-#     run_msp_crash_scraper(outputdata_dir, home_path=home_dir)
-#     logger.info("Finish script: Minnesota -----|")
+def Minnesota():
+    logger.info(">>> Start script: Minnesota")
+    pipeline_minnesota(output_folder=os.path.join(outputdata_dir, "minnesota"))
+    #run_msp_crash_scraper(outputdata_dir, home_path=home_dir)
+    logger.info("Finish script: Minnesota -----|")
 
-# Minnesota()
+Minnesota()
 
 
 # def Texas():

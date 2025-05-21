@@ -2,7 +2,7 @@ import os
 from src.services.ibm_cos import IBMCOSManager 
 from config.config_ibm import COS_API_KEY_ID, COS_INSTANCE_CRN, COS_ENDPOINT,bucket
 
-
+#OJO codigo temporal que debe ubicarse en la carpeta principal (se movio aqui, pero se ejecuta en la carpeta principal)
 # === Configuración general
 local_folder_base = "/home/data"  # carpeta donde están los subdirectorios por estado
 bucket_name = "bucket-synapse-iq"

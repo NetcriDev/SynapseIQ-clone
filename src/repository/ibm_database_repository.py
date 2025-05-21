@@ -1,2 +1,0 @@
-def repository():
-    pass
