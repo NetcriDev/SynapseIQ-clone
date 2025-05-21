@@ -393,56 +393,74 @@
     </style>
 
     <style>
-        /* Estilos para o ícone de lápis (mantidos) */
-        #openEmptyPopupBtn { /* ID ATUALIZADO AQUI */
-            color: #34d0db; /* Ou a cor que preferir */
-            transition: color 0.3s ease; /* Transição suave na mudança de cor */
+        /* Estilos para o ícone de lápis (agora para atribuição) */
+        #openAssignmentPopupBtn {
+            margin-left: auto; /* Empurra para a direita */
+            color: #34d0db;
+            transition: color 0.3s ease;
+            cursor: pointer;
+            font-size: 1.2em;
         }
 
-        #openEmptyPopupBtn:hover { /* ID ATUALIZADO AQUI */
-            color: #aaa; /* Cor mais escura ao passar o mouse */
+        #openAssignmentPopupBtn:hover {
+            color: #0056b3;
         }
 
-        /* Estilos básicos para o Modal (mantidos) */
+        /* Estilo para o ícone de upload (mantido) */
+        #openUploadModalBtn {
+            margin-left: 10px;
+            color: #34d0db;
+            transition: color 0.3s ease;
+            cursor: pointer;
+            font-size: 1.2em;
+        }
+
+        #openUploadModalBtn:hover {
+            color: #218838;
+        }
+
+        /* Estilos básicos para o Modal (aplicam-se a ambos os modais) */
         .modal {
-            display: none; /* Escondido por padrão */
-            position: fixed; /* Fixo na tela */
-            z-index: 2000; /* Acima de tudo */
+            display: none;
+            position: fixed;
+            z-index: 2000;
             left: 0;
             top: 0;
-            width: 100%; /* Largura total */
-            height: 100%; /* Altura total */
-            overflow: auto; /* Habilita scroll se o conteúdo for muito grande */
-            background-color: rgba(0,0,0,0.4); /* Fundo semi-transparente */
-            justify-content: center; /* Centraliza horizontalmente */
-            align-items: center; /* Centraliza verticalmente */
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+            justify-content: center;
+            align-items: center;
         }
 
         .modal-content {
             background-color: #fefefe;
-            margin: auto; /* Centraliza o modal */
+            margin: auto;
             padding: 20px;
             border: 1px solid #888;
-            width: 80%; /* Largura do conteúdo do modal */
-            max-width: 700px; /* Largura máxima */
+            width: 80%;
+            max-width: 700px;
             box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2), 0 6px 20px 0 rgba(0,0,0,0.19);
             animation-name: animatetop;
             animation-duration: 0.4s;
             border-radius: 8px;
-            position: relative; /* Para posicionar o botão de fechar */
+            position: relative;
         }
 
-        .modal-content p, h2{
-            font-size: 16px;
+        .modal-content h2 {
+            font-size: 1.5em;
         }
 
-        /* Animação de entrada do modal (mantida) */
+        .modal-content p {
+            font-size: 1.2em;
+        }
+
         @keyframes animatetop {
             from {top: -300px; opacity: 0}
             to {top: 0; opacity: 1}
         }
 
-        /* Botão de fechar (mantido) */
         .close-button {
             color: #aaa;
             float: right;
@@ -460,12 +478,96 @@
             cursor: pointer;
         }
 
-        /* Estilos para o conteúdo do popup vazio */
-        #popupContent {
+        /* Estilos para a tabela dentro do modal de atribuição */
+        .assignment-table-container {
+            max-height: 400px; /* Altura máxima para a tabela */
+            overflow-y: auto; /* Adiciona scroll se a tabela for muito grande */
             margin-top: 20px;
-            margin-bottom: 10px;
-            line-height: 1.6;
-            color: #333;
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        #assignmentTable {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        #assignmentTable th,
+        #assignmentTable td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        #assignmentTable th {
+            background-color: #f2f2f2;
+            position: sticky;
+            top: 0;
+            z-index: 1; /* Garante que o cabeçalho fique visível ao rolar */
+        }
+
+        #assignmentTable select {
+            width: 100%;
+            padding: 6px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        #assignmentTable .remove-btn {
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        #assignmentTable .remove-btn:hover {
+            background-color: #c82333;
+        }
+
+        #saveAssignmentsBtn {
+            background-color: #34d0db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+
+        #saveAssignmentsBtn:hover {
+            background-color: #218838;
+        }
+
+        /* Estilos específicos para o formulário de upload (mantido) */
+        #uploadFormContent {
+            margin-top: 20px;
+            /* text-align: center; */
+        }
+
+        #fileInput {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+
+        #uploadBtn {
+            background-color: #34d0db;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1.2em;
+            transition: background-color 0.3s ease;
+        }
+
+        #uploadBtn:hover {
+            background-color: #0056b3;
         }
     </style>
 </head>
@@ -506,7 +608,9 @@
                 <button onclick="applyFilters()">Apply Filters</button>
                 <button onclick="resetFilters()">Reset</button>
                 <button onclick="downloadSelectedCSV()" id="download-csv-button" style="margin-left: 10px;">Selected Reports (0)</button>
-                <i class="fas fa-user-tie" id="openEmptyPopupBtn" title="Open Information" style="margin-left: auto; cursor: pointer; font-size: 2.0em;" onclick="openEmptyPopup()"></i>
+                <i class="fas fa-user-tie" id="openAssignmentPopupBtn" title="Assign Marketers" style="margin-left: auto; cursor: pointer; font-size: 2em;" onclick="openAssignmentPopup()"></i>
+                <i class="fas fa-upload" id="openUploadModalBtn" title="Upload Files" style="margin-left: 10px; cursor: pointer; font-size: 2em;" onclick="openUploadModal()"></i>
+
             </div>
             <div class="table-scroll-container">
                 <table id="data-table">
@@ -541,13 +645,40 @@
         </div>
     </main>
 
-    <div id="emptyPopup" class="modal">
+    <div id="assignmentPopup" class="modal">
         <div class="modal-content">
-            <span class="close-button">&times;</span>
-            <h2>Edit Marketers</h2>
-            <div id="popupContent">
-                <p>Here you will be able to edit which marketers are responsable for each agency.</p>
-                <p>Stay tuned for the next update!</p>
+            <span class="close-button" onclick="closeAssignmentPopup()">&times;</span>
+            <h2>Assign Marketers to States (under development)</h2>
+            <div id="assignmentTableContainer" class="assignment-table-container">
+                <table id="assignmentTable">
+                    <thead>
+                        <tr>
+                            <th>Folder State</th>
+                            <th>Assigned Marketer</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="assignmentTableBody">
+                        </tbody>
+                </table>
+            </div>
+            <button id="saveAssignmentsBtn">Save Assignments</button>
+        </div>
+    </div>
+
+    <div id="uploadModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeUploadModal()">&times;</span>
+            <h2>Upload Files (under development)</h2>
+            <br>
+            <div id="uploadFormContent">
+                <p>Select one or more files to uplaod:</p>
+                <form id="fileUploadForm" enctype="multipart/form-data">
+                    <input type="file" id="fileInput" name="files[]" multiple accept=".pdf,.doc,.docx,.txt,.csv">
+                    <br><br>
+                    <button type="submit" id="uploadBtn">Upload</button>
+                </form>
+                <div id="uploadStatus" style="margin-top: 15px; font-weight: bold;"></div>
             </div>
         </div>
     </div>
@@ -1141,46 +1272,197 @@
     </script>
 
     <script>
-       // --- Nova funcionalidade: Popup Vazio ---
-        // As referências a esses elementos agora serão encontradas
-        const emptyPopup = document.getElementById("emptyPopup");
-        // Não precisamos mais do openEmptyPopupBtn aqui, pois o onclick está no HTML
-        const closeButton = document.querySelector("#emptyPopup .close-button"); // Seletor específico
+        // --- Variáveis e funções para o Popup de ATRIBUIÇÃO ---
+        const assignmentPopup = document.getElementById("assignmentPopup");
+        const assignmentTableBody = document.getElementById("assignmentTableBody");
+        const saveAssignmentsBtn = document.getElementById("saveAssignmentsBtn");
 
+        // Array de exemplo para os 6 Marketers
+        const marketers = [
+            { id: 'marketer1', name: 'Marketer Alpha' },
+            { id: 'marketer2', name: 'Marketer Beta' },
+            { id: 'marketer3', name: 'Marketer Gamma' },
+            { id: 'marketer4', name: 'Marketer Delta' },
+            { id: 'marketer5', name: 'Marketer Epsilon' },
+            { id: 'marketer6', name: 'Marketer Zeta' }
+        ];
 
-        // Função para abrir o popup (chamada pelo onclick no HTML)
-        function openEmptyPopup() {
-            if (emptyPopup) {
-                emptyPopup.style.display = "flex";
+        // Simulação de dados de atribuição: estado do folder -> ID do marketer
+        let folderStateAssignments = {
+            'CA': 'marketer1',
+            'NY': 'marketer3',
+            'TX': 'marketer2'
+            // Outros estados seriam undefined até serem atribuídos
+        };
+
+        // Função para abrir o popup de atribuição
+        function openAssignmentPopup() {
+            if (assignmentPopup) {
+                assignmentPopup.style.display = "flex";
+                populateAssignmentTable(); // Preenche a tabela toda vez que o modal é aberto
             } else {
-                console.error("Element with ID 'emptyPopup' not found. Cannot open popup.");
+                console.error("Element with ID 'assignmentPopup' not found. Cannot open assignment popup.");
             }
         }
 
-        // Event listener para fechar o popup pelo botão 'X'
-        // Agora que o script está no final, os elementos já existem quando estas linhas são executadas.
-        if (closeButton) {
-            closeButton.onclick = function() {
-                if (emptyPopup) { // Verificação extra, apenas por robustez
-                    emptyPopup.style.display = "none";
-                }
-            };
-        } else {
-            console.error("Close button for empty popup not found (check HTML ID/class).");
+        // Função para fechar o popup de atribuição
+        function closeAssignmentPopup() {
+            if (assignmentPopup) {
+                assignmentPopup.style.display = "none";
+            }
         }
 
-        // Event listener para fechar o popup ao clicar fora dele
-        if (emptyPopup) {
+        // Função para popular a tabela de atribuição
+        function populateAssignmentTable() {
+            assignmentTableBody.innerHTML = ''; // Limpa a tabela antes de preencher
+
+            if (typeof states === 'undefined' || states.length === 0) {
+                console.warn("Global 'states' array is empty or undefined. Cannot populate assignment table fully.");
+                // Você pode adicionar uma mensagem na tabela ou carregar de uma fonte aqui
+                const row = document.createElement('tr');
+                row.innerHTML = `<td colspan="3" style="text-align: center; color: gray;">No states available to assign.</td>`;
+                assignmentTableBody.appendChild(row);
+                return;
+            }
+
+            states.forEach(state => {
+                const row = document.createElement('tr');
+                const currentStateAbbr = state.abbr;
+                // Pega o ID do marketer atribuído, se houver, ou string vazia
+                const assignedMarketerId = folderStateAssignments[currentStateAbbr] || '';
+
+                row.innerHTML = `
+                    <td>${state.name} (${currentStateAbbr})</td>
+                    <td>
+                        <select data-state-abbr="${currentStateAbbr}">
+                            <option value="">-- Select Marketer --</option>
+                            ${marketers.map(marketer => `
+                                <option value="${marketer.id}" ${assignedMarketerId === marketer.id ? 'selected' : ''}>
+                                    ${marketer.name}
+                                </option>
+                            `).join('')}
+                        </select>
+                    </td>
+                    <td>
+                        <button class="remove-btn" data-state-abbr="${currentStateAbbr}">Remove</button>
+                    </td>
+                `;
+                assignmentTableBody.appendChild(row);
+            });
+
+            // Adiciona event listeners para os botões de remover
+            document.querySelectorAll('#assignmentTable .remove-btn').forEach(button => {
+                button.onclick = function() {
+                    const stateAbbrToRemove = this.dataset.stateAbbr;
+                    delete folderStateAssignments[stateAbbrToRemove]; // Remove a atribuição
+                    populateAssignmentTable(); // Repopula a tabela para refletir a mudança
+                };
+            });
+        }
+
+        // Função para salvar as atribuições
+        saveAssignmentsBtn.onclick = function() {
+            const newAssignments = {};
+            assignmentTableBody.querySelectorAll('tr').forEach(row => {
+                const selectElement = row.querySelector('select');
+                // Verifica se o selectElement existe (para ignorar a linha de "No states available")
+                if (selectElement) {
+                    const stateAbbr = selectElement.dataset.stateAbbr;
+                    const selectedMarketerId = selectElement.value;
+
+                    if (selectedMarketerId) { // Só salva se um marketer foi selecionado
+                        newAssignments[stateAbbr] = selectedMarketerId;
+                    }
+                }
+            });
+
+            folderStateAssignments = newAssignments; // Atualiza o objeto de atribuições
+            console.log("Marketer Assignments Saved:", folderStateAssignments);
+            alert("Marketer assignments saved successfully!");
+            closeAssignmentPopup(); // Fecha o modal após salvar
+
+            // IMPORTANTE: Aqui você faria uma chamada para o seu backend para salvar `folderStateAssignments`
+            /*
+            fetch('/api/save-marketer-assignments', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(folderStateAssignments)
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Success:', data);
+                alert("Marketer assignments saved successfully!");
+                closeAssignmentPopup();
+            })
+            .catch((error) => {
+                console.error('Error saving assignments:', error);
+                alert("Error saving assignments.");
+            });
+            */
+        };
+
+
+        // --- Funcionalidade: Popup de Upload (mantido) ---
+        const uploadModal = document.getElementById("uploadModal");
+        const fileInput = document.getElementById("fileInput");
+        const uploadBtn = document.getElementById("uploadBtn");
+        const uploadStatus = document.getElementById("uploadStatus");
+
+        function openUploadModal() {
+            if (uploadModal) {
+                uploadModal.style.display = "flex";
+                uploadStatus.textContent = '';
+                if (fileInput) fileInput.value = '';
+            } else {
+                console.error("Element with ID 'uploadModal' not found. Cannot open upload popup.");
+            }
+        }
+
+        function closeUploadModal() {
+            if (uploadModal) {
+                uploadModal.style.display = "none";
+            }
+        }
+
+
+        // Listener principal para DOMContentLoaded e clicks globais
+        document.addEventListener('DOMContentLoaded', (event) => {
+            // Lógica para o formulário de upload
+            const fileUploadForm = document.getElementById("fileUploadForm");
+            if (fileUploadForm) {
+                fileUploadForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    const files = fileInput.files;
+                    if (files.length === 0) {
+                        uploadStatus.textContent = 'Please select files to upload.';
+                        uploadStatus.style.color = 'red';
+                        return;
+                    }
+                    uploadStatus.textContent = 'Uploading...';
+                    uploadStatus.style.color = 'orange';
+                    setTimeout(() => {
+                        uploadStatus.textContent = `Successfully uploaded ${files.length} file(s)!`;
+                        uploadStatus.style.color = 'green';
+                    }, 2000);
+                });
+            } else {
+                console.error("File upload form not found.");
+            }
+
+            // Global click listener para fechar modais ao clicar fora
             window.onclick = function(event) {
-                if (event.target == emptyPopup) {
-                    emptyPopup.style.display = "none";
+                if (assignmentPopup && event.target == assignmentPopup) {
+                    closeAssignmentPopup();
+                }
+                if (uploadModal && event.target == uploadModal) {
+                    closeUploadModal();
                 }
             };
-        } else {
-            console.error("Empty popup element not found for global click listener (check HTML ID).");
-        }
 
-        // ... O restante do seu JavaScript (funções auxiliares, etc.)
+            // Chama populateStateSelect e fetchData no carregamento da página
+            populateStateSelect();
+            fetchData();
+        });
     </script>
 
 </body>
