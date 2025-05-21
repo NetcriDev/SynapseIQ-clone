@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hope Neuro Crash Reports</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     
     <style>
         /* --- :::::::::::::::: Reset básico e fontes :::::::::::::::: --- */
@@ -381,93 +380,7 @@
         .clickable-report-number:hover {
             color: darkblue; /* Cor ao passar o mouse */
         }
-
-        select, input {
-            padding: 5px 10px;
-            border-radius: 12px;
-            border: 1px solid #ddd;
-            background-color: #f9f9f9;
-            cursor: pointer;
-            text-transform: uppercase;
-        }
-    </style>
-
-    <style>
-        /* Estilos para o ícone de lápis (mantidos) */
-        #openEmptyPopupBtn { /* ID ATUALIZADO AQUI */
-            color: #34d0db; /* Ou a cor que preferir */
-            transition: color 0.3s ease; /* Transição suave na mudança de cor */
-        }
-
-        #openEmptyPopupBtn:hover { /* ID ATUALIZADO AQUI */
-            color: #aaa; /* Cor mais escura ao passar o mouse */
-        }
-
-        /* Estilos básicos para o Modal (mantidos) */
-        .modal {
-            display: none; /* Escondido por padrão */
-            position: fixed; /* Fixo na tela */
-            z-index: 2000; /* Acima de tudo */
-            left: 0;
-            top: 0;
-            width: 100%; /* Largura total */
-            height: 100%; /* Altura total */
-            overflow: auto; /* Habilita scroll se o conteúdo for muito grande */
-            background-color: rgba(0,0,0,0.4); /* Fundo semi-transparente */
-            justify-content: center; /* Centraliza horizontalmente */
-            align-items: center; /* Centraliza verticalmente */
-        }
-
-        .modal-content {
-            background-color: #fefefe;
-            margin: auto; /* Centraliza o modal */
-            padding: 20px;
-            border: 1px solid #888;
-            width: 80%; /* Largura do conteúdo do modal */
-            max-width: 700px; /* Largura máxima */
-            box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2), 0 6px 20px 0 rgba(0,0,0,0.19);
-            animation-name: animatetop;
-            animation-duration: 0.4s;
-            border-radius: 8px;
-            position: relative; /* Para posicionar o botão de fechar */
-        }
-
-        .modal-content p, h2{
-            font-size: 16px;
-        }
-
-        /* Animação de entrada do modal (mantida) */
-        @keyframes animatetop {
-            from {top: -300px; opacity: 0}
-            to {top: 0; opacity: 1}
-        }
-
-        /* Botão de fechar (mantido) */
-        .close-button {
-            color: #aaa;
-            float: right;
-            font-size: 28px;
-            font-weight: bold;
-            position: absolute;
-            top: 10px;
-            right: 20px;
-        }
-
-        .close-button:hover,
-        .close-button:focus {
-            color: black;
-            text-decoration: none;
-            cursor: pointer;
-        }
-
-        /* Estilos para o conteúdo do popup vazio */
-        #popupContent {
-            margin-top: 20px;
-            margin-bottom: 10px;
-            line-height: 1.6;
-            color: #333;
-        }
-    </style>
+</style>
 </head>
 <body>
 
@@ -506,7 +419,6 @@
                 <button onclick="applyFilters()">Apply Filters</button>
                 <button onclick="resetFilters()">Reset</button>
                 <button onclick="downloadSelectedCSV()" id="download-csv-button" style="margin-left: 10px;">Selected Reports (0)</button>
-                <i class="fas fa-user-tie" id="openEmptyPopupBtn" title="Open Information" style="margin-left: auto; cursor: pointer; font-size: 2.0em;" onclick="openEmptyPopup()"></i>
             </div>
             <div class="table-scroll-container">
                 <table id="data-table">
@@ -541,17 +453,6 @@
         </div>
     </main>
 
-    <div id="emptyPopup" class="modal">
-        <div class="modal-content">
-            <span class="close-button">&times;</span>
-            <h2>Edit Marketers</h2>
-            <div id="popupContent">
-                <p>Here you will be able to edit which marketers are responsable for each agency.</p>
-                <p>Stay tuned for the next update!</p>
-            </div>
-        </div>
-    </div>
-
     <script>
 
         window.watsonAssistantChatOptions = {
@@ -562,10 +463,7 @@
             onLoad: async (instance) => {
                 window.g_wa_instance = instance; // armazena globalmente
                 await instance.render();
-            },
-            headerConfig:{
-                showRestartButton: true
-            },// The ID of your service instance.
+            }
         };
         setTimeout(function(){
             const t=document.createElement('script');
@@ -754,31 +652,7 @@
                                 <td><button class="sendReportToChat clickable-report-number" data-id="${rowDataItem.reportNumber}">${rowDataItem.reportNumber}</button></td>
                                 <td>${rowDataItem.crashDate}</td>
                                 <td>${rowDataItem.driverName}</td>
-                                <td>
-                                    <div style="display: flex; align-items: center; gap: 8px;">
-                                        <div style="display: flex; flex-direction: column; gap: 4px;">
-                                            <input
-                                                type="text"
-                                                value="${motorista.phone2?.split(',')[0]?.trim() || ''}"
-                                                data-passenger-id="${motorista.id || ''}"
-                                                class="phoneInput phoneInputA"
-                                                style="width: 110px; padding: 4px;"
-                                            />
-                                            <input
-                                                type="text"
-                                                value="${motorista.phone2?.split(',')[1]?.trim() || ''}"
-                                                data-passenger-id="${motorista.id || ''}"
-                                                class="phoneInput phoneInputB"
-                                                style="width: 110px; padding: 4px;"
-                                            />
-                                        </div>
-                                        <div style="display: flex; flex-direction: column; gap: 4px;">
-                                            <button onclick="savePhoneNumber(this)" style="cursor: pointer; border: none; background: none;">
-                                                💾
-                                            </button>
-                                        </div>
-                                    </div>
-                                </td>
+                                <td>${rowDataItem.phone}</td>
                                 <td>${fullInsuranceDetailsHTML}</td> <td>${fullCrashSeverityHTML}</td>   <td>${rowDataItem.age}</td>
                                 <td>${rowDataItem.gender}</td>
                                 <td>${rowDataItem.address}</td>
@@ -816,53 +690,6 @@
                 console.error('Erro ao carregar os dados:', error);
                 loadingDiv.innerHTML = `<div style="color: red; text-align: center;">Erro ao carregar os dados. <br>(${error.message})</div>`;
                 tableContainer.style.display = "none";
-            }
-        }
-
-        async function savePhoneNumber(button) {
-            const row = button.closest("tr");
-            const inputA = row.querySelector(".phoneInputA");
-            const inputB = row.querySelector(".phoneInputB");
-
-            if (!inputA && !inputB) {
-                alert("Inputs not found");
-                return;
-            }
-
-            const phoneA = inputA ? inputA.value.trim() : "";
-            const phoneB = inputB ? inputB.value.trim() : "";
-
-            const phone = [phoneA, phoneB].filter(p => p !== "").join(", ");
-
-            const passengerId = (inputA || inputB).getAttribute("data-passenger-id");
-
-            if (!passengerId) {
-                alert("Passenger ID not found");
-                return;
-            }
-
-            // Certifique-se de que esta URL está correta e funcional no seu backend
-            const url = `https://8162-52-116-202-144.ngrok-free.app/passenger/${passengerId}/phones`;
-
-            try {
-                const res = await fetch(url, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'accept': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        phone1: "", // Forçando phone1 a ser vazio, como no seu código antigo
-                        phone2: phone // Enviando os dois telefones combinados como phone2
-                    })
-                });
-
-                if (!res.ok) throw new Error("Error saving phone number");
-
-                alert("Phone number updated!");
-            } catch (err) {
-                console.error(err);
-                alert("Error to update phone number.");
             }
         }
         
@@ -1138,49 +965,6 @@
             fetchData();
             updateDownloadButton(); // Inicializa o estado do botão
         });
-    </script>
-
-    <script>
-       // --- Nova funcionalidade: Popup Vazio ---
-        // As referências a esses elementos agora serão encontradas
-        const emptyPopup = document.getElementById("emptyPopup");
-        // Não precisamos mais do openEmptyPopupBtn aqui, pois o onclick está no HTML
-        const closeButton = document.querySelector("#emptyPopup .close-button"); // Seletor específico
-
-
-        // Função para abrir o popup (chamada pelo onclick no HTML)
-        function openEmptyPopup() {
-            if (emptyPopup) {
-                emptyPopup.style.display = "flex";
-            } else {
-                console.error("Element with ID 'emptyPopup' not found. Cannot open popup.");
-            }
-        }
-
-        // Event listener para fechar o popup pelo botão 'X'
-        // Agora que o script está no final, os elementos já existem quando estas linhas são executadas.
-        if (closeButton) {
-            closeButton.onclick = function() {
-                if (emptyPopup) { // Verificação extra, apenas por robustez
-                    emptyPopup.style.display = "none";
-                }
-            };
-        } else {
-            console.error("Close button for empty popup not found (check HTML ID/class).");
-        }
-
-        // Event listener para fechar o popup ao clicar fora dele
-        if (emptyPopup) {
-            window.onclick = function(event) {
-                if (event.target == emptyPopup) {
-                    emptyPopup.style.display = "none";
-                }
-            };
-        } else {
-            console.error("Empty popup element not found for global click listener (check HTML ID).");
-        }
-
-        // ... O restante do seu JavaScript (funções auxiliares, etc.)
     </script>
 
 </body>
