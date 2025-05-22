@@ -1,7 +1,7 @@
 import os
 import sys
 
-PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))  # Ajusta según nivel
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))  # Ajusta según nivel
 os.chdir(PROJECT_ROOT)
 
 if PROJECT_ROOT not in sys.path:
@@ -34,9 +34,9 @@ query = """
     FROM (
         SELECT *
         FROM passengers
-        WHERE website = 'minnesota'
+        WHERE state <> 'Texas'
         ORDER BY id DESC
-        LIMIT 500
+        LIMIT 10
     ) sub
     WHERE
         phone2 IS NULL OR phone2 ILIKE 'n/a' OR phone2 ILIKE 'null' OR phone2 ILIKE 'none' OR trim(phone2) = ''

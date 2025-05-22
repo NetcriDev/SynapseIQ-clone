@@ -22,14 +22,13 @@ def safe_int(value):
     except ValueError:
         return None
     
-def mn_dataframe_to_db(df: pd.DataFrame, pdf_base_folder: str, token_DataIris_folder: str = None):
+def mn_dataframe_to_db(df: pd.DataFrame, pdf_base_folder: str):
     """
     Insert crash report data from a DataFrame into the database.
 
     Args:
         df (pd.DataFrame): DataFrame containing crash report data.
         pdf_base_folder (str): Path to the folder where PDF files are saved.
-        token_DataIris_folder (str): Path to the folder containing the DataIris token.
     Returns:
         None
     """
@@ -56,7 +55,7 @@ def mn_dataframe_to_db(df: pd.DataFrame, pdf_base_folder: str, token_DataIris_fo
             age = safe_int(row["Age"])
             media_contact = row['Contact'].strip() if pd.notna(row['Contact']) else ''
             crash_severity = row['Type'].strip() if pd.notna(row['Type']) else ''
-            original_document_location = os.path.join(pdf_base_folder, "ms" + report_number + ".pdf")
+            original_document_location = os.path.join(pdf_base_folder, report_number + ".pdf")
             generation_date = datetime.now()
             case_number = row['Case Number'].strip() if pd.notna(row['Case Number']) else ''
             driver_first, driver_middle, driver_last = split_driver_name(driver_name)
@@ -71,8 +70,9 @@ def mn_dataframe_to_db(df: pd.DataFrame, pdf_base_folder: str, token_DataIris_fo
                     INSERT INTO incident_reports (
                         report_number, internal_report_number, accident_datetime, city,
                         state, source_url, narrative, original_document_location,
-                        generation_date, original_format, notes, crash_severity, json, website
-                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                        generation_date, original_format, notes, crash_severity,
+                        json, website, is_external
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                     RETURNING id
                 """, (
                     report_number,
@@ -88,7 +88,8 @@ def mn_dataframe_to_db(df: pd.DataFrame, pdf_base_folder: str, token_DataIris_fo
                     "Case Number: " + case_number + " || Contact: " + media_contact,
                     crash_severity,
                     row_json,
-                    "minnesota"
+                    "minnesota",
+                    "no"
                 ))
                 incident_id = cur.fetchone()[0]
 

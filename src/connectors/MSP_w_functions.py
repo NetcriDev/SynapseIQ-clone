@@ -8,7 +8,6 @@ import pandas as pd
 from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
 from src.utils.logger_config import setup_logger
-from src.database.minnesota_into_db import mn_dataframe_to_db
 
 
 
@@ -145,12 +144,11 @@ def save_as_pdf(url, filename):
 # ::::::::::::::::::::::::::::::: main :::::::::::::::::::::::::::::::
 
 
-def pipeline_minnesota(output_folder: str = None, token_folder: str = None) -> pd.DataFrame:
+def pipeline_minnesota(output_folder: str = None) -> pd.DataFrame:
     """
     Main function to run the Minnesota crash report scraping and save the data to a CSV file.
     Args:
         output_folder (str): Path to the folder where the CSV and pdfs files will be saved. If None, defaults to '/home/data/minnesota'.
-        token_folder (str): Path to the folder containing the DataIris token.
     returns:
         pd.DataFrame: DataFrame containing the crash report data.    
     """
@@ -185,6 +183,7 @@ def pipeline_minnesota(output_folder: str = None, token_folder: str = None) -> p
     df_final.to_csv(csv_path, index=False)
     logger.info(f"CSV saved in: {csv_path}")
 
+    # NOTE: Save the last CSV path to a text file
     with open(output_folder + "/last_csv_path.txt", "w") as f:
         f.write(csv_path + "\n")
 

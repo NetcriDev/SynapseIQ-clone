@@ -1,7 +1,7 @@
 import os
 import sys
 
-PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))  # Ajusta según nivel
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))  # Ajusta según nivel
 os.chdir(PROJECT_ROOT)
 
 if PROJECT_ROOT not in sys.path:
@@ -44,8 +44,9 @@ try:
         WHERE 
             nearest_hope_d IS NULL
             AND (name_nearest_hope IS NULL OR trim(name_nearest_hope) = '')
+            AND state <> 'Texas'
         ORDER BY id DESC
-        LIMIT 200
+        LIMIT 10
     """)
 
     results = cur.fetchall()

@@ -9,7 +9,7 @@ if PROJECT_ROOT not in sys.path:
 
 import pandas as pd
 from src.utils.logger_config import setup_logger
-from src.database.minnesota_into_db import mn_dataframe_to_db
+from src.database.winstonsalem_into_db import insert_dataframe_into_db
 
 
 outputdata_dir = "/Users/cristianb/Documents/Python/rel8ed/Data"
@@ -21,7 +21,7 @@ logger= setup_logger("Scheduled_execution", outputdata_dir)
 # now
 
 
-def load_latest_minnesota_csv(txt_path="/tmp/last_csv_path.txt") -> pd.DataFrame:
+def load_latest_kansas_csv(txt_path="/tmp/last_csv_path.txt") -> pd.DataFrame:
     """
     Reads the path to the most recent CSV from a .txt file and loads it into a DataFrame.
 
@@ -55,12 +55,12 @@ def load_latest_minnesota_csv(txt_path="/tmp/last_csv_path.txt") -> pd.DataFrame
     return df
 
 
-def Minnesota_into_db():
-    logger.info(">>> Minnesota: Start insert into db ")
+def winston_into_db():
+    logger.info(">>> Winston Salem: Start insert into db ")
 
-    df = load_latest_minnesota_csv(txt_path=os.path.join(outputdata_dir, "minnesota", "last_csv_path.txt")) 
-    mn_dataframe_to_db(df, os.path.join(outputdata_dir, "minnesota"))
+    df = load_latest_kansas_csv(txt_path=os.path.join(outputdata_dir, "winstonsalem", "last_csv_path.txt")) 
+    insert_dataframe_into_db(df, os.path.join(outputdata_dir, "winstonsalem"))
 
-    logger.info(" Minnesota: Finish insert into db -----|")
+    logger.info(" Winston Salem: Finish insert into db -----|")
 
-Minnesota_into_db()
+winston_into_db()
