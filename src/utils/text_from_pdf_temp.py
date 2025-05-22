@@ -25,12 +25,20 @@ conn = psycopg2.connect(
 cur = conn.cursor(cursor_factory=RealDictCursor)
 
 # Ejecutar consulta
+# cur.execute("""
+#         SELECT report_number, state, original_document_location
+#         FROM incident_reports
+#         WHERE 
+#             (text_from_pdf IS NULL OR text_from_pdf = '')
+#             AND NOT source_url LIKE '%https://cris.dot.state.tx.us/public/Query/app/home%'
+#         ORDER BY id DESC
+#         LIMIT 100;
+#             """)
+
 cur.execute("""
         SELECT report_number, state, original_document_location
         FROM incident_reports
-        WHERE 
-            (text_from_pdf IS NULL OR text_from_pdf = '')
-            AND NOT source_url LIKE '%https://cris.dot.state.tx.us/public/Query/app/home%'
+        WHERE state = 'OH' AND (text_from_pdf IS NULL OR text_from_pdf = '')
         ORDER BY id DESC
         LIMIT 100;
             """)
@@ -39,11 +47,13 @@ cur.execute("""
 pdfp = PdfProcessor()
 
 for row in cur.fetchall():
-    original_document_location = row["original_document_location"]
-    report_number = row["report_number"]
-    state = row["state"]
-    pdfp.process_pdf_from_path(report_number, state, original_document_location)
-
+    try:
+        original_document_location = row["original_document_location"]
+        report_number = row["report_number"]
+        state = row["state"]
+        pdfp.process_pdf_from_path(report_number, state, original_document_location)
+    except:
+        print("sigueinte")
 # Cierre
 cur.close()
 conn.close()
