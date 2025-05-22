@@ -11,10 +11,10 @@ from src.connectors.WSP_w_functions import pipeline_winstonsalem
 from src.utils.logger_config import setup_logger
 
 
-outputdata_dir = "/Users/cristianb/Documents/Python/rel8ed/Data"
-home_dir = "/Users/cristianb/Documents/Python/rel8ed/SynapseIQ_staging"
-#outputdata_dir = "/home/data"
-#home_dir="home/SynapseIQ"
+#outputdata_dir = "/Users/cristianb/Documents/Python/rel8ed/Data"
+#home_dir = "/Users/cristianb/Documents/Python/rel8ed/SynapseIQ_staging"
+outputdata_dir = "/home/data"
+home_dir="home/SynapseIQ"
 
 logger= setup_logger("Scheduled_execution", home_dir)
 # now

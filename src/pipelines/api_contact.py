@@ -16,8 +16,8 @@ from src.utils.utils_api_contact import DatabaseType
 
 
 # --- DIRECTORIOS ---
-outputdata_folder = "/Users/cristianb/Documents/Python/rel8ed/Data"
-#outputdata_dir = "/home/data"
+#outputdata_folder = "/Users/cristianb/Documents/Python/rel8ed/Data"
+outputdata_folder= "/home/data"
 
 logger= setup_logger("Scheduled_execution", outputdata_folder)
 
@@ -36,7 +36,7 @@ query = """
         FROM passengers
         WHERE state <> 'Texas'
         ORDER BY id DESC
-        LIMIT 10
+        LIMIT 100
     ) sub
     WHERE
         phone2 IS NULL OR phone2 ILIKE 'n/a' OR phone2 ILIKE 'null' OR phone2 ILIKE 'none' OR trim(phone2) = ''

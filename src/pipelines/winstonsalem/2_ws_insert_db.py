@@ -12,10 +12,10 @@ from src.utils.logger_config import setup_logger
 from src.database.winstonsalem_into_db import insert_dataframe_into_db
 
 
-outputdata_dir = "/Users/cristianb/Documents/Python/rel8ed/Data"
-home_dir = "/Users/cristianb/Documents/Python/rel8ed/SynapseIQ_staging"
-#outputdata_dir = "/home/data"
-#home_dir="home/SynapseIQ"
+#outputdata_dir = "/Users/cristianb/Documents/Python/rel8ed/Data"
+#home_dir = "/Users/cristianb/Documents/Python/rel8ed/SynapseIQ_staging"
+outputdata_dir = "/home/data"
+home_dir="home/SynapseIQ"
 
 logger= setup_logger("Scheduled_execution", outputdata_dir)
 # now

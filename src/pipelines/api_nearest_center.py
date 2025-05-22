@@ -15,7 +15,9 @@ from src.services.api_geocode_distance import HopeCenterDistancer
 
 
 # --- DIRECTORIOS Y LOGGER ---
-outputdata_folder = "/Users/cristianb/Documents/Python/rel8ed/Data"
+#outputdata_folder = "/Users/cristianb/Documents/Python/rel8ed/Data"
+outputdata_folder= "/home/data"
+
 logger = setup_logger("Scheduled_execution", outputdata_folder)
 
 
@@ -46,7 +48,7 @@ try:
             AND (name_nearest_hope IS NULL OR trim(name_nearest_hope) = '')
             AND state <> 'Texas'
         ORDER BY id DESC
-        LIMIT 10
+        LIMIT 100
     """)
 
     results = cur.fetchall()
