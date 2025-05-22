@@ -17,6 +17,7 @@ from src.utils.utils_api_contact import DatabaseType
 from src.services.api_geocode_distance import HopeCenterDistancer
 from src.services.ibm_cos import IBMCOSManager
 from config.config_ibm import COS_API_KEY_ID, COS_INSTANCE_CRN, COS_ENDPOINT, bucket
+from src.services.text_from_pdf import PdfProcessor
 
 main_script_path = sys.path[0]
 logger = setup_logger("Winstonsalem_execution", main_script_path)
@@ -89,8 +90,8 @@ def insert_dataframe_into_db(df: pd.DataFrame, file_path: str, home_path: str = 
                 INSERT INTO incident_reports (
                     report_number, internal_report_number, source_url, accident_datetime, city, state, street,
                     technical_notes, json, original_document_location, generation_date,
-                    original_format, nearest_hope_d, name_nearest_hope, crash_severity
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    original_format, nearest_hope_d, name_nearest_hope, crash_severity, website, is_external
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 RETURNING id
             """, (
                 report_number,
@@ -107,9 +108,14 @@ def insert_dataframe_into_db(df: pd.DataFrame, file_path: str, home_path: str = 
                 "pdf",
                 hope_center[1] if hope_center else None,
                 hope_center[0] if hope_center else None,
-                severity  
+                severity,
+                "winstonsalem",
+                "no"  
             ))
             incident_id = cur.fetchone()[0]
+            
+            pdfp = PdfProcessor()
+            pdfp.process_pdf_from_path(report_number, state, os.path.join(file_path,str(report_number)+".pdf"))
 
         # Insert vehicle if not exists for the incident
         vehicle_id = None

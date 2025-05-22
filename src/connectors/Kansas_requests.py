@@ -20,6 +20,7 @@ from src.utils.utils_api_contact import DatabaseType
 from src.services.api_geocode_distance import HopeCenterDistancer
 from src.services.ibm_cos import IBMCOSManager
 from config.config_ibm import COS_API_KEY_ID, COS_INSTANCE_CRN, COS_ENDPOINT, bucket
+from src.services.text_from_pdf import PdfProcessor
 
 
 main_script_path = sys.path[0]
@@ -98,9 +99,10 @@ def insert_full_crash_data(df_expanded: pd.DataFrame, file_path: str, home_path:
                     report_number, internal_report_number, source_url, 
                     accident_datetime, city, state, crash_severity, 
                     technical_notes, json, original_document_location, 
-                    generation_date, original_format, nearest_hope_d, name_nearest_hope
+                    generation_date, original_format, nearest_hope_d, 
+                    name_nearest_hope, website, is_external
                 )
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """, (
                 report_number,
                 "ks"+str(report_number),
@@ -115,8 +117,13 @@ def insert_full_crash_data(df_expanded: pd.DataFrame, file_path: str, home_path:
                 generation_date,
                 "pdf",
                 hope_center[1] if hope_center else None,
-                hope_center[0] if hope_center else None  
+                hope_center[0] if hope_center else None,
+                "kansas",
+                "no"
             ))
+
+            pdfp = PdfProcessor()
+            pdfp.process_pdf_from_path(report_number, state, os.path.join(file_path,str(report_number)+".pdf"))
 
         # Get incident ID
         cur.execute("SELECT id FROM incident_reports WHERE report_number = %s AND accident_datetime = %s", (report_number, accident_dt))

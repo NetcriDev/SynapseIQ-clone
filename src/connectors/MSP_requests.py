@@ -15,6 +15,7 @@ from src.utils.split_name import split_driver_name
 from src.services.api_contact import DataIrisSession
 from src.utils.utils_api_contact import DatabaseType
 from src.services.api_geocode_distance import HopeCenterDistancer
+from src.services.text_from_pdf import PdfProcessor
 
 main_script_path = sys.path[0]
 logger = setup_logger("Minnesota_execution", main_script_path)
@@ -97,8 +98,8 @@ def insert_dataframe_to_db(df: pd.DataFrame, pdf_base_path: str, home_path: str 
                     report_number, internal_report_number, accident_datetime, city, street,
                     state, source_url, narrative, original_document_location,
                     generation_date, original_format, notes, crash_severity, json,
-                    nearest_hope_d, name_nearest_hope
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    nearest_hope_d, name_nearest_hope, website, is_external
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 RETURNING id
             """, (
                 report_number,
@@ -116,9 +117,14 @@ def insert_dataframe_to_db(df: pd.DataFrame, pdf_base_path: str, home_path: str 
                 crash_severity,                                                 # crash_severity
                 row_json,
                 hope_center[1] if hope_center else None,
-                hope_center[0] if hope_center else None  
+                hope_center[0] if hope_center else None,
+                "minnesota",
+                "no"  
             ))
             incident_id = cur.fetchone()[0]
+            
+            pdfp = PdfProcessor()
+            pdfp.process_pdf_from_path(report_number, "MN", original_document_location)
 
         # Verificar si ya existe el vehículo para ese conductor
         cur.execute("""
