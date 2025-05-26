@@ -48,7 +48,7 @@ def load_latest_kansas_csv(txt_path="/tmp/last_csv_path.txt") -> pd.DataFrame:
         raise FileNotFoundError(f"CSV file not found at path: {csv_path}")
 
     try:
-        df = pd.read_csv(csv_path)
+        df = pd.read_csv(csv_path, dtype={"ID": str})
     except Exception as e:
         raise ValueError(f"Failed to read CSV: {e}")
 

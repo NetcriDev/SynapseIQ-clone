@@ -73,7 +73,7 @@ def insert_dataframe_into_db(df: pd.DataFrame, file_path: str, home_path: str = 
                 INSERT INTO incident_reports (
                     report_number, internal_report_number, source_url, accident_datetime, city, state, street,
                     technical_notes, json, original_document_location, generation_date,
-                    original_format, crash_severity, narrative, website, is_external
+                    original_format, crash_severity, narrative, website, is_external,
                 ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 RETURNING id
             """, (
@@ -153,8 +153,11 @@ def insert_dataframe_into_db(df: pd.DataFrame, file_path: str, home_path: str = 
                         state,
                         city,
                         street,
-                        website
-                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                        website,
+                        hasinsurance_details, 
+                        hasname, 
+                        over18
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """, (
                     vehicle_id,
                     'Driver',
@@ -169,7 +172,10 @@ def insert_dataframe_into_db(df: pd.DataFrame, file_path: str, home_path: str = 
                     state,
                     city,
                     street,
-                    "winstonsalem"
+                    "winstonsalem",
+                    str(bool(insurance)),
+                    str(bool(driver) and driver.upper() not in {"", "N/A", "KNOWN", "UNKNOWN"}),
+                    str((age_value := (int(age) if str(age).isdigit() else None)) is not None and age_value > 17)
                 ))
 
     conn.commit()

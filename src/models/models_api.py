@@ -10,6 +10,7 @@ class Passenger(BaseModel):
     vehicle_id: int
     role: Optional[str]
     name: Optional[str]
+    state: Optional[str]
     first_name: Optional[str]
     middle_name: Optional[str]
     last_name: Optional[str]
@@ -23,6 +24,11 @@ class Passenger(BaseModel):
     phone2: Optional[str]
     contact_resolution: Optional[str]
     notes: Optional[str]
+    hotlead: Optional[str]
+    hasphone: Optional[str]
+    hasinsurance_details: Optional[str]
+    hasname: Optional[str]
+    over18: Optional[str]
 
 class PassengerUpdatePhones(BaseModel):
     phone1: Optional[str]
@@ -59,6 +65,7 @@ class Vehicle(BaseModel):
 
 class IncidentReport(BaseModel):
     id: int
+    website: Optional[str]
     report_number: str
     internal_report_number: Optional[str]
     version_json: Optional[str]
@@ -117,6 +124,11 @@ class PassengerReport(BaseModel):
     state: Optional[str]
     city: Optional[str]
     street: Optional[str]
+    hotlead: Optional[str]
+    hasphone: Optional[str]
+    hasinsurance_details: Optional[str]
+    hasname: Optional[str]
+    over18: Optional[str]
 
 #Texas
 class CrashReportWithPassengers(BaseModel):

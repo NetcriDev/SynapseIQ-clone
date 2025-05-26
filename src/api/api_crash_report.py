@@ -17,6 +17,7 @@ from src.api.notification_manager import connected_clients
 from src.services.ibm_fundational_models import WatsonXModelHandler
 from dotenv import load_dotenv
 from pathlib import Path
+from math import ceil
 
 # Ruta absoluta o relativa al archivo .env
 #dotenv_path = Path("/Users/cristianb/Documents/Python/rel8ed/SynapseIQ_staging/.env")
@@ -147,6 +148,7 @@ def view_incident_pdf(report_number: str, response: Response = None):
 # Endpoint: Filtrado múltiple de incident_reports con paginación
 @app.get("/incident/search", response_model=List[IncidentReport])
 def search_incidents(
+    website: Optional[str] = None,
     generation_from: Optional[str] = None,
     generation_to: Optional[str] = None,
     accident_from: Optional[str] = None,
@@ -165,6 +167,9 @@ def search_incidents(
     filters = []
     params = []
 
+    if website:
+        filters.append("website ILIKE %s")
+        params.append(f"%{website}%")   
     if generation_from:
         filters.append("generation_date >= %s")
         params.append(parse_date(generation_from))
@@ -240,8 +245,14 @@ def search_incidents(
 @app.get("/passengers/search", response_model=List[Passenger])
 def search_passengers(
     name: Optional[str] = None,
+    state: Optional[str] = None,
     age: Optional[int] = None,
     license_number: Optional[str] = None,
+    hotlead: Optional[str] = None,
+    hasphone: Optional[str] = None,
+    hasinsurance_details: Optional[str] = None,
+    hasname: Optional[str] = None,
+    over18: Optional[str] = None,
     page: int = 1,
     page_size: int = 10,
     response: Response = None
@@ -251,6 +262,25 @@ def search_passengers(
 
     filters = []
     params = []
+
+    if state:
+        filters.append("state ILIKE %s")
+        params.append(f"%{state}%")
+    if hotlead:
+        filters.append("hotlead ILIKE %s")
+        params.append(f"%{hotlead}%")
+    if hasphone:
+        filters.append("hasphone ILIKE %s")
+        params.append(f"%{hasphone}%")
+    if hasinsurance_details:
+        filters.append("hasinsurance_details ILIKE %s")
+        params.append(f"%{hasinsurance_details}%")
+    if hasname:
+        filters.append("hasname ILIKE %s")
+        params.append(f"%{hasname}%")
+    if over18:
+        filters.append("over18 ILIKE %s")
+        params.append(f"%{over18}%")
     if name:
         filters.append("name ILIKE %s")
         params.append(f"%{name}%")
@@ -261,16 +291,29 @@ def search_passengers(
         filters.append("license_number ILIKE %s")
         params.append(f"%{license_number}%")
 
-    query = "SELECT * FROM passengers"
-    if filters:
-        query += " WHERE " + " AND ".join(filters)
-    query += " ORDER BY id DESC"
+    where_clause = " WHERE " + " AND ".join(filters) if filters else ""
 
-    cur.execute(query, tuple(params))
+    # Count total rows
+    count_query = f"SELECT COUNT(*) FROM passengers {where_clause}"
+    cur.execute(count_query, tuple(params))
+    total_items = cur.fetchone()["count"]
+    total_pages = ceil(total_items / page_size) if page_size else 1
+    offset = (page - 1) * page_size
+
+    # Main paginated query
+    query = f"""
+        SELECT * FROM passengers
+        {where_clause}
+        ORDER BY id DESC
+        LIMIT %s OFFSET %s
+    """
+    cur.execute(query, tuple(params + [page_size, offset]))
     passengers = cur.fetchall()
     conn.close()
+
     if response:
         response.headers["Access-Control-Allow-Origin"] = "*"
+
     return passengers
 
 # Endpoint: Editar teléfonos de un pasajero

@@ -142,8 +142,12 @@ def mn_dataframe_to_db(df: pd.DataFrame, pdf_base_folder: str):
                         state,
                         city,
                         address,
-                        website
-                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                        website,
+                        hasinsurance_details,
+                        hasname,
+                        over18
+
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """, (
                     vehicle_id,
                     report_number,
@@ -156,7 +160,10 @@ def mn_dataframe_to_db(df: pd.DataFrame, pdf_base_folder: str):
                     state,
                     city,
                     addres,
-                    "minnesota"
+                    "minnesota",
+                    'False',
+                    str(bool(driver_name) and driver_name.upper() not in {"", "N/A", "KNOWN", "UNKNOWN"}),
+                    str((age_value := (int(age) if str(age).isdigit() else None)) is not None and age_value > 17)
                 ))
 
         conn.commit()

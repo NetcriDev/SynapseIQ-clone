@@ -80,8 +80,43 @@ cur.close()
 conn.close()
 
 
+def actualizar_hasphone():
+    conn = get_connection()
 
+    try:
+        with conn.cursor() as cur:
+            # Actualizar a 'True' si phone1 o phone2 es válido
+            cur.execute("""
+                UPDATE passengers
+                SET hasphone = 'True'
+                WHERE (
+                    COALESCE(TRIM(phone1), '') NOT IN ('', ',', ' , ')
+                    OR
+                    COALESCE(TRIM(phone2), '') NOT IN ('', ',', ' , ')
+                );
+            """)
 
+            # Actualizar a 'False' si ambos son vacíos, coma, o null
+            cur.execute("""
+                UPDATE passengers
+                SET hasphone = 'False'
+                WHERE NOT (
+                    COALESCE(TRIM(phone1), '') NOT IN ('', ',', ' , ')
+                    OR
+                    COALESCE(TRIM(phone2), '') NOT IN ('', ',', ' , ')
+                );
+            """)
+
+            conn.commit()
+            print("Actualización completada correctamente.")
+    except Exception as e:
+        print(f"Error durante la actualización: {e}")
+        conn.rollback()
+    finally:
+        conn.close()
+
+# Ejecutar
+actualizar_hasphone()
 
 
 

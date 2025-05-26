@@ -136,10 +136,10 @@ class PdfProcessor:
             }
         )
 
-    def process_pdf_from_path(self, report_number: str, state: str, file_path: Union[str, Path]) -> str:
+    def process_pdf_from_path(self, report_number: str, state: str, file_path: Union[str, Path], narrative: str) -> str:
         """Procesa un PDF desde una ruta local."""
         print(f"Procesando archivo local: {file_path}")
-        return self._convert_and_store(report_number, state, str(file_path))
+        return self._convert_and_store(report_number, state, str(file_path), narrative)
 
     def process_pdf_from_ibm_cos(self, stream: BytesIO, report_number: str) -> Optional[str]:
         """
@@ -181,12 +181,12 @@ class PdfProcessor:
         print(f"Procesando archivo subido vía API: {tmp_path}")
         return self._convert_and_store(tmp_path, report_number)
 
-    def _convert_and_store(self, report_number: str, state: str ,source_path: str) -> str:
+    def _convert_and_store(self, report_number: str, state: str ,source_path: str, narrative: str) -> str:
         """Convierte el PDF a texto y lo guarda en la base de datos."""
         try:
             result: ConversionResult = self.converter.convert(source=source_path)
             markdown = result.document.export_to_markdown()
-            save_to_postgres(report_number, state, markdown)
+            save_to_postgres(report_number, state, str(markdown) + "\n\n" + narrative)
             return markdown
         except Exception as e:
             print(f"Error al procesar el PDF: {e}")

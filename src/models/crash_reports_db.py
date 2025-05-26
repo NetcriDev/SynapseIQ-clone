@@ -79,7 +79,11 @@ def create_crash_report_schema():
         notes TEXT,
         technical_notes TEXT,
         json JSONB,
-        text_from_pdf TEXT
+        text_from_pdf TEXT,
+        is_external TEXT,
+        website TEXT,
+        document_location_ibm TEXT,
+        address TEXT
     )
     """)
 
@@ -116,7 +120,8 @@ def create_crash_report_schema():
         owner_address TEXT,
         owner_phone TEXT,
         notes TEXT,
-        technical_notes TEXT
+        technical_notes TEXT,
+        website TEXT
     )
     """)
 
@@ -144,7 +149,15 @@ def create_crash_report_schema():
         phone2 TEXT,
         contact_resolution TEXT,
         notes TEXT,
-        technical_notes TEXT
+        technical_notes TEXT,
+        website TEXT,
+        address TEXT,
+        insurance_company TEXT,
+        hasphone TEXT,
+        hasinsurance_details TEXT,
+        hasname TEXT,
+        over18 TEXT,
+        hotlead TEXT
     )
     """)
 

@@ -44,15 +44,15 @@ def insert_full_crash_data(df_expanded: pd.DataFrame, file_path: str):
         license = row.get("License", "").strip()
         insurance = str(row.get("Insurance", "")).strip()
         state = row.get("State", "").strip()
-        city = row.get("City", "").strip()
+        city = str(row.get("City") or "").strip()
         severity = row.get("Type", "").strip()
         role = row.get("Role", "").strip()
         age = row.get("Age", None)
         generation_date = datetime.now()
-        gender=row.get("Gender", "").strip()
+        gender=str(row.get("Gender") or "").strip()
         driver_first, driver_middle, driver_last = split_driver_name(driver)
         narrative = row.get("Crash Narrative", "").strip()
-        print(f">>>> {narrative}")
+        #print(f">>>> {narrative}")
         accident_dt_str = f"{row['Date']} {row['Time']}"
         try:
             accident_dt = datetime.strptime(accident_dt_str, "%m/%d/%Y %H:%M")
@@ -81,7 +81,8 @@ def insert_full_crash_data(df_expanded: pd.DataFrame, file_path: str):
                     report_number, internal_report_number, source_url, 
                     accident_datetime, city, state, crash_severity, 
                     technical_notes, original_document_location, 
-                    generation_date, original_format, website, narrative, is_external
+                    generation_date, original_format, website,
+                    narrative, is_external
                 )
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """, (
@@ -179,8 +180,11 @@ def insert_full_crash_data(df_expanded: pd.DataFrame, file_path: str):
                     state,
                     city,
                     website,
-                    role
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    role,
+                    hasinsurance_details,
+                    hasname,
+                    over18
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """, (
                 vehicle_id,
                 report_number,
@@ -195,7 +199,10 @@ def insert_full_crash_data(df_expanded: pd.DataFrame, file_path: str):
                 state,
                 city,
                 "kansas",
-                role
+                role,
+                str(bool(insurance)),
+                str(bool(driver) and driver.upper() not in {"", "N/A", "KNOWN", "UNKNOWN"}),
+                str((age_value := (int(age) if str(age).isdigit() else None)) is not None and age_value > 17)
             ))
 
     conn.commit()

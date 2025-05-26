@@ -44,29 +44,29 @@ logger= setup_logger("Scheduled_execution", home_dir)
 # WinstonSalem()
 
 
-def Minnesota():
-    logger.info(">>> Start script: Minnesota")
-    pipeline_minnesota(output_folder=os.path.join(outputdata_dir, "minnesota"))
-    #run_msp_crash_scraper(outputdata_dir, home_path=home_dir)
-    logger.info("Finish script: Minnesota -----|")
+# def Minnesota():
+#     logger.info(">>> Start script: Minnesota")
+#     pipeline_minnesota(output_folder=os.path.join(outputdata_dir, "minnesota"))
+#     #run_msp_crash_scraper(outputdata_dir, home_path=home_dir)
+#     logger.info("Finish script: Minnesota -----|")
 
-Minnesota()
+# Minnesota()
 
 
-# def Texas():
-#     logger.info(">>> Start script: Texas")
-#     try:
-#         logger.info(" scraping execute...")
-#         df_scraped = run_scraper(os.path.join(outputdata_dir,"texas"), os.path.join(home_dir,"texas"))
+def Texas():
+    logger.info(">>> Start script: Texas")
+    try:
+        logger.info(" scraping execute...")
+        df_scraped = run_scraper(os.path.join(outputdata_dir,"texas"), os.path.join(home_dir,"texas"))
 
-#         logger.info("processed CSV ")
-#         df_processed = read_and_save_recent_csv(os.path.join(outputdata_dir,"texas"), 
-#                                                 os.path.join(outputdata_dir,"texas", "processed"),
-#                                                 margin_seconds=60)
-#         logger.info("Finish script: Texas -----|")
-#     except Exception as e:
-#         logger.error("Error script: Texas -----|")
-# Texas()
+        logger.info("processed CSV ")
+        df_processed = read_and_save_recent_csv(os.path.join(outputdata_dir,"texas"), 
+                                                os.path.join(outputdata_dir,"texas", "processed"),
+                                                margin_seconds=60)
+        logger.info("Finish script: Texas -----|")
+    except Exception as e:
+        logger.error("Error script: Texas -----|")
+Texas()
 
 
 #process_names_in_db()

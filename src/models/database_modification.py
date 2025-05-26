@@ -42,36 +42,40 @@ try:
     # ADD COLUMN report_number TEXT
     # """
 
-    # 
+    # !!! Ya Implementado!!!
     # alter_table_sql = """ 
     # ALTER TABLE incident_reports
     # ADD COLUMN is_external  TEXT
     # """
 
-
+    # !!! Ya Implementado!!!
     # alter_table_sql = """ 
     # ALTER TABLE incident_reports
     # ADD COLUMN website  TEXT
     # """
 
-
+    # !!! Ya Implementado!!!
     # alter_table_sql = """ 
     # ALTER TABLE incident_reports
     # ADD COLUMN document_location_ibm TEXT
     # """
 
+    # !!! Ya Implementado!!!
     #Agregar sitio web, en lugar de state
     # alter_table_sql = """ 
     # ALTER TABLE passengers
     # ADD COLUMN website TEXT
     # """
 
+    # !!! Ya Implementado!!!
     #Agregar sitio web, en lugar de state
     # alter_table_sql = """ 
     # ALTER TABLE vehicles
     # ADD COLUMN website TEXT
     # """
 
+
+    # !!! Ya Implementado!!!
     #Agregar address
     # alter_table_sql = """ 
     # ALTER TABLE passengers
@@ -83,6 +87,18 @@ try:
     ALTER TABLE incident_reports
     ADD COLUMN address TEXT
     """
+
+    #Agregar address
+    alter_table_sql = """ 
+    ALTER TABLE passengers
+    ADD COLUMN insurance_company TEXT,
+    ADD COLUMN hasphone TEXT,
+    ADD COLUMN hasinsurance_details TEXT,
+    ADD COLUMN hasname TEXT,
+    ADD COLUMN over18 TEXT,
+    ADD COLUMN hotlead TEXT;
+    """
+
 
     cursor.execute(alter_table_sql)
     conexion.commit()
