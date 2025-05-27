@@ -8,6 +8,7 @@ app = Flask(__name__)
 
 # Auth0 init
 PROFILE_KEY = 'profile'
+JWT_PAYLOAD_KEY = 'jwt_payload'
 #
 AUTH0_CLIENT_ID="RYJg443VOd2t6cX9CrtD6F0PZgqEILQX"
 AUTH0_DOMAIN="rel8edto.us.auth0.com"
@@ -29,6 +30,17 @@ auth0 = oauth.register(
     },
 )
 
+def getroles(userid):
+    import requests
+    headers = {'content-type': 'application/json'}
+    data = {"client_id":AUTH0_CLIENT_ID,"client_secret":AUTH0_CLIENT_SECRET,"audience":"https://rel8edto.us.auth0.com/api/v2/","grant_type":"client_credentials"}
+    response = requests.post('https://rel8edto.us.auth0.com/oauth/token', headers=headers, json=data)
+    access_token = response.json().get('access_token')
+    headers = {'Authorization': f'Bearer {access_token}'}
+    response = requests.get(f'https://rel8edto.us.auth0.com/api/v2/users/{userid}/roles', headers=headers)
+    roles = response.json()
+    return [r.get('name') for r in roles if r.get('name')]
+
 def requires_auth(f):
     @wraps(f)
     def decorated(*args, **kwargs):
@@ -40,6 +52,9 @@ def requires_auth(f):
 @app.route('/')
 @requires_auth
 def main_page():
+    user_roles = session[JWT_PAYLOAD_KEY]['roles']
+    # array of roles for the authenticated user calling this endpoint
+    print("Roles:", user_roles)
     return render_template('main.html')
 
 SEARCH_API_URL = "https://8162-52-116-202-144.ngrok-free.app/incident/search?page=1&page_size=2000"
@@ -73,7 +88,9 @@ def callback_handling():
     auth0.authorize_access_token()
     resp = auth0.get('userinfo')
     userinfo = resp.json()
-    session["jwt_payload"] = userinfo
+    userid = userinfo['sub']
+    userinfo['roles'] = getroles(userid)
+    session[JWT_PAYLOAD_KEY] = userinfo
     session[PROFILE_KEY] = {
         'user_id': userinfo['sub'],
         'name': userinfo['name'],
