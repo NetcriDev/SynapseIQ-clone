@@ -73,7 +73,7 @@ def insert_dataframe_into_db(df: pd.DataFrame, file_path: str, home_path: str = 
                 INSERT INTO incident_reports (
                     report_number, internal_report_number, source_url, accident_datetime, city, state, street,
                     technical_notes, json, original_document_location, generation_date,
-                    original_format, crash_severity, narrative, website, is_external,
+                    original_format, crash_severity, narrative, website, is_external
                 ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 RETURNING id
             """, (

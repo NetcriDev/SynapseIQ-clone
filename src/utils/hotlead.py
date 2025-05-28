@@ -1,5 +1,5 @@
 import psycopg2
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from config.config import get_connection
 
 def is_invalid_string(value: str) -> bool:
@@ -14,7 +14,8 @@ def is_qualified_hot_lead(
     hasphone: str,
     nearest_center_d: float,
     accident_datetime: datetime,
-    injury_severity: str
+    injury_severity: str,
+    website: str
 ) -> str:
     """
     Evaluates whether a passenger qualifies as a hot lead based on the defined criteria.
@@ -39,20 +40,29 @@ def is_qualified_hot_lead(
         # Validar distancia
         within_distance = nearest_center_d is not None and nearest_center_d <= 20
 
+
+        accident_datetime = accident_datetime.replace(tzinfo=timezone.utc)
         # Validar fecha de accidente
         recent_accident = isinstance(accident_datetime, datetime) and \
-                          (datetime.utcnow() - accident_datetime) <= timedelta(hours=48)
-
+                          (datetime.now(timezone.utc) - accident_datetime) <= timedelta(hours= 53)
         # Validar severidad crítica
         is_critical = not is_invalid_string(injury_severity) and "critical" in injury_severity.strip().lower()
 
-        all_conditions = all([
-            has_insurance,
-            has_phone,
-            within_distance,
-            recent_accident,
-            is_critical
-        ])
+        if website == "winstonsalem":
+            all_conditions = all([
+                has_insurance,
+                has_phone,
+                within_distance,
+                recent_accident,
+                is_critical
+            ])
+        else:
+            all_conditions = all([
+                has_insurance,
+                has_phone,
+                within_distance,
+                recent_accident
+            ])
 
         return "True" if all_conditions else "False"
 
@@ -72,6 +82,7 @@ def update_hotlead_flags():
             p.hasinsurance_details,
             p.hasphone,
             p.injury_severity,
+            p.website,
             ir.accident_datetime,
             ir.nearest_center_d
         FROM passengers p
@@ -79,20 +90,22 @@ def update_hotlead_flags():
         JOIN incident_reports ir ON v.incident_report_id = ir.id
         WHERE ir.state IS DISTINCT FROM 'Texas'
         AND (p.hotlead IS NULL OR TRIM(p.hotlead) = '')
+        ORDER BY p.id DESC
         LIMIT 200;
     """)
 
     passengers = cur.fetchall()
 
     for row in passengers:
-        passenger_id, hasinsurance_details, hasphone, injury_severity, accident_datetime, nearest_center_d = row
+        passenger_id, hasinsurance_details, hasphone, injury_severity, website, accident_datetime, nearest_center_d = row
 
         flag = is_qualified_hot_lead(
             hasinsurance_details,
             hasphone,
             nearest_center_d,
             accident_datetime,
-            injury_severity
+            injury_severity,
+            website
         )
 
         # Actualizar valor en la base de datos

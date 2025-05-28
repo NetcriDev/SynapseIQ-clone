@@ -1,12 +1,9 @@
 import psycopg2
 import os
 import psycopg2.extras
-from fastapi import FastAPI, Query, HTTPException, Response, Depends, WebSocket, WebSocketDisconnect
 from typing import List, Optional, Dict
 from datetime import datetime, time
-from src.models.models_api import Passenger, PassengerUpdatePhones, Vehicle, IncidentReport, ChatRequest, ChatResponse
 from config.config import get_connection
-from src.utils.util_pagination import paginate
 from src.utils.parse_date import parse_date
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -18,6 +15,27 @@ from src.services.ibm_fundational_models import WatsonXModelHandler
 from dotenv import load_dotenv
 from pathlib import Path
 from math import ceil
+from passlib.context import CryptContext
+from fastapi import (FastAPI, 
+                     Query, 
+                     HTTPException, 
+                     Response, 
+                     Depends, 
+                     WebSocket, 
+                     WebSocketDisconnect, 
+                     Body, 
+                     Path as PathUrl)
+from src.models.models_api import (
+    Passenger,
+    PassengerUpdatePhones,
+    Vehicle,
+    IncidentReport,
+    ChatRequest,
+    ChatResponse,
+    MarketerUserCreate,
+    MarketerUserRead,
+    AssignMarketerUser
+)
 
 # Ruta absoluta o relativa al archivo .env
 #dotenv_path = Path("/Users/cristianb/Documents/Python/rel8ed/SynapseIQ_staging/.env")
@@ -41,6 +59,8 @@ watson_handler = WatsonXModelHandler(
 )
 
 app = FastAPI()
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # Configuration CORS
 app.add_middleware(
@@ -157,6 +177,12 @@ def search_incidents(
     state: Optional[str] = None,
     city: Optional[str] = None,
     crash_severity: Optional[str] = None,
+    hotlead: Optional[str] = None,
+    hasphone: Optional[str] = None,
+    hasinsurance_details: Optional[str] = None,
+    hasname: Optional[str] = None,
+    over18: Optional[str] = None,
+    marketer_username: Optional[str] = None,
     page: int = 1,
     page_size: int = 15,
     response: Response = None
@@ -196,27 +222,60 @@ def search_incidents(
     if crash_severity:
         filters.append("crash_severity ILIKE %s")
         params.append(f"%{crash_severity}%")
+    if hotlead:
+        filters.append("p.hotlead ILIKE %s")
+        params.append(f"%{hotlead}%")
+    if hasphone:
+        filters.append("p.hasphone ILIKE %s")
+        params.append(f"%{hasphone}%")
+    if hasinsurance_details:
+        filters.append("p.hasinsurance_details ILIKE %s")
+        params.append(f"%{hasinsurance_details}%")
+    if hasname:
+        filters.append("p.hasname ILIKE %s")
+        params.append(f"%{hasname}%")
+    if over18:
+        filters.append("p.over18 ILIKE %s")
+        params.append(f"%{over18}%")
+    if marketer_username:
+        filters.append("""
+            ir.id IN (
+                SELECT DISTINCT ir_sub.id
+                FROM incident_reports ir_sub
+                JOIN vehicles v_sub ON v_sub.incident_report_id = ir_sub.id
+                JOIN passengers p_sub ON p_sub.vehicle_id = v_sub.id
+                JOIN passenger_marketer_users pmu ON pmu.passenger_id = p_sub.id
+                JOIN marketer_users mu ON mu.id = pmu.marketer_user_id
+                WHERE mu.username ILIKE %s
+            )
+        """)
+        params.append(f"%{marketer_username}%")
 
-    base_query = "FROM incident_reports"
+    # Query base con JOINs para aplicar filtros de passengers
+    base_query = """
+        FROM incident_reports ir
+        JOIN vehicles v ON v.incident_report_id = ir.id
+        JOIN passengers p ON p.vehicle_id = v.id
+    """
     if filters:
         base_query += " WHERE " + " AND ".join(filters)
 
-    # Obtener total si deseas usarlo (opcional)
-    count_query = f"SELECT COUNT(*) {base_query}"
+    # Total para headers
+    count_query = f"SELECT COUNT(DISTINCT ir.id) {base_query}"
     cur.execute(count_query, tuple(params))
     total_rows = cur.fetchone()["count"]
 
-    # Agregar paginación al query final
     offset = (page - 1) * page_size
+
     select_query = f"""
-        SELECT * {base_query}
-        ORDER BY accident_datetime DESC
+        SELECT DISTINCT ir.* {base_query}
+        ORDER BY ir.accident_datetime DESC
         LIMIT %s OFFSET %s
     """
     cur.execute(select_query, tuple(params + [page_size, offset]))
     incidents = cur.fetchall()
 
-    # Agregar vehículos y pasajeros
+    # Agregar vehículos y pasajeros por incidente
     for incident in incidents:
         cur.execute("SELECT * FROM vehicles WHERE incident_report_id = %s", (incident['id'],))
         vehicles = cur.fetchall()
@@ -245,7 +304,6 @@ def search_incidents(
 @app.get("/passengers/search", response_model=List[Passenger])
 def search_passengers(
     name: Optional[str] = None,
-    state: Optional[str] = None,
     age: Optional[int] = None,
     license_number: Optional[str] = None,
     hotlead: Optional[str] = None,
@@ -263,9 +321,7 @@ def search_passengers(
     filters = []
     params = []
 
-    if state:
-        filters.append("state ILIKE %s")
-        params.append(f"%{state}%")
+
     if hotlead:
         filters.append("hotlead ILIKE %s")
         params.append(f"%{hotlead}%")
@@ -482,6 +538,8 @@ def get_text_from_pdf(report_number: str, state: str) -> str:
     return text
 
 
+# ---------------- Endpoints de chat ----------------|
+
 # Endpoint principal de chat
 @app.post("/chat", response_model=ChatResponse)
 async def chat_with_model(request: ChatRequest):
@@ -568,6 +626,213 @@ def get_chat_history(report_number: str, state: str):
         "state": session["state"],
         "history": messages
     }
+
+
+
+# ======= Marketer Users =======
+
+@app.post("/marketer-users/", response_model=MarketerUserRead)
+def create_marketer_user(user: MarketerUserCreate):
+    hashed_password = pwd_context.hash(user.password)
+    conn = get_connection()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+    try:
+        cur.execute("""
+            INSERT INTO marketer_users (username, email, full_name, hashed_password, role)
+            VALUES (%s, %s, %s, %s, %s)
+            RETURNING id, username, email, full_name, is_active, role
+        """, (user.username, user.email, user.full_name, hashed_password, user.role))
+        user_created = cur.fetchone()
+        conn.commit()
+        return user_created
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=400, detail=str(e))
+    finally:
+        conn.close()
+
+
+@app.get("/marketer-users/", response_model=List[MarketerUserRead])
+def get_all_marketer_users():
+    conn = get_connection()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+    cur.execute("SELECT id, username, email, full_name, is_active, role FROM marketer_users ORDER BY id")
+    result = cur.fetchall()
+    conn.close()
+    return result
+
+@app.get("/marketer-users/{user_id}", response_model=MarketerUserRead)
+def get_marketer_user(user_id: int = PathUrl(...)):
+    conn = get_connection()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+    cur.execute("SELECT id, username, email, full_name, is_active, role FROM marketer_users WHERE id = %s", (user_id,))
+    user = cur.fetchone()
+    conn.close()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
+
+
+@app.put("/marketer-users/{user_id}")
+def update_marketer_user(
+    user_id: int,
+    full_name: Optional[str] = Body(default=None),
+    email: Optional[str] = Body(default=None),
+    role: Optional[str] = Body(default=None),
+    is_active: Optional[bool] = Body(default=None),
+):
+    conn = get_connection()
+    cur = conn.cursor()
+    updates = []
+    values = []
+
+    if full_name is not None:
+        updates.append("full_name = %s")
+        values.append(full_name)
+    if email is not None:
+        updates.append("email = %s")
+        values.append(email)
+    if role is not None:
+        updates.append("role = %s")
+        values.append(role)
+    if is_active is not None:
+        updates.append("is_active = %s")
+        values.append(is_active)
+
+    if not updates:
+        raise HTTPException(status_code=400, detail="No fields provided for update")
+
+    updates.append("updated_at = %s")
+    values.append(datetime.utcnow())
+
+    values.append(user_id)
+
+    cur.execute(f"""
+        UPDATE marketer_users
+        SET {', '.join(updates)}
+        WHERE id = %s
+    """, tuple(values))
+
+    if cur.rowcount == 0:
+        conn.rollback()
+        raise HTTPException(status_code=404, detail="User not found")
+    conn.commit()
+    conn.close()
+    return {"message": "User updated successfully"}
+
+@app.delete("/marketer-users/{user_id}")
+def delete_marketer_user(user_id: int):
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("DELETE FROM marketer_users WHERE id = %s", (user_id,))
+    if cur.rowcount == 0:
+        conn.rollback()
+        raise HTTPException(status_code=404, detail="User not found")
+    conn.commit()
+    conn.close()
+    return {"message": "User deleted successfully"}
+
+
+# ======= Assign marketer to passenger =======
+
+@app.post("/assign-marketer-users/")
+def assign_marketer_users(data: AssignMarketerUser):
+    conn = get_connection()
+    cur = conn.cursor()
+    try:
+        for marketer_id in data.marketer_user_ids:
+            cur.execute("""
+                SELECT 1 FROM passenger_marketer_users 
+                WHERE passenger_id = %s AND marketer_user_id = %s
+            """, (data.passenger_id, marketer_id))
+            if cur.fetchone():
+                continue  # ya existe la asignación
+            cur.execute("""
+                INSERT INTO passenger_marketer_users (
+                    passenger_id, marketer_user_id, assigned_at, status, created_by
+                ) VALUES (%s, %s, %s, %s, %s)
+            """, (data.passenger_id, marketer_id, datetime.datetime.now(), 'active', 'system'))
+        conn.commit()
+        return {"message": "Assignments processed successfully"}
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        conn.close()
+
+@app.get("/passenger/{passenger_id}/marketer-users", response_model=List[MarketerUserRead])
+def get_marketers_for_passenger(passenger_id: int):
+    conn = get_connection()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+    cur.execute("""
+        SELECT mu.id, mu.username, mu.email, mu.full_name, mu.is_active, mu.role
+        FROM marketer_users mu
+        JOIN passenger_marketer_users pmu ON pmu.marketer_user_id = mu.id
+        WHERE pmu.passenger_id = %s
+    """, (passenger_id,))
+    users = cur.fetchall()
+    conn.close()
+    return users
+
+@app.put("/assign-marketer-users/update")
+def update_assignment_status(
+    passenger_id: int = Body(...),
+    marketer_user_id: int = Body(...),
+    status: Optional[str] = Body(default="active"),
+    updated_by: Optional[str] = Body(default="system")
+):
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("""
+        UPDATE passenger_marketer_users
+        SET status = %s, updated_at = %s, updated_by = %s
+        WHERE passenger_id = %s AND marketer_user_id = %s
+    """, (status, datetime.utcnow(), updated_by, passenger_id, marketer_user_id))
+
+    if cur.rowcount == 0:
+        conn.rollback()
+        raise HTTPException(status_code=404, detail="Assignment not found")
+    conn.commit()
+    conn.close()
+    return {"message": "Assignment updated successfully"}
+
+@app.delete("/assign-marketer-users/")
+def delete_assignment(passenger_id: int, marketer_user_id: int):
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("""
+        DELETE FROM passenger_marketer_users
+        WHERE passenger_id = %s AND marketer_user_id = %s
+    """, (passenger_id, marketer_user_id))
+
+    if cur.rowcount == 0:
+        conn.rollback()
+        raise HTTPException(status_code=404, detail="Assignment not found")
+    conn.commit()
+    conn.close()
+    return {"message": "Assignment deleted successfully"}
+
+
+
+@app.get("/incident/by-marketer/{marketer_user_id}")
+def get_incidents_by_marketer(marketer_user_id: int):
+    conn = get_connection()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+    try:
+        cur.execute("""
+            SELECT DISTINCT ir.*
+            FROM incident_reports ir
+            JOIN vehicles v ON v.incident_report_id = ir.id
+            JOIN passengers p ON p.vehicle_id = v.id
+            JOIN passenger_marketer_users pmu ON pmu.passenger_id = p.id
+            WHERE pmu.marketer_user_id = %s
+            ORDER BY ir.accident_datetime DESC
+        """, (marketer_user_id,))
+        incidents = cur.fetchall()
+        return incidents
+    finally:
+        conn.close()
 
 
 

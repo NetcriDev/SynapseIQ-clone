@@ -1,7 +1,7 @@
 
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 from typing import List, Optional
-from datetime import datetime
+from datetime import datetime 
 
 # Pydantic models
 class Passenger(BaseModel):
@@ -29,6 +29,7 @@ class Passenger(BaseModel):
     hasinsurance_details: Optional[str]
     hasname: Optional[str]
     over18: Optional[str]
+    marketer_users: Optional[List["MarketerUserRead"]] = []
 
 class PassengerUpdatePhones(BaseModel):
     phone1: Optional[str]
@@ -163,3 +164,26 @@ class MessageRecord(BaseModel):
     role: str
     content: str
     created_at: datetime
+
+# ------------- Marketer -------------
+
+class MarketerUserCreate(BaseModel):
+    username: str
+    email: EmailStr
+    full_name: Optional[str]
+    role: str = "marketing"
+    password: str
+
+class MarketerUserRead(BaseModel):
+    id: int
+    username: str
+    email: EmailStr
+    full_name: Optional[str]
+    is_active: bool
+    role: str
+    class Config:
+        orm_mode = True
+
+class AssignMarketerUser(BaseModel):
+    passenger_id: int
+    marketer_user_ids: List[int]
