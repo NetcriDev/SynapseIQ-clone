@@ -1,0 +1,1894 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hope Neuro Crash Reports</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    
+    <style>
+        /* --- :::::::::::::::: Reset básico e fontes :::::::::::::::: --- */
+        :root {
+            --primary-color: #57e0e02f;
+            --secondary-color: #6c757d;
+            --light-color: #f8f9fa;
+            --dark-color: #343a40;
+            --border-color: #dee2e6;
+            --hover-color: #e9ecef;
+            --header-bg: #ffffff;
+            --shadow-color: rgba(0, 0, 0, 0.1);
+        }
+    
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--primary-color);
+            color: var(--dark-color);
+            line-height: 1.6;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+    
+        * {
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+        }
+
+        body, html {
+            overflow: hidden;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+    
+        /* --- :::::::::::::::::::::::::::::::: CABEÇALHO :::::::::::::::::::::::::::::::: --- */
+        .site-header {
+            background-color: var(--header-bg);
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px var(--shadow-color);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+    
+        .site-header .logo-container img {
+            max-height: 35px;
+            margin: 0 10px;
+        }
+    
+        /* --- :::::::::::::::::::::::::::::::: CONTEUDO PRINCIPAL :::::::::::::::::::::::::::::::: --- */
+        .main-content {
+            padding: 20px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+        }
+    
+        .main-content h2 {
+            color: var(--primary-color);
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2em;
+        }
+    
+        /* --- :::::::::::::::::::::::::::::::: LOADING MESSAGE :::::::::::::::::::::::::::::::: --- */
+        #loading {
+            text-align: center;
+            font-size: 1.5em;
+            color: var(--secondary-color);
+            margin: 50px 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+        #loading h3 {
+            font-size: 28px;
+        }
+    
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border-left-color: blue;
+            animation: spin 1s ease infinite;
+            margin-bottom: 15px;
+        }
+    
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    
+        /* --- :::::::::::::::::::::::::::::::: FILTROS :::::::::::::::::::::::::::::::: --- */
+        #filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            font-family: Arial, sans-serif;
+            margin-bottom: 20px;
+        }
+
+        #filters label {
+            display: flex;
+            flex-direction: column;
+            font-size: 13px;
+            color: #333;
+            gap:8px
+        }
+
+        #filters input[type="date"],
+        #filters select {
+            padding: 8px 10px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 14px;
+            min-width: 160px;
+            margin-top: 5px;
+        }
+
+        #filters button {
+            padding: 8px 16px;
+            background-color: #34d0db;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s ease;
+            margin-top: 20px;
+        }
+
+        #filters button:hover {
+            background-color: #0056b3;
+        }
+
+        /* #filters button:last-of-type {
+            background-color: #6c757d;
+        }
+
+        #filters button:last-of-type:hover {
+            background-color: #5a6268;
+        } */
+
+
+        /* --- :::::::::::::::::::::::::::::::: TABELA :::::::::::::::::::::::::::::::: --- */
+        .table-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            min-height: 0;
+            width: 100%;
+            max-width: 100%;
+            max-height: 97%;
+            overflow: hidden;
+            padding-top:5px;
+        }
+
+        /* Container da tabela com scroll VERTICAL apenas */
+        .table-scroll-container {
+            overflow-x: hidden; /* Remove scroll horizontal */
+            overflow-y: auto;   /* Mantém scroll vertical */
+            flex: 1;
+            max-height: calc(100vh - 350px); /* Ajuste conforme necessário */
+            width: 100%;
+            border: #6c757d;
+            border-radius: 10px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Estilo para a tabela - agora sem largura mínima fixa */
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            border-radius: 10px;
+            overflow: hidden;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+            /* Removido o min-width para permitir que a tabela se ajuste */
+        }
+
+        /* Garante que o conteúdo das células quebre linha quando necessário */
+        th, td {
+            padding: 12px 15px;
+            border: 1px solid var(--border-color);
+            text-align: left;
+            vertical-align: middle;
+            white-space: normal; /* Permite quebra de linha */
+            word-wrap: break-word; /* Quebra palavras longas */
+            max-width: 200px; /* Limite máximo para cada célula */
+        }
+
+        /* Mantém o cabeçalho fixo durante o scroll */
+        thead th {
+            background-color: var(--hover-color);
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+    
+        /* Controles de paginação */
+        .pagination-controls {
+            text-align: center;
+            margin-top: 20px;
+            padding: 10px;
+        }
+
+        .pagination-controls button {
+            background-color: var(--primary-color);
+            color: rgb(0, 0, 0);
+            border: none;
+            padding: 10px 15px;
+            margin: 0 5px;
+            cursor: pointer;
+            border-radius: 5px;
+            font-size: 1em;
+        }
+        
+        .pagination-controls button:hover {
+            background-color: var(--hover-color);
+        }
+
+        /* Estilo para a linha de detalhes */
+        .incident-details {
+            text-align: left;
+            font-size: 14px;
+            padding: 10px;
+            line-height: 1.5;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            background-color: var(--light-color);
+        }
+
+        .incident-details h3 {
+            font-size: 15px;
+            margin: 0 0 10px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .general-info p,
+        .vehicles-section li {
+            margin: 4px 0;
+            color: #444;
+        }
+
+        .vehicles-section {
+            margin-top: 10px;
+        }
+
+        .vehicles-section h4 {
+            margin-bottom: 5px;
+            font-size: 15px;
+            font-weight: bold;
+            color: #222;
+        }
+
+        .vehicles-section ul {
+            list-style-type: disc;
+            padding-left: 20px;
+        }
+
+        .vehicles-section li {
+            padding-left: 5px;
+        }
+
+        /* Garante que os detalhes tenham espaço e fiquem bem visíveis */
+        .details-content {
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            justify-content: flex-start;
+            background-color: #f9f9f9;
+        }
+
+        button {
+            background-color: var(--hover-color);
+            color: rgb(0, 0, 0);
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9em;
+        }
+
+    
+        /* --- :::::::::::::::::::::::::::::::: RESPONSIVIDADE :::::::::::::::::::::::::::::::: --- */
+        @media (max-width: 992px) {
+            .table-scroll-container {
+                max-height: calc(100vh - 200px);
+            }
+            
+            th, td {
+                padding: 10px 8px;
+                font-size: 0.9em;
+            }
+        }
+    
+        @media (max-width: 768px) {
+            .site-header {
+                flex-direction: column;
+                padding: 15px;
+            }
+    
+            .site-header .logo-container {
+                display: flex;
+                justify-content: space-around;
+                width: 100%;
+                margin-bottom: 10px;
+            }
+            
+            .site-header .logo-container img {
+                max-height: 40px;
+            }
+    
+            .main-content h2 {
+                font-size: 1.5em;
+            }
+    
+            .table-scroll-container {
+                max-height: calc(100vh - 180px);
+            }
+        }
+    
+        @media (max-width: 480px) {
+            .site-header .logo-container img {
+                max-height: 35px;
+            }
+            
+            .main-content h2 {
+                font-size: 1.3em;
+            }
+            
+            .table-scroll-container {
+                max-height: calc(100vh - 160px);
+            }
+            
+            th, td {
+                padding: 8px 6px;
+                font-size: 0.8em;
+            }
+        }
+    </style>
+
+    <style>
+        .clickable-report-number {
+            background: none;
+            border: none;
+            color: blue; /* Ou a cor que preferir para links */
+            text-decoration: underline;
+            cursor: pointer;
+            padding: 0;
+            font-size: inherit; /* Herda o tamanho da fonte da célula */
+        }
+
+        .clickable-report-number:hover {
+            color: darkblue; /* Cor ao passar o mouse */
+        }
+
+        select, input {
+            padding: 5px 10px;
+            border-radius: 12px;
+            border: 1px solid #ddd;
+            background-color: #f9f9f9;
+            cursor: pointer;
+            text-transform: uppercase;
+        }
+    </style>
+
+    <style>
+        /* Estilo para o ícone de upload (mantido) */
+        #openUploadModalBtn {
+            margin-left: 10px;
+            color: #34d0db;
+            transition: color 0.3s ease;
+            cursor: pointer;
+            font-size: 1.2em;
+            margin-top:30px;
+        }
+
+        #openUploadModalBtn:hover {
+            color: #218838;
+        }
+
+        /* Estilos básicos para o Modal (aplicam-se a ambos os modais) */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 700px;
+            box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2), 0 6px 20px 0 rgba(0,0,0,0.19);
+            animation-name: animatetop;
+            animation-duration: 0.4s;
+            border-radius: 8px;
+            position: relative;
+        }
+
+        .modal-content h2 {
+            font-size: 1.5em;
+        }
+
+        .modal-content p {
+            font-size: 1.2em;
+        }
+
+        @keyframes animatetop {
+            from {top: -300px; opacity: 0}
+            to {top: 0; opacity: 1}
+        }
+
+        .close-button {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            position: absolute;
+            top: 10px;
+            right: 20px;
+        }
+
+        .close-button:hover,
+        .close-button:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        /* Estilos para a tabela dentro do modal de atribuição */
+        .assignment-table-container {
+            max-height: 400px; /* Altura máxima para a tabela */
+            overflow-y: auto; /* Adiciona scroll se a tabela for muito grande */
+            margin-top: 20px;
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        #assignmentTable {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        #assignmentTable th,
+        #assignmentTable td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        #assignmentTable th {
+            background-color: #f2f2f2;
+            position: sticky;
+            top: 0;
+            z-index: 1; /* Garante que o cabeçalho fique visível ao rolar */
+        }
+
+        #assignmentTable select {
+            width: 100%;
+            padding: 6px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        #assignmentTable .remove-btn {
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        #assignmentTable .remove-btn:hover {
+            background-color: #c82333;
+        }
+
+        #saveAssignmentsBtn {
+            background-color: #34d0db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+
+        #saveAssignmentsBtn:hover {
+            background-color: #218838;
+        }
+
+        /* Estilos específicos para o formulário de upload (mantido) */
+        #uploadFormContent {
+            margin-top: 20px;
+            /* text-align: center; */
+        }
+
+        #fileInput {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+
+        #uploadBtn {
+            background-color: #34d0db;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1.2em;
+            transition: background-color 0.3s ease;
+        }
+
+        #uploadBtn:hover {
+            background-color: #0056b3;
+        }
+    </style>
+
+    <style>
+       .filter-group {
+            display: flex;
+            flex-direction: row;
+            align-items: flex-start;
+            padding: 5px 10px;
+        }
+
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            font-size: 0.95em;
+            position: relative;
+            padding-left: 30px;
+            user-select: none;
+            color: #333;
+        }
+
+        .checkbox-container input {
+            position: absolute;
+            opacity: 0;
+            cursor: pointer;
+            height: 0;
+            width: 0;
+        }
+
+        .checkmark {
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 18px;
+            width: 18px;
+            background-color: #f0f0f0;
+            border: 2px solid #ccc;
+            border-radius: 4px;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+            transition: 0.2s;
+        }
+
+        .checkbox-container:hover .checkmark {
+            background-color: #e0e0e0;
+        }
+
+        .checkbox-container input:checked ~ .checkmark {
+            background-color: #34d0db;
+            border-color: #34d0db;
+        }
+
+        .checkmark:after {
+            content: "";
+            position: absolute;
+            display: none;
+        }
+
+        .checkbox-container input:checked ~ .checkmark:after {
+            display: block;
+        }
+
+        .checkbox-container .checkmark:after {
+            left: 5px;
+            top: 1px;
+            width: 5px;
+            height: 10px;
+            border: solid white;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+        }
+
+    </style>
+
+    <style>
+        .btn-confirm, .action-button {
+            background-color: #34d0db; 
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .btn-confirm:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+        /* .custom-select {
+            
+        } */
+    </style>
+</head>
+<body>
+
+    <header class="site-header sticky">
+        <div class="logo-container">
+            <img src="static/img/rel8ed_logo_v2.png" alt="Rel8ed Logo">
+        </div>
+        <div class="logo-container">
+            <img src="static/img/Hope-Neuro_Logo.png" alt="Hope Neuro Logo">
+        </div>
+    </header>
+
+    <main class="main-content">
+        <div id="loading">
+            <h3>Hope Neuro Crash Reports</h3>
+            <br>
+            <div class="spinner"></div>
+            Loading Data...
+        </div>
+
+        <div class="table-container">
+            <div id="filters" style="margin: 20px;">
+                <label>
+                    From:
+                    <input type="date" id="filter-from">
+                </label>
+                <label>
+                    To:
+                    <input type="date" id="filter-to">
+                </label>
+                <label>
+                    Agency:
+                    <select id="filter-website">
+                        <option value="">All Agencies</option>
+                        <option value="kansas">Kansas</option>
+                        <option value="minnesota">Minnesota</option>
+                        <option value="winstonsalem">Winston Salem</option>
+                        <option value="texas">Texas</option>
+                    </select>
+                </label>
+
+                <label>
+                    Marketer:
+                    <select id="filter-marketer">
+                        <option value="">All Marketers</option>
+                        </select>
+                </label>
+                <div style="display: flex; flex-direction: column; gap:5px; margin-top: 10px;">
+                    <span style="font-size: 13px; ;">Other filters:</span>
+                    <div style="display: flex; flex-wrap: wrap; ">
+                        <div class="filter-group" style="display: flex; flex-direction: column;">
+                            <label class="checkbox-container">
+                                <input type="checkbox" id="toggle-hotlead" data-filter-name="hotlead">
+                                <span class="checkmark"></span>
+                                Hotlead
+                            </label>
+                            <label class="checkbox-container">
+                                <input type="checkbox" id="toggle-hasphone" data-filter-name="hasphone">
+                                <span class="checkmark"></span>
+                                Phone
+                            </label>
+                        </div>
+                        <div class="filter-group" style="display: flex; flex-direction: column;">
+                            <label class="checkbox-container">
+                                <input type="checkbox" id="toggle-hasinsurance_details" data-filter-name="hasinsurance_details">
+                                <span class="checkmark"></span>
+                                Insurance
+                            </label>
+                            <label class="checkbox-container">
+                                <input type="checkbox" id="toggle-over18" data-filter-name="over18">
+                                <span class="checkmark"></span>
+                                +18
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap:10px; margin-top: 30px; margin-left: 15px;">
+                    <button style="margin:0px" onclick="applyFilters()">Apply Filters</button>
+                    <button style="margin:0px; background-color: #6c757d;" onclick="resetFilters()">Reset</button>
+                </div>
+                <div style="display: flex; flex-direction: column; gap:10px; margin-top: 30px; margin-left: 15px;">
+                    <button style="margin:0px" onclick="openAssignModal()" id="assign-button" style="margin-left: 10px;">Assign Reports (0)</button>
+                    <button style="margin:0px; background-color: #6c757d;" style="margin-left: 10px; " id="delete-assignment-btn" class="action-button" disabled>Delete Assignment</button>
+                </div>
+                <button style="margin:0px; margin-top: 30px; margin-left: 15px;" onclick="downloadSelectedCSV()" id="download-csv-button" style="margin-left: 10px;">Download Reports (0)</button>
+                    <i class="fas fa-upload" id="openUploadModalBtn" title="Upload Files" style="margin-left: auto; cursor: pointer; font-size: 2em;" onclick="openUploadModal()"></i>
+
+            </div>
+            <div class="table-scroll-container">
+                <table id="data-table">
+                    <thead>
+                        <tr>
+                            <th><input type="checkbox" id="select-all-current-page" title="Selecionar todos nesta página"></th> <th>Details</th>
+                            <th>Report N°</th>
+                            <th>Crash Date</th>
+                            <th>Driver Name</th>
+                            <th>Phone N°</th>
+                            <th>Insurance Details</th>
+                            <th>Crash Severity</th>
+                            <th>Age</th>
+                            <th>Gender</th>
+                            <th>Address</th>
+                            <th>State</th>
+                            <th>City</th>
+                            <th>Report PDF</th>
+                            <th>Distance from Clinic</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-body">
+                        </tbody>
+                </table>
+            </div>
+
+            <div class="pagination-controls">
+                <button onclick="previousPage()">«</button>
+                <span id="page-number">Page 1</span>
+                <button onclick="nextPage()">»</button>
+            </div>
+        </div>
+    </main>
+
+    <div id="uploadModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeUploadModal()">&times;</span>
+            <h2>Upload Files (under development)</h2>
+            <br>
+            <div id="uploadFormContent">
+                <p>Select one or more files to upload:</p>
+                <form id="fileUploadForm" enctype="multipart/form-data">
+                    <input type="file" id="fileInput" name="files[]" multiple accept=".pdf,.doc,.docx,.txt,.csv">
+                    <br><br>
+                    <button type="submit" id="uploadBtn">Upload</button>
+                </form>
+                <div id="uploadStatus" style="margin-top: 15px; font-weight: bold;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="assignModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" id="closeAssignModalBtn">&times;</span>
+            <h2>Assign reports</h2>
+            <br>
+            <div id="assignFormContent">
+                <p>Select marketer to assignt to <strong id="assign-count">0</strong> reports.</p>
+                
+                <select id="modal-marketer-select" class="custom-select" style="width: 100%; padding: 8px; margin-top: 10px;">
+                    <option value="" disabled selected>Loading Marketers...</option>
+                </select>
+                
+                <button id="confirm-assign-button" class="btn-confirm" style="width: 100%; margin-top: 20px;">
+                    Confirm Assign
+                </button>
+                <div id="assign-status" style="margin-top: 15px; font-weight: bold; text-align: center;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="deleteAssignmentModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeModal('deleteAssignmentModal')">&times;</span>
+            <h2>Delete Marketer Assignment</h2>
+            <div id="marketerListToDelete">
+                <p>Loading marketers...</p>
+            </div>
+            <button style="margin-top:10px;" id="confirm-delete-assignment-btn" class="action-button">Confirm Delete</button>
+        </div>
+    </div>
+
+    <script>
+
+        window.watsonAssistantChatOptions = {
+            integrationID: "aa6251d5-7615-46fd-9a89-dcce1a75b536", // The ID of this integration.
+            region: "us-south", // The region your integration is hosted in.
+            serviceInstanceID: "1fe70761-3293-40e8-94d4-3dab7c3a289a", // The ID of your service instance.
+            //   onLoad: async (instance) => { await instance.render(); 
+            onLoad: async (instance) => {
+                window.g_wa_instance = instance; // armazena globalmente
+                await instance.render();
+            },
+            headerConfig:{
+                showRestartButton: true
+            },// The ID of your service instance.
+        };
+        setTimeout(function(){
+            const t=document.createElement('script');
+            t.src="https://web-chat.global.assistant.watson.appdomain.cloud/versions/" + (window.watsonAssistantChatOptions.clientVersion || 'latest') + "/WatsonAssistantChatEntry.js";
+            document.head.appendChild(t);
+        });
+
+        // selectedItems agora armazena os objetos de dados das linhas selecionadas
+        let selectedRowDataForExport = [];
+        // selectedItemIds armazena os IDs únicos para gerenciar o estado dos checkboxes
+        const selectedItemIds = new Set();
+
+        let currentApiData = []; // Armazena os dados brutos da API para a página atual
+        let currentlyDisplayedData = []; // Armazena os objetos de dados processados para a página atual
+
+        let currentPage = 1;
+        const pageSize = 10;
+        let currentFilters = { from: '', to: '', website: '', marketerId: ''  };
+        // Novo objeto para armazenar o estado de cada filtro booleano
+        let booleanFilterStates = {
+            hotlead: false,
+            hasphone: false,
+            hasinsurance_details: false,
+            hasname: false,
+            over18: false
+        };
+
+        function applyFilters() {
+            currentFilters.from = document.getElementById('filter-from').value;
+            currentFilters.to = document.getElementById('filter-to').value;
+            currentFilters.website = document.getElementById('filter-website').value;
+            currentFilters.marketerId = document.getElementById('filter-marketer').value; // <<< NOVA LINHA
+
+            // ***** NOVA LÓGICA: Ler o estado dos toggles AQUI *****
+            for (const filterName in booleanFilterStates) {
+                const toggleElement = document.getElementById(`toggle-${filterName}`);
+                if (toggleElement) {
+                    booleanFilterStates[filterName] = toggleElement.checked;
+                }
+            }
+            // ****************************************************
+
+            currentPage = 1;
+            fetchData();
+        }
+
+        function resetFilters() {
+            document.getElementById('filter-from').value = '';
+            document.getElementById('filter-to').value = '';
+            document.getElementById('filter-website').value = '';
+            document.getElementById('filter-marketer').value = ''; // <<< NOVA LINHA
+
+            currentFilters = { from: '', to: '', website: '', marketerId: '' }; // <<< MODIFICADA
+
+            // Reseta o estado de todos os toggles booleanos para 'false' e desmarca visualmente
+            for (const filterName in booleanFilterStates) {
+                booleanFilterStates[filterName] = false; 
+                const toggleElement = document.getElementById(`toggle-${filterName}`);
+                if (toggleElement) {
+                    toggleElement.checked = false; 
+                }
+            }
+
+            currentPage = 1;
+            fetchData();
+        }
+
+        /**
+         * Busca a lista de marketers da API e popula o dropdown de FILTRO.
+         */
+        async function populateMarketerFilterDropdown() {
+            const selectElement = document.getElementById('filter-marketer');
+            // Certifique-se que o elemento existe antes de prosseguir
+            if (!selectElement) {
+                console.error("Elemento #filter-marketer não encontrado para popular o dropdown de filtro.");
+                return;
+            }
+            const apiUrl = 'https://8162-52-116-202-144.ngrok-free.app/marketer-users/';
+
+            // Mantém a opção "Todos os Marketers" e adiciona um "Carregando..." temporário
+            selectElement.innerHTML = '<option value="">All Marketers</option><option value="" disabled>Carregando...</option>';
+
+            try {
+                const response = await fetch(apiUrl);
+                if (!response.ok) {
+                    throw new Error(`Erro na API ao buscar marketers: ${response.status}`);
+                }
+                const marketers = await response.json();
+
+                // Limpa as opções, exceto "Todos os Marketers"
+                selectElement.innerHTML = '<option value="">All Marketers</option>'; 
+
+                marketers.forEach(marketer => {
+                    const option = document.createElement('option');
+                    option.value = marketer.username;
+                    option.textContent = marketer.full_name || marketer.username;
+                    selectElement.appendChild(option);
+                });
+
+            } catch (error) {
+                console.error('Falha ao carregar marketers para o filtro:', error);
+                // Restaura para apenas "Todos os Marketers" em caso de erro
+                selectElement.innerHTML = '<option value="">All Marketers</option><option value="" disabled>Erro ao carregar</option>';
+            }
+        }
+
+        async function fetchData() {
+            // Desestrutura o objeto currentFilters para pegar 'from', 'to' e 'website'
+            const { from, to, website, marketerId } = currentFilters; 
+
+            // Elementos do DOM para feedback visual (carregamento, tabela)
+            const loadingDiv = document.getElementById("loading");
+            const tableContainer = document.querySelector(".table-container");
+            const tableBody = document.getElementById("table-body");
+
+            // Atualiza o número da página exibido
+            document.getElementById("page-number").textContent = `Page ${currentPage}`;
+            
+            // Esconde a tabela e mostra o indicador de carregamento
+            tableContainer.style.display = "none";
+            loadingDiv.style.display = "flex";
+            
+            // Desmarca o checkbox "Selecionar Todos" ao carregar nova página
+            document.getElementById('select-all-current-page').checked = false;
+
+            // Constrói a URL base da API com a página atual e o tamanho da página
+            let url = `https://8162-52-116-202-144.ngrok-free.app/incident/search?page=${currentPage}&page_size=${pageSize}`;
+            
+            // Adiciona os filtros de data se eles existirem
+            if (from) url += `&accident_from=${from}`;
+            if (to) url += `&accident_to=${to}`;
+            
+            // **NOVO: Adiciona o filtro de website à URL se ele existir**
+            if (website) url += `&website=${encodeURIComponent(website)}`;
+
+            // Adiciona o filtro de marketer ID se ele existir <<< NOVA LÓGICA
+            if (marketerId) url += `&marketer_username=${encodeURIComponent(marketerId)}`;
+            //  ↑↑↑ ATENÇÃO: Confirme se 'marketer_id' é o nome correto do parâmetro da sua API backend!
+
+            // Adiciona os filtros booleanos (toggles) à URL
+            for (const filterName in booleanFilterStates) {
+                if (booleanFilterStates[filterName]) { // Se o toggle estiver ativado (true)
+                    url += `&${filterName}=True`; // Adiciona o filtro com "True" à URL
+                }
+            }
+
+            try {
+                // Faz a requisição à API
+                const response = await fetch(url);
+                
+                // Verifica se a resposta da rede foi bem-sucedida
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                // Converte a resposta para JSON e armazena os dados brutos da API
+                currentApiData = await response.json();
+
+                // Limpa o corpo da tabela e a lista de dados atualmente exibidos
+                tableBody.innerHTML = '';
+                currentlyDisplayedData = [];
+
+                // Itera sobre os incidentes e seus veículos/passageiros para popular a tabela
+                currentApiData.forEach((incidente, incidentIndex) => {
+                    // Extrai a pasta do caminho do documento para determinar o tipo de link do PDF
+                    const caminho = incidente.original_document_location?.replace(/\\/g, "/");
+                    const partes = caminho?.split("/");
+                    const folder = partes?.[3] || "Texas"; // Default para "Texas" se não houver pasta
+
+                    // Garante que haja pelo menos um "passageiro" (o motorista se não houver passageiros explícitos)
+                    const passageiros = incidente.vehicles.flatMap((veiculo, vehicleIndex) => {
+                        if (veiculo.passengers?.length) {
+                            // Retorna os passageiros do veículo, incluindo o índice e id do veículo
+                            return veiculo.passengers.map(p => ({
+                                ...p,
+                                vehicleIndex,
+                                vehicleId: veiculo.id
+                            }));
+                        } else {
+                            // Se não houver passageiros, retorna um array vazio (não retorna o motorista)
+                            return [];
+                        }
+                    });
+
+                    // Itera sobre os passageiros (ou motoristas) para criar as linhas da tabela
+                     passageiros.forEach((motorista, passengerIndex) => {
+                        // **LÓGICA DE FILTRAGEM ATUALIZADA**
+                        // Se um marketerId específico foi selecionado NO FILTRO DO SELECT,
+                        // E este passageiro NÃO tem marketers,
+                        // OU tem marketers mas está vazio,
+                        // OU tem marketers mas nenhum corresponde ao selecionado,
+                        // então pule este passageiro.
+                        if (currentFilters.marketerId && currentFilters.marketerId !== "") { // Verifica se um marketer específico FOI selecionado
+                            if (!motorista.marketer_users || 
+                                motorista.marketer_users.length === 0 || 
+                                !motorista.marketer_users.some(m => m.username === currentFilters.marketerId)) {
+                                return; // Pula este passageiro se não corresponde ao filtro específico
+                            }
+                        }
+                        // Se o filtro de marketerId NÃO está selecionado (ou seja, "Todos os Marketers"),
+                        // Constrói o nome completo do motorista/passageiro
+                        const nameParts = [motorista.first_name, motorista.middle_name, motorista.last_name]
+                            .filter(part => part && part.trim() !== "");
+                        const driverName = nameParts.length > 0 ? nameParts.join(" ") : (motorista.name || "--");
+
+                        // Constrói os detalhes de seguro
+                        const insuranceDetails = [
+                            incidente.vehicles[motorista.vehicleIndex].insurance_company ? `Insurance Company: ${incidente.vehicles[motorista.vehicleIndex].insurance_company}` : '',
+                            incidente.vehicles[motorista.vehicleIndex].driver_license ? `License: ${incidente.vehicles[motorista.vehicleIndex].driver_license}` : '',
+                            incidente.vehicles[motorista.vehicleIndex].policy_number ? `Policy: ${incidente.vehicles[motorista.vehicleIndex].policy_number}` : ''
+                        ].filter(Boolean).join('; ') || '--';
+                        const fullInsuranceDetailsHTML = insuranceDetails.replace(/; /g, '<br>');
+
+                        // Constrói os detalhes de severidade do acidente e ferimento
+                        const crashSeverity = [
+                            incidente.crash_severity ? `Crash: ${incidente.crash_severity}` : '',
+                            motorista.injury_severity ? `Type: ${motorista.injury_severity}` : ''
+                        ].filter(Boolean).join('; ') || '--';
+                        const fullCrashSeverityHTML = crashSeverity.replace(/; /g, '<br>');
+
+                        // Constrói os detalhes de distância para a clínica
+                        const distanceFromClinic = [
+                            incidente.nearest_hope_d ? `Miles: ${incidente.nearest_hope_d}` : '',
+                            incidente.name_nearest_hope ? `Center: ${incidente.name_nearest_hope}` : ''
+                        ].filter(Boolean).join('; ') || '--';
+                        const fullDistanceToClinicHTML = distanceFromClinic.replace(/; /g, '<br>');
+
+                        // Cria um ID único para a linha da tabela
+                        const rowUniqueId = `incident_${incidente.report_number || incidentIndex}_vehicle_${motorista.vehicleIndex}_person_${passengerIndex}_${(driverName || 'unknown').replace(/\s+/g, '_')}`;
+
+                        // Cria um objeto com os dados da linha para exportação e seleção
+                        const rowDataItem = {
+                            id: rowUniqueId,
+                            reportNumber: incidente.report_number || '--',
+                            crashDate: incidente.accident_datetime?.split("T")[0] || '--',
+                            driverName: driverName,
+                            phone: motorista.phone2 || "--",
+                            insuranceDetails: insuranceDetails,
+                            crashSeverity: crashSeverity,
+                            age: motorista.age || "--",
+                            gender: motorista.gender || "--",
+                            address: incidente.vehicles[motorista.vehicleIndex].owner_address || "--",
+                            state: incidente.state || "--", // Agora exibe a abreviação diretamente
+                            city: incidente.city || "--",
+                            reportPDFUrl: folder?.toLowerCase() === "minnesota" ?
+                                incidente.source_url :
+                                `https://8162-52-116-202-144.ngrok-free.app/incident/pdf/view/${incidente.pdf_id || incidente.report_number}`,
+                            distanceFromClinic: distanceFromClinic,
+                            originalIncident: incidente,
+                            originalVehicle: incidente.vehicles[motorista.vehicleIndex],
+                            originalMotorista: motorista
+                        };
+                        currentlyDisplayedData.push(rowDataItem);
+
+                        // Cria a linha da tabela
+                        const row = document.createElement("tr");
+                        const isChecked = selectedItemIds.has(rowUniqueId);
+
+                        row.innerHTML = `
+                            <td><input type="checkbox" class="row-checkbox" data-row-id="${rowUniqueId}" ${isChecked ? 'checked' : ''}></td>
+                            <td><button onclick="toggleDetails('${rowUniqueId}-details', this)">▶</button></td>
+                            <td>${rowDataItem.reportNumber}</td>
+                            <td>${rowDataItem.crashDate}</td>
+                            <td>${rowDataItem.driverName}</td>
+                            <td>
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <div style="display: flex; flex-direction: column; gap: 4px;">
+                                        <input
+                                            type="text"
+                                            value="${motorista.phone2?.split(',')[0]?.trim() || ''}"
+                                            data-passenger-id="${motorista.id || ''}"
+                                            class="phoneInput phoneInputA"
+                                            style="width: 110px; padding: 4px;"
+                                        />
+                                        <input
+                                            type="text"
+                                            value="${motorista.phone2?.split(',')[1]?.trim() || ''}"
+                                            data-passenger-id="${motorista.id || ''}"
+                                            class="phoneInput phoneInputB"
+                                            style="width: 110px; padding: 4px;"
+                                        />
+                                    </div>
+                                    <div style="display: flex; flex-direction: column; gap: 4px;">
+                                        <button
+                                            class="sendReportToChat"
+                                            data-id="${rowDataItem.reportNumber}"
+                                            title="Send report to chat"
+                                            style="background: none; border: none; cursor: pointer; font-size: 1.2em; color: #34d0db;"
+                                        >
+                                            <i class="fas fa-phone"></i>
+                                        </button>
+                                        <button
+                                            onclick="savePhoneNumber(this)"
+                                            title="Save phone number"
+                                            style="cursor: pointer; border: none; background: none;">
+                                            💾
+                                        </button>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>${fullInsuranceDetailsHTML}</td> 
+                            <td>${fullCrashSeverityHTML}</td> 
+                            <td>${rowDataItem.age}</td>
+                            <td>${rowDataItem.gender}</td>
+                            <td>${rowDataItem.address}</td>
+                            <td>${rowDataItem.state}</td>
+                            <td>${rowDataItem.city}</td>
+                            <td>${
+                                folder.toLowerCase() === "texas"
+                                    ? '❌'
+                                    : `<a href="${rowDataItem.reportPDFUrl}" target="_blank">📄</a>`
+                            }</td>
+                            <td style="${getMilesCellStyle(rowDataItem.distanceFromClinic)}">${fullDistanceToClinicHTML}</td>
+                        `;
+
+                        // Cria a linha de detalhes oculta
+                        const detailsRow = document.createElement("tr");
+                        detailsRow.classList.add("details-row");
+                        detailsRow.style.display = "none";
+                        detailsRow.id = `${rowUniqueId}-details`;
+                        detailsRow.innerHTML = `<td colspan="15">${renderGenericDetails(incidente)}</td>`;
+
+                        tableBody.appendChild(row);
+                        tableBody.appendChild(detailsRow);
+                    });
+                });
+
+                // Adiciona listeners aos checkboxes, atualiza o estado do "Selecionar Todos" e do botão de download
+                addCheckboxListenersToCurrentPage();
+                updateSelectAllCheckboxState();
+                updateDownloadButton();
+                updateAssignButton()
+
+                // Esconde o indicador de carregamento e mostra a tabela
+                loadingDiv.style.display = "none";
+                tableContainer.style.display = "block";
+
+            } catch (error) {
+                console.error('Erro ao carregar os dados:', error);
+                loadingDiv.innerHTML = `<div style="color: red; text-align: center;">Erro ao carregar os dados. <br>(${error.message})</div>`;
+                tableContainer.style.display = "none";
+            }
+        }
+
+        async function savePhoneNumber(button) {
+            const row = button.closest("tr");
+            const inputA = row.querySelector(".phoneInputA");
+            const inputB = row.querySelector(".phoneInputB");
+
+            if (!inputA && !inputB) {
+                alert("Inputs not found");
+                return;
+            }
+
+            const phoneA = inputA ? inputA.value.trim() : "";
+            const phoneB = inputB ? inputB.value.trim() : "";
+
+            const phone = [phoneA, phoneB].filter(p => p !== "").join(", ");
+
+            const passengerId = (inputA || inputB).getAttribute("data-passenger-id");
+
+            if (!passengerId) {
+                alert("Passenger ID not found");
+                return;
+            }
+
+            // Certifique-se de que esta URL está correta e funcional no seu backend
+            const url = `https://8162-52-116-202-144.ngrok-free.app/passenger/${passengerId}/phones`;
+
+            try {
+                const res = await fetch(url, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        phone1: "", // Forçando phone1 a ser vazio, como no seu código antigo
+                        phone2: phone // Enviando os dois telefones combinados como phone2
+                    })
+                });
+
+                if (!res.ok) throw new Error("Error saving phone number");
+
+                alert("Phone number updated!");
+            } catch (err) {
+                console.error(err);
+                alert("Error to update phone number.");
+            }
+        }
+        
+        function getMilesCellStyle(milesText) {
+            if (typeof milesText !== "string" || milesText.trim() === "" || milesText.trim() === "--") {
+                return ""; // sem cor para vazias ou "--"
+            }
+
+            const parts = milesText.split(":");
+            if (parts.length < 2) return "";
+
+            const miles = parseFloat(parts[1].replace(",", "."));
+            if (isNaN(miles)) return "";
+
+            if (miles <= 20) {
+                return 'background-color: #d4edda;'; // Verde claro
+            } else if (miles <= 30) {
+                return 'background-color: #fff3cd;'; // Amarelo claro
+            } else {
+                return 'background-color: #f8d7da;'; // Vermelho claro
+            }
+        }
+
+
+        function addCheckboxListenersToCurrentPage() {
+            document.querySelectorAll('.row-checkbox').forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    const rowId = this.dataset.rowId;
+                    // Encontra o item de dados correspondente em currentlyDisplayedData
+                    const dataItem = currentlyDisplayedData.find(item => item.id === rowId);
+
+                    if (!dataItem) {
+                        console.warn("Data item não encontrado para o rowId:", rowId);
+                        return;
+                    }
+
+                    if (this.checked) {
+                        if (!selectedItemIds.has(rowId)) {
+                            selectedItemIds.add(rowId);
+                            selectedRowDataForExport.push(dataItem);
+                        }
+                    } else {
+                        if (selectedItemIds.has(rowId)) {
+                            selectedItemIds.delete(rowId);
+                            selectedRowDataForExport = selectedRowDataForExport.filter(item => item.id !== rowId);
+                        }
+                    }
+                    updateDownloadButton();
+                    updateAssignButton()
+                    updateSelectAllCheckboxState(); // Atualiza o checkbox do cabeçalho
+                });
+            });
+        }
+
+        document.getElementById('select-all-current-page').addEventListener('change', function() {
+            const isChecked = this.checked;
+            document.querySelectorAll('.row-checkbox').forEach(checkbox => {
+                // Apenas altera se o estado for diferente para evitar reprocessamento desnecessário
+                if (checkbox.checked !== isChecked) {
+                    checkbox.checked = isChecked;
+                    // Dispara o evento 'change' para que a lógica de adicionar/remover seja executada
+                    checkbox.dispatchEvent(new Event('change'));
+                }
+            });
+        });
+
+        function updateSelectAllCheckboxState() {
+            const selectAllCheckbox = document.getElementById('select-all-current-page');
+            const rowCheckboxes = document.querySelectorAll('.row-checkbox');
+            if (rowCheckboxes.length === 0) {
+                selectAllCheckbox.checked = false;
+                selectAllCheckbox.indeterminate = false;
+                return;
+            }
+
+            const allCheckedOnPage = Array.from(rowCheckboxes).every(cb => cb.checked);
+            const someCheckedOnPage = Array.from(rowCheckboxes).some(cb => cb.checked);
+
+            selectAllCheckbox.checked = allCheckedOnPage;
+            selectAllCheckbox.indeterminate = !allCheckedOnPage && someCheckedOnPage;
+        }
+
+
+        function updateDownloadButton() {
+            const button = document.getElementById('download-csv-button');
+            const count = selectedRowDataForExport.length;
+            button.textContent = `Download Reports (${count})`;
+            button.disabled = count === 0;
+        }
+
+        function updateAssignButton() {
+            const assignReportBtn = document.getElementById('assign-button');
+            if (assignReportBtn) {
+                const count = selectedItemIds.size; // Alterado aqui
+                assignReportBtn.textContent = `Assign Reports (${count})`;
+                assignReportBtn.disabled = count === 0;
+            }
+            const deleteAssignmentBtn = document.getElementById('delete-assignment-btn');
+            if (deleteAssignmentBtn) {
+                deleteAssignmentBtn.disabled = selectedItemIds.size === 0;
+            }
+        }
+
+        function nextPage() {
+            currentPage++;
+            fetchData();
+        }
+
+        function previousPage() {
+            if (currentPage > 1) {
+                currentPage--;
+                fetchData();
+            }
+        }
+
+        const inputElement = document.getElementById("sendToChat");
+
+        if (inputElement) {
+            inputElement.addEventListener("keypress", function(event) {
+                if (event.key === "Enter") {
+                    sendToChat(inputElement.value, window.g_wa_instance);
+                }
+            });
+        }
+
+        function sendToChat(message, instance) {
+            if (instance && instance.send) {
+                instance.send({ input: { text: message } });
+            } else {
+                console.warn("Instância do chat não disponível ou inválida.");
+            }
+        }
+
+        document.addEventListener("click", function(e) {
+            let target = e.target;
+
+            // Se clicou no ícone <i>, sobe até o botão
+            if (target.tagName === 'I') {
+                target = target.closest("button");
+            }
+
+            if (target && target.classList.contains("sendReportToChat")) {
+                const reportNumber = target.getAttribute("data-id");
+
+                const row = target.closest("tr");
+                const stateCell = row ? row.cells[11] : null; // 11 = índice da coluna "state"
+                const reportState = stateCell ? stateCell.textContent.trim() : "";
+
+                if (window.g_wa_instance) {
+                    sendToChat(`${reportNumber}, ${reportState}`, window.g_wa_instance);
+                } else {
+                    console.warn("Error loading Watson Assistant instance.");
+                }
+            }
+        });
+
+        function toggleDetails(id, button) {
+            const detailsRow = document.getElementById(id);
+            const isVisible = detailsRow.style.display === "table-row";
+            detailsRow.style.display = isVisible ? "none" : "table-row";
+            button.textContent = isVisible ? "▶" : "▼";
+        }
+
+        function renderGenericDetails(incident) {
+            const city = incident.city || '';
+            const state = incident.state || '';
+            const dateTime = incident.accident_datetime ? new Date(incident.accident_datetime).toLocaleString() : 'N/A';
+            const numberOfVehicles = Array.isArray(incident.vehicles) ? incident.vehicles.length : 0;
+
+            let html = `
+                <div class="incident-details-container" style="display: flex; gap: 20px;">
+                    <div class="incident-details" style="flex: 1;">
+                        <h3>Accident Details - ${incident.report_number || '--'}</h3>
+                        <div class="general-info">
+                            <p><strong>Date & Time:</strong> ${dateTime}</p>
+                            <p><strong>Location:</strong> ${incident.street || '--'}, ${city}, ${state}</p>
+                            ${incident.weather_condition ? `<p><strong>Weather:</strong> ${incident.weather_condition}</p>` : ''}
+                            ${incident.road_condition ? `<p><strong>Road Condition:</strong> ${incident.road_condition}</p>` : ''}
+                            ${incident.crash_severity ? `<p><strong>Severity:</strong> ${incident.crash_severity}</p>` : ''}
+                            ${incident.narrative ? `<p><strong>Narrative:</strong> ${incident.narrative}</p>` : ''}
+                            ${incident.notes ? `<p><strong>Notes:</strong> ${incident.notes}</p>` : ''}
+                        </div>
+            `;
+
+            if (numberOfVehicles > 0) {
+                html += `
+                    <div class="vehicles-section">
+                        <h4>People Involved (${numberOfVehicles} vehicle${numberOfVehicles > 1 ? 's' : ''})</h4>
+                `;
+
+                incident.vehicles.forEach((vehicle, idx) => {
+                    const driverName = [vehicle.driver_first_name, vehicle.driver_middle_name, vehicle.driver_last_name]
+                        .filter(Boolean).join(" ") || vehicle.driver_name || "--";
+
+                    html += `<p><strong>Vehicle ${idx + 1} - Driver:</strong> ${driverName}</p>`;
+
+                    const passengers = vehicle.passengers?.length ? vehicle.passengers : [];
+
+                    if (passengers.length > 0) {
+                        html += `<ul>`;
+                        passengers.forEach((passenger, pIdx) => {
+                            const passengerName = [passenger.first_name, passenger.middle_name, passenger.last_name]
+                                .filter(Boolean).join(" ") || passenger.name || "--";
+                            const age = passenger.age || "--";
+                            const gender = passenger.gender || "--";
+                            html += `<li>${passengerName} - Age: ${age}, Gender: ${gender}</li>`;
+                        });
+                        html += `</ul>`;
+                    }
+                });
+
+                html += `</div>`;
+            }
+
+            html += `</div> <!-- end of left column -->`;
+
+            html += `
+                <div class="audit-history" style="flex: 1; display: flex; align-items: center; justify-content: center; background: #f5f5f5;">
+                    <p style="text-align: center;">Audit History (under development)</p>
+                </div>
+                </div> <!-- end of container -->
+            `;
+
+            return html;
+        }
+
+        function downloadSelectedCSV() {
+            if (selectedRowDataForExport.length === 0) {
+                alert("Nenhum item selecionado para download.");
+                return;
+            }
+
+            const headers = [
+                "Report N°", "Crash Date", "Driver Name", "Phone N°",
+                "Insurance Details", "Crash Severity", "Age", "Gender",
+                "Address", "State", "City", "Report PDF Link", "Distance from Clinic"
+            ];
+
+            // As chaves devem corresponder exatamente às propriedades do objeto rowDataItem
+            const dataKeys = [
+                "reportNumber", "crashDate", "driverName", "phone",
+                "insuranceDetails", "crashSeverity", "age", "gender",
+                "address", "state", "city", "reportPDFUrl", "distanceFromClinic"
+            ];
+
+            const DELIMITER = ';'; // Alterado para ponto e vírgula
+
+            // Adiciona o BOM UTF-8 para melhor compatibilidade com Excel
+            let csvContent = "\ufeff"; 
+
+            csvContent += headers.map(header => {
+                let cleanHeader = String(header).replace(/"/g, '""'); // Escapa aspas duplas
+                return `"${cleanHeader}"`; // Envolve com aspas duplas
+            }).join(DELIMITER) + "\r\n";
+
+            selectedRowDataForExport.forEach(item => {
+                const row = dataKeys.map(key => {
+                    let val = item[key] !== undefined && item[key] !== null ? String(item[key]) : "";
+                    
+                    // Remove/substitui tabulações e quebras de linha de dentro dos campos
+                    // para evitar problemas de formatação, mesmo quando o campo está entre aspas.
+                    val = val.replace(/\t/g, ' '); // Substitui tabulação por espaço
+                    val = val.replace(/\n/g, ' '); // Substitui nova linha por espaço
+                    val = val.replace(/\r/g, ' '); // Substitui carriage return por espaço
+
+                    val = `"${val.replace(/"/g, '""')}"`; // Escapa aspas duplas internas e envolve o valor com aspas duplas
+                    return val;
+                });
+                csvContent += row.join(DELIMITER) + "\r\n";
+            });
+
+            // Usar Blob para criar o arquivo é mais robusto
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", "Crash_Report_Data.csv");
+            document.body.appendChild(link); // Necessário para Firefox
+
+            link.click();
+
+            document.body.removeChild(link); // Limpa o link
+            URL.revokeObjectURL(url); // Libera o objeto URL
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchData();
+            updateDownloadButton(); // Inicializa o estado do botão
+            updateAssignButton();
+            populateMarketerFilterDropdown();
+
+           // Adicionar listeners para o modal de atribuição
+            if (closeAssignBtn) {
+                closeAssignBtn.addEventListener('click', closeAssignModal);
+            }
+            if (confirmAssignBtn) {
+                confirmAssignBtn.addEventListener('click', performAssignment);
+            }
+            
+            // Listener global para fechar o modal ao clicar fora (modificado para incluir o novo modal)
+            window.addEventListener('click', function(event) {
+                if (event.target == uploadModal) {
+                    closeUploadModal();
+                }
+                if (event.target == assignModal) { // Adicionado
+                    closeAssignModal();
+                }
+            });
+                });
+    </script>
+
+    <script>
+        // --- Funcionalidade: Popup de Upload (mantido) ---
+        const uploadModal = document.getElementById("uploadModal");
+        const fileInput = document.getElementById("fileInput");
+        const uploadBtn = document.getElementById("uploadBtn");
+        const uploadStatus = document.getElementById("uploadStatus");
+
+        function openUploadModal() {
+            if (uploadModal) {
+                uploadModal.style.display = "flex";
+                uploadStatus.textContent = '';
+                if (fileInput) fileInput.value = '';
+            } else {
+                console.error("Element with ID 'uploadModal' not found. Cannot open upload popup.");
+            }
+        }
+
+        function closeUploadModal() {
+            if (uploadModal) {
+                uploadModal.style.display = "none";
+            }
+        }
+
+
+        // Listener principal para DOMContentLoaded e clicks globais
+        document.addEventListener('DOMContentLoaded', (event) => {
+            // Lógica para o formulário de upload
+            const fileUploadForm = document.getElementById("fileUploadForm");
+            if (fileUploadForm) {
+                fileUploadForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    const files = fileInput.files;
+                    if (files.length === 0) {
+                        uploadStatus.textContent = 'Please select files to upload.';
+                        uploadStatus.style.color = 'red';
+                        return;
+                    }
+                    uploadStatus.textContent = 'Uploading...';
+                    uploadStatus.style.color = 'orange';
+                    setTimeout(() => {
+                        uploadStatus.textContent = `Successfully uploaded ${files.length} file(s)!`;
+                        uploadStatus.style.color = 'green';
+                    }, 2000);
+                });
+            } else {
+                console.error("File upload form not found.");
+            }
+
+            // Global click listener para fechar modais ao clicar fora
+            window.onclick = function(event) {
+                if (uploadModal && event.target == uploadModal) {
+                    closeUploadModal();
+                }
+            };
+
+            fetchData();
+        });
+
+        // --- INÍCIO: LÓGICA DO MODAL DE ATRIBUIÇÃO ---
+
+        // Pega as referências dos elementos do novo modal
+        const assignModal = document.getElementById("assignModal");
+        const closeAssignBtn = document.getElementById("closeAssignModalBtn");
+        const confirmAssignBtn = document.getElementById("confirm-assign-button");
+        const marketerSelect = document.getElementById("modal-marketer-select");
+        const assignCountSpan = document.getElementById("assign-count");
+        const assignStatus = document.getElementById("assign-status");
+
+
+        /**
+         * Abre o modal de atribuição, mas somente se houver reports selecionados.
+         */
+        async function openAssignModal() {
+            if (selectedItemIds.size === 0) {
+                alert("Please select at least one report to assign.");
+                return;
+            }
+            
+            // Atualiza a contagem de reports no texto do modal
+            assignCountSpan.textContent = selectedItemIds.size;
+            
+            // Limpa o status e reativa o botão de confirmação
+            assignStatus.textContent = '';
+            confirmAssignBtn.disabled = false;
+            confirmAssignBtn.textContent = 'Confirm Assignment';
+
+            // Mostra o modal
+            assignModal.style.display = "flex";
+            
+            // Busca e popula a lista de marketers
+            await populateMarketersDropdown();
+        }
+
+        /**
+         * Fecha o modal de atribuição.
+         */
+        function closeAssignModal() {
+            assignModal.style.display = "none";
+        }
+
+        /**
+         * Busca a lista de marketers da API e popula o dropdown DENTRO DO MODAL.
+         */
+        async function populateMarketersDropdown() {
+            const apiUrl = 'https://8162-52-116-202-144.ngrok-free.app/marketer-users/';
+            marketerSelect.innerHTML = '<option value="" disabled>Carregando...</option>'; // Feedback visual
+
+            try {
+                const response = await fetch(apiUrl);
+                if (!response.ok) throw new Error(`Erro na API: ${response.status}`);
+                
+                const marketers = await response.json();
+                marketerSelect.innerHTML = '<option value="" disabled selected>Select a Marketer</option>';
+
+                marketers.forEach(marketer => {
+                    const option = document.createElement('option');
+                    option.value = marketer.id;
+                    option.textContent = marketer.full_name || marketer.username;
+                    marketerSelect.appendChild(option);
+                });
+
+            } catch (error) {
+                console.error('Failed to load marketers:', error);
+                marketerSelect.innerHTML = '<option value="" disabled>Error loading</option>';
+            }
+        }
+
+
+        /**
+         * Executa a lógica de atribuição quando o botão de confirmação no modal é clicado.
+         */
+        async function performAssignment() {
+            const marketerId = marketerSelect.value;
+
+            // 1. Validação
+            if (!marketerId) {
+                alert('Por favor, selecione um marketer.');
+                return;
+            }
+
+            // 2. Coleta os IDs dos passageiros (usando os dados já carregados)
+            const passengerIdsToAssign = [];
+            selectedItemIds.forEach(rowId => {
+                const rowData = currentlyDisplayedData.find(item => item.id === rowId);
+                if (rowData && rowData.originalMotorista && rowData.originalMotorista.id) {
+                    passengerIdsToAssign.push(rowData.originalMotorista.id);
+                }
+            });
+
+            if (passengerIdsToAssign.length === 0) {
+                alert('Erro: Não foi possível encontrar os dados dos passageiros selecionados.');
+                return;
+            }
+            
+            // 3. Feedback visual e desativação do botão
+            confirmAssignBtn.disabled = true;
+            assignStatus.textContent = 'Atribuindo...';
+            assignStatus.style.color = 'orange';
+
+            const apiUrl = 'https://8162-52-116-202-144.ngrok-free.app/assign-marketer-users/';
+            let successCount = 0;
+            let errorCount = 0;
+
+            // 4. Loop para fazer as chamadas à API
+            for (const passengerId of passengerIdsToAssign) {
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            passenger_id: passengerId,
+                            marketer_user_ids: [parseInt(marketerId, 10)]
+                        })
+                    });
+                    if (response.ok) {
+                        successCount++;
+                    } else {
+                        errorCount++;
+                        console.error(`Falha ao atribuir passageiro ${passengerId}:`, await response.text());
+                    }
+                } catch (error) {
+                    errorCount++;
+                    console.error(`Erro de rede ao atribuir passageiro ${passengerId}:`, error);
+                }
+            }
+
+            // 5. Feedback final e limpeza
+            alert(`${successCount} reports successfully assigned.${errorCount > 0 ? `\n${errorCount} failed.` : ''}`);
+
+            closeAssignModal(); // Fecha o modal
+            
+            selectedItemIds.clear(); // Limpa a seleção de checkboxes
+            fetchData(); // Recarrega os dados da tabela para refletir as mudanças
+        }
+
+
+        // --- FIM: LÓGICA DO MODAL DE ATRIBUIÇÃO ---
+    
+    </script>
+        
+        
+    <script>
+        let passengersWithMarketersForDeletion = [];
+
+        // Funções para abrir e fechar o modal de deleção
+        function openDeleteAssignmentModal() {
+            document.getElementById('deleteAssignmentModal').style.display = 'flex';
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        // Event Listener para o novo botão
+        document.addEventListener('DOMContentLoaded', () => {
+
+            const deleteAssignmentBtn = document.getElementById('delete-assignment-btn');
+            if (deleteAssignmentBtn) {
+                deleteAssignmentBtn.addEventListener('click', prepareDeleteAssignmentModal);
+            }
+
+            const confirmDeleteAssignmentBtn = document.getElementById('confirm-delete-assignment-btn');
+            if (confirmDeleteAssignmentBtn) {
+                confirmDeleteAssignmentBtn.addEventListener('click', confirmDeleteAssignments);
+            }
+        });
+
+        // Função para preparar o modal de deleção
+        async function prepareDeleteAssignmentModal() {
+            passengersWithMarketersForDeletion = []; // Limpa a lista anterior
+            const marketerListDiv = document.getElementById('marketerListToDelete');
+            marketerListDiv.innerHTML = '<p>Searching for marketers in selected reports...</p>';
+            
+            const uniqueMarketerUsernames = new Set();
+            
+            // Coleta os dados completos dos itens selecionados
+            const selectedReportsData = currentlyDisplayedData.filter(item => selectedItemIds.has(item.id));
+
+            // Itera sobre os relatórios selecionados
+            for (const report of selectedReportsData) {
+                // A API de vocês já tem o passageiro no "originalMotorista"
+                const passenger = report.originalMotorista;
+
+                if (passenger && passenger.marketer_users && passenger.marketer_users.length > 0) {
+                    // Adiciona o passageiro completo à lista para deleção, incluindo o ID do passageiro
+                    passengersWithMarketersForDeletion.push({
+                        passengerId: passenger.id,
+                        marketers: passenger.marketer_users
+                    });
+
+                    // Coleta os usernames únicos dos marketers encontrados
+                    passenger.marketer_users.forEach(marketer => {
+                        uniqueMarketerUsernames.add(JSON.stringify({
+                            id: marketer.id,
+                            username: marketer.username,
+                            full_name: marketer.full_name
+                        }));
+                    });
+                }
+            }
+
+            // Popula o modal com os marketers únicos encontrados
+            if (uniqueMarketerUsernames.size > 0) {
+                marketerListDiv.innerHTML = '<h3 style="font-weight: normal; font-size: 15px">Select Marketer(s) to Delete:</h3>';
+                uniqueMarketerUsernames.forEach(marketerString => {
+                    const marketer = JSON.parse(marketerString);
+                    const label = document.createElement('label');
+                    label.innerHTML = `
+                        <input type="checkbox" name="marketerToDelete" value="${marketer.id}" data-username="${marketer.username}">
+                        ${marketer.full_name || marketer.username}
+                    `;
+                    marketerListDiv.appendChild(label);
+                    label.style.fontSize = '15px';
+                    marketerListDiv.appendChild(document.createElement('br'));
+                });
+            } else {
+                marketerListDiv.innerHTML = '<p>No marketers found in the selected reports to delete.</p>';
+                document.getElementById('confirm-delete-assignment-btn').disabled = true; // Desabilita o botão se não houver marketers
+            }
+            document.getElementById('confirm-delete-assignment-btn').disabled = uniqueMarketerUsernames.size === 0; // Garante que o botão está habilitado/desabilitado corretamente
+            openDeleteAssignmentModal();
+        }
+
+        // Função para confirmar a deleção
+        async function confirmDeleteAssignments() {
+            const selectedMarketerCheckboxes = document.querySelectorAll('#marketerListToDelete input[name="marketerToDelete"]:checked');
+
+            if (selectedMarketerCheckboxes.length === 0) {
+                alert("Please select at least one marketer to delete.");
+                return;
+            }
+
+            const marketersToDelete = Array.from(selectedMarketerCheckboxes).map(checkbox => ({
+                id: checkbox.value,
+                username: checkbox.dataset.username
+            }));
+
+            // Confirmação adicional antes de prosseguir
+            if (!confirm(`Are you sure you want to delete assignments for the selected marketer(s)? This action cannot be undone.`)) {
+                return;
+            }
+
+            // Array para armazenar as requisições DELETE
+            const deletePromises = [];
+            const deleteErrors = [];
+
+            for (const passengerData of passengersWithMarketersForDeletion) {
+                for (const marketerToDelete of marketersToDelete) {
+                    // Verifica se este passageiro realmente tem o marketer que queremos deletar
+                    const hasMarketer = passengerData.marketers.some(m => m.id.toString() === marketerToDelete.id);
+                    if (hasMarketer) {
+                        const deleteUrl = `https://8162-52-116-202-144.ngrok-free.app/assign-marketer-users/?passenger_id=${passengerData.passengerId}&marketer_user_id=${marketerToDelete.id}`;
+                        
+                        deletePromises.push(
+                            fetch(deleteUrl, {
+                                method: 'DELETE',
+                                headers: {
+                                    'accept': 'application/json'
+                                    // Adicione headers de autenticação se sua API precisar (e.g., 'Authorization': `Bearer ${token}`)
+                                }
+                            })
+                            .then(response => {
+                                if (!response.ok) {
+                                    return response.json().then(errorData => {
+                                        throw new Error(`HTTP error! Status: ${response.status}, Details: ${JSON.stringify(errorData)}`);
+                                    });
+                                }
+                                return response.json(); // Ou response.text() se a API não retornar JSON em DELETE
+                            })
+                            .catch(error => {
+                                console.error(`Error deleting assignment for passenger ${passengerData.passengerId} and marketer ${marketerToDelete.username}:`, error);
+                                deleteErrors.push(`Failed to delete for passenger ${passengerData.passengerId} and marketer ${marketerToDelete.username}: ${error.message}`);
+                            })
+                        );
+                    }
+                }
+            }
+
+            // Espera todas as requisições DELETE serem concluídas
+            await Promise.all(deletePromises);
+
+            closeModal('deleteAssignmentModal');
+            
+            if (deleteErrors.length > 0) {
+                alert("Some assignments failed to delete:\n" + deleteErrors.join("\n"));
+            } else {
+                alert("Marketer assignments deleted successfully!");
+            }
+
+            // Recarrega os dados da tabela para refletir as mudanças
+            fetchData(); 
+        }
+
+    </script>
+
+</body>
+
+</html>
