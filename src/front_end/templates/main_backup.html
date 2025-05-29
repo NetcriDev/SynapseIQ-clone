@@ -1116,13 +1116,19 @@
         document.addEventListener("click", function(e) {
             if (e.target && e.target.classList.contains("sendReportToChat")) {
                 const reportNumber = e.target.getAttribute("data-id");
+
+                const row = e.target.closest("tr");
+                const stateCell = row ? row.cells[11] : null; // 11 = índice da coluna "state"
+                const reportState = stateCell ? stateCell.textContent.trim() : "";
+
                 if (window.g_wa_instance) {
-                    sendToChat(`${reportNumber}`, window.g_wa_instance);
+                    sendToChat(`${reportNumber}, ${reportState}`, window.g_wa_instance);
                 } else {
                     console.warn("Error loading Watson Assistant instance.");
                 }
             }
         });
+
 
 
         function populateStateSelect() {

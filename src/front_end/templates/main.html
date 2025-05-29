@@ -112,7 +112,7 @@
         #filters {
             display: flex;
             flex-wrap: wrap;
-            gap: 15px;
+            gap: 10px;
             align-items: center;
             font-family: Arial, sans-serif;
             margin-bottom: 20px;
@@ -121,8 +121,9 @@
         #filters label {
             display: flex;
             flex-direction: column;
-            font-size: 14px;
+            font-size: 13px;
             color: #333;
+            gap:8px
         }
 
         #filters input[type="date"],
@@ -151,13 +152,13 @@
             background-color: #0056b3;
         }
 
-        #filters button:last-of-type {
+        /* #filters button:last-of-type {
             background-color: #6c757d;
         }
 
         #filters button:last-of-type:hover {
             background-color: #5a6268;
-        }
+        } */
 
 
         /* --- :::::::::::::::::::::::::::::::: TABELA :::::::::::::::::::::::::::::::: --- */
@@ -393,19 +394,6 @@
     </style>
 
     <style>
-        /* Estilos para o ícone de lápis (agora para atribuição) */
-        #openAssignmentPopupBtn {
-            margin-left: auto; /* Empurra para a direita */
-            color: #34d0db;
-            transition: color 0.3s ease;
-            cursor: pointer;
-            font-size: 1.2em;
-        }
-
-        #openAssignmentPopupBtn:hover {
-            color: #0056b3;
-        }
-
         /* Estilo para o ícone de upload (mantido) */
         #openUploadModalBtn {
             margin-left: 10px;
@@ -413,6 +401,7 @@
             transition: color 0.3s ease;
             cursor: pointer;
             font-size: 1.2em;
+            margin-top:30px;
         }
 
         #openUploadModalBtn:hover {
@@ -570,6 +559,97 @@
             background-color: #0056b3;
         }
     </style>
+
+    <style>
+       .filter-group {
+            display: flex;
+            flex-direction: row;
+            align-items: flex-start;
+            padding: 5px 10px;
+        }
+
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            font-size: 0.95em;
+            position: relative;
+            padding-left: 30px;
+            user-select: none;
+            color: #333;
+        }
+
+        .checkbox-container input {
+            position: absolute;
+            opacity: 0;
+            cursor: pointer;
+            height: 0;
+            width: 0;
+        }
+
+        .checkmark {
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 18px;
+            width: 18px;
+            background-color: #f0f0f0;
+            border: 2px solid #ccc;
+            border-radius: 4px;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+            transition: 0.2s;
+        }
+
+        .checkbox-container:hover .checkmark {
+            background-color: #e0e0e0;
+        }
+
+        .checkbox-container input:checked ~ .checkmark {
+            background-color: #34d0db;
+            border-color: #34d0db;
+        }
+
+        .checkmark:after {
+            content: "";
+            position: absolute;
+            display: none;
+        }
+
+        .checkbox-container input:checked ~ .checkmark:after {
+            display: block;
+        }
+
+        .checkbox-container .checkmark:after {
+            left: 5px;
+            top: 1px;
+            width: 5px;
+            height: 10px;
+            border: solid white;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+        }
+
+    </style>
+
+    <style>
+        .btn-confirm, .action-button {
+            background-color: #34d0db; 
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .btn-confirm:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+        /* .custom-select {
+            
+        } */
+    </style>
 </head>
 <body>
 
@@ -601,15 +681,62 @@
                     <input type="date" id="filter-to">
                 </label>
                 <label>
-                    State:
-                    <select id="filter-state"> <option value="">All States</option>
+                    Agency:
+                    <select id="filter-website">
+                        <option value="">All Agencies</option>
+                        <option value="kansas">Kansas</option>
+                        <option value="minnesota">Minnesota</option>
+                        <option value="winstonsalem">Winston Salem</option>
+                        <option value="texas">Texas</option>
                     </select>
                 </label>
-                <button onclick="applyFilters()">Apply Filters</button>
-                <button onclick="resetFilters()">Reset</button>
-                <button onclick="downloadSelectedCSV()" id="download-csv-button" style="margin-left: 10px;">Selected Reports (0)</button>
-                <i class="fas fa-user-tie" id="openAssignmentPopupBtn" title="Assign Marketers" style="margin-left: auto; cursor: pointer; font-size: 2em;" onclick="openAssignmentPopup()"></i>
-                <i class="fas fa-upload" id="openUploadModalBtn" title="Upload Files" style="margin-left: 10px; cursor: pointer; font-size: 2em;" onclick="openUploadModal()"></i>
+
+                <label>
+                    Marketer:
+                    <select id="filter-marketer">
+                        <option value="">All Marketers</option>
+                        </select>
+                </label>
+                <div style="display: flex; flex-direction: column; gap:5px; margin-top: 10px;">
+                    <span style="font-size: 13px; ;">Other filters:</span>
+                    <div style="display: flex; flex-wrap: wrap; ">
+                        <div class="filter-group" style="display: flex; flex-direction: column;">
+                            <label class="checkbox-container">
+                                <input type="checkbox" id="toggle-hotlead" data-filter-name="hotlead">
+                                <span class="checkmark"></span>
+                                Hotlead
+                            </label>
+                            <label class="checkbox-container">
+                                <input type="checkbox" id="toggle-hasphone" data-filter-name="hasphone">
+                                <span class="checkmark"></span>
+                                Phone
+                            </label>
+                        </div>
+                        <div class="filter-group" style="display: flex; flex-direction: column;">
+                            <label class="checkbox-container">
+                                <input type="checkbox" id="toggle-hasinsurance_details" data-filter-name="hasinsurance_details">
+                                <span class="checkmark"></span>
+                                Insurance
+                            </label>
+                            <label class="checkbox-container">
+                                <input type="checkbox" id="toggle-over18" data-filter-name="over18">
+                                <span class="checkmark"></span>
+                                +18
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap:10px; margin-top: 30px; margin-left: 15px;">
+                    <button style="margin:0px" onclick="applyFilters()">Apply Filters</button>
+                    <button style="margin:0px; background-color: #6c757d;" onclick="resetFilters()">Reset</button>
+                </div>
+                <div style="display: flex; flex-direction: column; gap:10px; margin-top: 30px; margin-left: 15px;">
+                    <button style="margin:0px" onclick="openAssignModal()" id="assign-button" style="margin-left: 10px;">Assign Reports (0)</button>
+                    <button style="margin:0px; background-color: #6c757d;" style="margin-left: 10px; " id="delete-assignment-btn" class="action-button" disabled>Delete Assignment</button>
+                </div>
+                <button style="margin:0px; margin-top: 30px; margin-left: 15px;" onclick="downloadSelectedCSV()" id="download-csv-button" style="margin-left: 10px;">Download Reports (0)</button>
+                    <i class="fas fa-upload" id="openUploadModalBtn" title="Upload Files" style="margin-left: auto; cursor: pointer; font-size: 2em;" onclick="openUploadModal()"></i>
 
             </div>
             <div class="table-scroll-container">
@@ -645,27 +772,6 @@
         </div>
     </main>
 
-    <div id="assignmentPopup" class="modal">
-        <div class="modal-content">
-            <span class="close-button" onclick="closeAssignmentPopup()">&times;</span>
-            <h2>Assign Marketers to States (under development)</h2>
-            <div id="assignmentTableContainer" class="assignment-table-container">
-                <table id="assignmentTable">
-                    <thead>
-                        <tr>
-                            <th>Folder State</th>
-                            <th>Assigned Marketer</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="assignmentTableBody">
-                        </tbody>
-                </table>
-            </div>
-            <button id="saveAssignmentsBtn">Save Assignments</button>
-        </div>
-    </div>
-
     <div id="uploadModal" class="modal">
         <div class="modal-content">
             <span class="close-button" onclick="closeUploadModal()">&times;</span>
@@ -680,6 +786,37 @@
                 </form>
                 <div id="uploadStatus" style="margin-top: 15px; font-weight: bold;"></div>
             </div>
+        </div>
+    </div>
+
+    <div id="assignModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" id="closeAssignModalBtn">&times;</span>
+            <h2>Assign reports</h2>
+            <br>
+            <div id="assignFormContent">
+                <p>Select marketer to assignt to <strong id="assign-count">0</strong> reports.</p>
+                
+                <select id="modal-marketer-select" class="custom-select" style="width: 100%; padding: 8px; margin-top: 10px;">
+                    <option value="" disabled selected>Loading Marketers...</option>
+                </select>
+                
+                <button id="confirm-assign-button" class="btn-confirm" style="width: 100%; margin-top: 20px;">
+                    Confirm Assign
+                </button>
+                <div id="assign-status" style="margin-top: 15px; font-weight: bold; text-align: center;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="deleteAssignmentModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeModal('deleteAssignmentModal')">&times;</span>
+            <h2>Delete Marketer Assignment</h2>
+            <div id="marketerListToDelete">
+                <p>Loading marketers...</p>
+            </div>
+            <button style="margin-top:10px;" id="confirm-delete-assignment-btn" class="action-button">Confirm Delete</button>
         </div>
     </div>
 
@@ -712,234 +849,325 @@
         let currentApiData = []; // Armazena os dados brutos da API para a página atual
         let currentlyDisplayedData = []; // Armazena os objetos de dados processados para a página atual
 
-        const states = [
-            { name: 'Alabama', abbr: 'AL' }, { name: 'Alaska', abbr: 'AK' },
-            { name: 'Arizona', abbr: 'AZ' }, { name: 'Arkansas', abbr: 'AR' },
-            { name: 'California', abbr: 'CA' }, { name: 'Colorado', abbr: 'CO' },
-            { name: 'Connecticut', abbr: 'CT' }, { name: 'Delaware', abbr: 'DE' },
-            { name: 'Florida', abbr: 'FL' }, { name: 'Georgia', abbr: 'GA' },
-            { name: 'Hawaii', abbr: 'HI' }, { name: 'Idaho', abbr: 'ID' },
-            { name: 'Illinois', abbr: 'IL' }, { name: 'Indiana', abbr: 'IN' },
-            { name: 'Iowa', abbr: 'IA' }, { name: 'Kansas', abbr: 'KS' },
-            { name: 'Kentucky', abbr: 'KY' }, { name: 'Louisiana', abbr: 'LA' },
-            { name: 'Maine', abbr: 'ME' }, { name: 'Maryland', abbr: 'MD' },
-            { name: 'Massachusetts', abbr: 'MA' }, { name: 'Michigan', abbr: 'MI' },
-            { name: 'Minnesota', abbr: 'MN' }, { name: 'Mississippi', abbr: 'MS' },
-            { name: 'Missouri', abbr: 'MO' }, { name: 'Montana', abbr: 'MT' },
-            { name: 'Nebraska', abbr: 'NE' }, { name: 'Nevada', abbr: 'NV' },
-            { name: 'New Hampshire', abbr: 'NH' }, { name: 'New Jersey', abbr: 'NJ' },
-            { name: 'New Mexico', abbr: 'NM' }, { name: 'New York', abbr: 'NY' },
-            { name: 'North Carolina', abbr: 'NC' }, { name: 'North Dakota', abbr: 'ND' },
-            { name: 'Ohio', abbr: 'OH' }, { name: 'Oklahoma', abbr: 'OK' },
-            { name: 'Oregon', abbr: 'OR' }, { name: 'Pennsylvania', abbr: 'PA' },
-            { name: 'Rhode Island', abbr: 'RI' }, { name: 'South Carolina', abbr: 'SC' },
-            { name: 'South Dakota', abbr: 'SD' }, { name: 'Tennessee', abbr: 'TN' },
-            { name: 'Texas', abbr: 'TX' }, { name: 'Utah', abbr: 'UT' },
-            { name: 'Vermont', abbr: 'VT' }, { name: 'Virginia', abbr: 'VA' },
-            { name: 'Washington', abbr: 'WA' }, { name: 'West Virginia', abbr: 'WV' },
-            { name: 'Wisconsin', abbr: 'WI' }, { name: 'Wyoming', abbr: 'WY' }
-        ];
-
         let currentPage = 1;
         const pageSize = 10;
-        let currentFilters = { from: '', to: '', state: '' };
+        let currentFilters = { from: '', to: '', website: '', marketerId: ''  };
+        // Novo objeto para armazenar o estado de cada filtro booleano
+        let booleanFilterStates = {
+            hotlead: false,
+            hasphone: false,
+            hasinsurance_details: false,
+            hasname: false,
+            over18: false
+        };
 
         function applyFilters() {
             currentFilters.from = document.getElementById('filter-from').value;
             currentFilters.to = document.getElementById('filter-to').value;
-            currentFilters.state = document.getElementById('filter-state').value;
+            currentFilters.website = document.getElementById('filter-website').value;
+            currentFilters.marketerId = document.getElementById('filter-marketer').value; // <<< NOVA LINHA
+
+            // ***** NOVA LÓGICA: Ler o estado dos toggles AQUI *****
+            for (const filterName in booleanFilterStates) {
+                const toggleElement = document.getElementById(`toggle-${filterName}`);
+                if (toggleElement) {
+                    booleanFilterStates[filterName] = toggleElement.checked;
+                }
+            }
+            // ****************************************************
+
             currentPage = 1;
-            // Considere limpar seleções ao aplicar filtros ou mantê-las
-            // selectedItemIds.clear();
-            // selectedRowDataForExport = [];
-            // updateDownloadButton();
             fetchData();
         }
 
         function resetFilters() {
             document.getElementById('filter-from').value = '';
             document.getElementById('filter-to').value = '';
-            document.getElementById('filter-state').value = '';
-            currentFilters = { from: '', to: '', state: '' };
+            document.getElementById('filter-website').value = '';
+            document.getElementById('filter-marketer').value = ''; // <<< NOVA LINHA
+
+            currentFilters = { from: '', to: '', website: '', marketerId: '' }; // <<< MODIFICADA
+
+            // Reseta o estado de todos os toggles booleanos para 'false' e desmarca visualmente
+            for (const filterName in booleanFilterStates) {
+                booleanFilterStates[filterName] = false; 
+                const toggleElement = document.getElementById(`toggle-${filterName}`);
+                if (toggleElement) {
+                    toggleElement.checked = false; 
+                }
+            }
+
             currentPage = 1;
-            // selectedItemIds.clear();
-            // selectedRowDataForExport = [];
-            // updateDownloadButton();
             fetchData();
         }
 
-        async function fetchData(retryWithName = false) {
-            const { from, to, state } = currentFilters;
+        /**
+         * Busca a lista de marketers da API e popula o dropdown de FILTRO.
+         */
+        async function populateMarketerFilterDropdown() {
+            const selectElement = document.getElementById('filter-marketer');
+            // Certifique-se que o elemento existe antes de prosseguir
+            if (!selectElement) {
+                console.error("Elemento #filter-marketer não encontrado para popular o dropdown de filtro.");
+                return;
+            }
+            const apiUrl = 'https://8162-52-116-202-144.ngrok-free.app/marketer-users/';
+
+            // Mantém a opção "Todos os Marketers" e adiciona um "Carregando..." temporário
+            selectElement.innerHTML = '<option value="">All Marketers</option><option value="" disabled>Carregando...</option>';
+
+            try {
+                const response = await fetch(apiUrl);
+                if (!response.ok) {
+                    throw new Error(`Erro na API ao buscar marketers: ${response.status}`);
+                }
+                const marketers = await response.json();
+
+                // Limpa as opções, exceto "Todos os Marketers"
+                selectElement.innerHTML = '<option value="">All Marketers</option>'; 
+
+                marketers.forEach(marketer => {
+                    const option = document.createElement('option');
+                    option.value = marketer.username;
+                    option.textContent = marketer.full_name || marketer.username;
+                    selectElement.appendChild(option);
+                });
+
+            } catch (error) {
+                console.error('Falha ao carregar marketers para o filtro:', error);
+                // Restaura para apenas "Todos os Marketers" em caso de erro
+                selectElement.innerHTML = '<option value="">All Marketers</option><option value="" disabled>Erro ao carregar</option>';
+            }
+        }
+
+        async function fetchData() {
+            // Desestrutura o objeto currentFilters para pegar 'from', 'to' e 'website'
+            const { from, to, website, marketerId } = currentFilters; 
+
+            // Elementos do DOM para feedback visual (carregamento, tabela)
             const loadingDiv = document.getElementById("loading");
             const tableContainer = document.querySelector(".table-container");
             const tableBody = document.getElementById("table-body");
 
+            // Atualiza o número da página exibido
             document.getElementById("page-number").textContent = `Page ${currentPage}`;
+            
+            // Esconde a tabela e mostra o indicador de carregamento
             tableContainer.style.display = "none";
             loadingDiv.style.display = "flex";
-            document.getElementById('select-all-current-page').checked = false; // Desmarca o checkbox do cabeçalho
+            
+            // Desmarca o checkbox "Selecionar Todos" ao carregar nova página
+            document.getElementById('select-all-current-page').checked = false;
 
-            let stateQuery = "";
-            if (state) {
-                const stateObj = states.find(s => s.abbr === state || s.name === state);
-                stateQuery = retryWithName ? (stateObj?.name || state) : (stateObj?.abbr || state);
-            }
-
+            // Constrói a URL base da API com a página atual e o tamanho da página
             let url = `https://8162-52-116-202-144.ngrok-free.app/incident/search?page=${currentPage}&page_size=${pageSize}`;
+            
+            // Adiciona os filtros de data se eles existirem
             if (from) url += `&accident_from=${from}`;
             if (to) url += `&accident_to=${to}`;
-            if (stateQuery) url += `&state=${encodeURIComponent(stateQuery)}`;
+            
+            // **NOVO: Adiciona o filtro de website à URL se ele existir**
+            if (website) url += `&website=${encodeURIComponent(website)}`;
+
+            // Adiciona o filtro de marketer ID se ele existir <<< NOVA LÓGICA
+            if (marketerId) url += `&marketer_username=${encodeURIComponent(marketerId)}`;
+            //  ↑↑↑ ATENÇÃO: Confirme se 'marketer_id' é o nome correto do parâmetro da sua API backend!
+
+            // Adiciona os filtros booleanos (toggles) à URL
+            for (const filterName in booleanFilterStates) {
+                if (booleanFilterStates[filterName]) { // Se o toggle estiver ativado (true)
+                    url += `&${filterName}=True`; // Adiciona o filtro com "True" à URL
+                }
+            }
 
             try {
+                // Faz a requisição à API
                 const response = await fetch(url);
-                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                currentApiData = await response.json(); // Armazena dados brutos
-
-                if (currentApiData.length === 0 && state && !retryWithName) {
-                    return fetchData(true);
+                
+                // Verifica se a resposta da rede foi bem-sucedida
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
                 }
+                
+                // Converte a resposta para JSON e armazena os dados brutos da API
+                currentApiData = await response.json();
 
+                // Limpa o corpo da tabela e a lista de dados atualmente exibidos
                 tableBody.innerHTML = '';
-                currentlyDisplayedData = []; // Limpa os dados da exibição anterior
+                currentlyDisplayedData = [];
 
+                // Itera sobre os incidentes e seus veículos/passageiros para popular a tabela
                 currentApiData.forEach((incidente, incidentIndex) => {
+                    // Extrai a pasta do caminho do documento para determinar o tipo de link do PDF
                     const caminho = incidente.original_document_location?.replace(/\\/g, "/");
                     const partes = caminho?.split("/");
-                    const folder = partes?.[3] || "Texas";
+                    const folder = partes?.[3] || "Texas"; // Default para "Texas" se não houver pasta
 
-                    incidente.vehicles.forEach((veiculo, vehicleIndex) => {
-                        const passageiros = veiculo.passengers?.length ?
-                            veiculo.passengers :
-                            [{
-                                id: null, name: veiculo.driver_name,
-                                first_name: veiculo.driver_first_name,
-                                middle_name: veiculo.driver_middle_name,
-                                last_name: veiculo.driver_last_name,
-                                phone2: null, age: "--", gender: "--"
-                            }];
+                    // Garante que haja pelo menos um "passageiro" (o motorista se não houver passageiros explícitos)
+                    const passageiros = incidente.vehicles.flatMap((veiculo, vehicleIndex) => {
+                        if (veiculo.passengers?.length) {
+                            // Retorna os passageiros do veículo, incluindo o índice e id do veículo
+                            return veiculo.passengers.map(p => ({
+                                ...p,
+                                vehicleIndex,
+                                vehicleId: veiculo.id
+                            }));
+                        } else {
+                            // Se não houver passageiros, retorna um array vazio (não retorna o motorista)
+                            return [];
+                        }
+                    });
 
-                        passageiros.forEach((motorista, passengerIndex) => {
-                            const nameParts = [motorista.first_name, motorista.middle_name, motorista.last_name]
-                                .filter(part => part && part.trim() !== "");
-                            const driverName = nameParts.length > 0 ? nameParts.join(" ") : (motorista.name || "--");
+                    // Itera sobre os passageiros (ou motoristas) para criar as linhas da tabela
+                     passageiros.forEach((motorista, passengerIndex) => {
+                        // **LÓGICA DE FILTRAGEM ATUALIZADA**
+                        // Se um marketerId específico foi selecionado NO FILTRO DO SELECT,
+                        // E este passageiro NÃO tem marketers,
+                        // OU tem marketers mas está vazio,
+                        // OU tem marketers mas nenhum corresponde ao selecionado,
+                        // então pule este passageiro.
+                        if (currentFilters.marketerId && currentFilters.marketerId !== "") { // Verifica se um marketer específico FOI selecionado
+                            if (!motorista.marketer_users || 
+                                motorista.marketer_users.length === 0 || 
+                                !motorista.marketer_users.some(m => m.username === currentFilters.marketerId)) {
+                                return; // Pula este passageiro se não corresponde ao filtro específico
+                            }
+                        }
+                        // Se o filtro de marketerId NÃO está selecionado (ou seja, "Todos os Marketers"),
+                        // Constrói o nome completo do motorista/passageiro
+                        const nameParts = [motorista.first_name, motorista.middle_name, motorista.last_name]
+                            .filter(part => part && part.trim() !== "");
+                        const driverName = nameParts.length > 0 ? nameParts.join(" ") : (motorista.name || "--");
 
-                            const insuranceDetailsText = veiculo.insurance_company ? `Insurance Company: ${veiculo.insurance_company}` : "--";
-                            const driverLicenseText = veiculo.driver_license ? `License: ${veiculo.driver_license}` : "";
-                            const policyNumberText = veiculo.policy_number ? `Policy: ${veiculo.policy_number}` : "";
-                            const fullInsuranceDetailsHTML = `${insuranceDetailsText}${driverLicenseText ? '<br>' + driverLicenseText : ''}${policyNumberText ? '<br>' + policyNumberText : ''}`;
+                        // Constrói os detalhes de seguro
+                        const insuranceDetails = [
+                            incidente.vehicles[motorista.vehicleIndex].insurance_company ? `Insurance Company: ${incidente.vehicles[motorista.vehicleIndex].insurance_company}` : '',
+                            incidente.vehicles[motorista.vehicleIndex].driver_license ? `License: ${incidente.vehicles[motorista.vehicleIndex].driver_license}` : '',
+                            incidente.vehicles[motorista.vehicleIndex].policy_number ? `Policy: ${incidente.vehicles[motorista.vehicleIndex].policy_number}` : ''
+                        ].filter(Boolean).join('; ') || '--';
+                        const fullInsuranceDetailsHTML = insuranceDetails.replace(/; /g, '<br>');
 
-                            const crashSeverityText = incidente.crash_severity ? `Crash: ${incidente.crash_severity}` : "--";
-                            const injurySeverityText = motorista.injury_severity ? `Type: ${motorista.injury_severity}` : "";
-                            const fullCrashSeverityHTML = `${crashSeverityText}${injurySeverityText ? '<br>' + injurySeverityText : ''}`;
+                        // Constrói os detalhes de severidade do acidente e ferimento
+                        const crashSeverity = [
+                            incidente.crash_severity ? `Crash: ${incidente.crash_severity}` : '',
+                            motorista.injury_severity ? `Type: ${motorista.injury_severity}` : ''
+                        ].filter(Boolean).join('; ') || '--';
+                        const fullCrashSeverityHTML = crashSeverity.replace(/; /g, '<br>');
 
-                            const nearestHopeMilesText = incidente.nearest_hope_d ? ` Miles: ${incidente.nearest_hope_d}` : "";
-                            const nearestHopeCenterText = incidente.name_nearest_hope ? `Center: ${incidente.name_nearest_hope}` : "";
-                            const fullDistanceToClinicHTML = `${nearestHopeMilesText}${nearestHopeCenterText ? '<br>' + nearestHopeCenterText : ''}`;
+                        // Constrói os detalhes de distância para a clínica
+                        const distanceFromClinic = [
+                            incidente.nearest_hope_d ? `Miles: ${incidente.nearest_hope_d}` : '',
+                            incidente.name_nearest_hope ? `Center: ${incidente.name_nearest_hope}` : ''
+                        ].filter(Boolean).join('; ') || '--';
+                        const fullDistanceToClinicHTML = distanceFromClinic.replace(/; /g, '<br>');
 
-                            // ID único para cada linha que pode ser selecionada. MUITO IMPORTANTE!
-                            // Se 'incidente.id' ou 'motorista.id' existir e for único, use-o.
-                            // Caso contrário, crie um composto, garantindo sua unicidade.
-                            const rowUniqueId = `incident_${incidente.report_number || incidentIndex}_vehicle_${vehicleIndex}_person_${passengerIndex}_${(driverName || 'unknown').replace(/\s+/g, '_')}`;
+                        // Cria um ID único para a linha da tabela
+                        const rowUniqueId = `incident_${incidente.report_number || incidentIndex}_vehicle_${motorista.vehicleIndex}_person_${passengerIndex}_${(driverName || 'unknown').replace(/\s+/g, '_')}`;
 
-                            // Objeto de dados para exportação e gerenciamento
-                            const rowDataItem = {
-                                id: rowUniqueId,
-                                reportNumber: incidente.report_number || '--',
-                                crashDate: incidente.accident_datetime?.split("T")[0] || '--',
-                                driverName: driverName,
-                                phone: motorista.phone2 || "--",
-                                insuranceDetails: [
-                                    veiculo.insurance_company ? `Insurance Company: ${veiculo.insurance_company}`: '',
-                                    veiculo.driver_license ? `License: ${veiculo.driver_license}` : '',
-                                    veiculo.policy_number ? `Policy: ${veiculo.policy_number}` : ''
-                                ].filter(Boolean).join('; ') || '--',
-                                crashSeverity: [
-                                    incidente.crash_severity ? `Crash: ${incidente.crash_severity}` : '',
-                                    motorista.injury_severity ? `Type: ${motorista.injury_severity}` : ''
-                                ].filter(Boolean).join('; ') || '--',
-                                age: motorista.age || "--",
-                                gender: motorista.gender || "--",
-                                address: veiculo.owner_address || "--",
-                                state: getFullStateName(incidente.state),
-                                city: incidente.city || "--",
-                                reportPDFUrl: folder?.toLowerCase() === "minnesota" ?
-                                    incidente.source_url :
-                                    `https://8162-52-116-202-144.ngrok-free.app/incident/pdf/view/${incidente.pdf_id || incidente.report_number}`,
-                                distanceFromClinic: [
-                                    incidente.nearest_hope_d ? `Miles: ${incidente.nearest_hope_d}`: '',
-                                    incidente.name_nearest_hope ? `Center: ${incidente.name_nearest_hope}`: ''
-                                ].filter(Boolean).join('; ') || '--',
-                                // Guarde os objetos originais se precisar para a visualização de detalhes
-                                originalIncident: incidente,
-                                originalVehicle: veiculo,
-                                originalMotorista: motorista
-                            };
-                            currentlyDisplayedData.push(rowDataItem);
+                        // Cria um objeto com os dados da linha para exportação e seleção
+                        const rowDataItem = {
+                            id: rowUniqueId,
+                            reportNumber: incidente.report_number || '--',
+                            crashDate: incidente.accident_datetime?.split("T")[0] || '--',
+                            driverName: driverName,
+                            phone: motorista.phone2 || "--",
+                            insuranceDetails: insuranceDetails,
+                            crashSeverity: crashSeverity,
+                            age: motorista.age || "--",
+                            gender: motorista.gender || "--",
+                            address: incidente.vehicles[motorista.vehicleIndex].owner_address || "--",
+                            state: incidente.state || "--", // Agora exibe a abreviação diretamente
+                            city: incidente.city || "--",
+                            reportPDFUrl: folder?.toLowerCase() === "minnesota" ?
+                                incidente.source_url :
+                                `https://8162-52-116-202-144.ngrok-free.app/incident/pdf/view/${incidente.pdf_id || incidente.report_number}`,
+                            distanceFromClinic: distanceFromClinic,
+                            originalIncident: incidente,
+                            originalVehicle: incidente.vehicles[motorista.vehicleIndex],
+                            originalMotorista: motorista
+                        };
+                        currentlyDisplayedData.push(rowDataItem);
 
-                            const row = document.createElement("tr");
-                            const isChecked = selectedItemIds.has(rowUniqueId);
+                        // Cria a linha da tabela
+                        const row = document.createElement("tr");
+                        const isChecked = selectedItemIds.has(rowUniqueId);
 
-                            row.innerHTML = `
-                                <td><input type="checkbox" class="row-checkbox" data-row-id="${rowUniqueId}" ${isChecked ? 'checked' : ''}></td>
-                                <td><button onclick="toggleDetails('${rowUniqueId}-details', this)">▶</button></td>
-                                <td><button class="sendReportToChat clickable-report-number" data-id="${rowDataItem.reportNumber}">${rowDataItem.reportNumber}</button></td>
-                                <td>${rowDataItem.crashDate}</td>
-                                <td>${rowDataItem.driverName}</td>
-                                <td>
-                                    <div style="display: flex; align-items: center; gap: 8px;">
-                                        <div style="display: flex; flex-direction: column; gap: 4px;">
-                                            <input
-                                                type="text"
-                                                value="${motorista.phone2?.split(',')[0]?.trim() || ''}"
-                                                data-passenger-id="${motorista.id || ''}"
-                                                class="phoneInput phoneInputA"
-                                                style="width: 110px; padding: 4px;"
-                                            />
-                                            <input
-                                                type="text"
-                                                value="${motorista.phone2?.split(',')[1]?.trim() || ''}"
-                                                data-passenger-id="${motorista.id || ''}"
-                                                class="phoneInput phoneInputB"
-                                                style="width: 110px; padding: 4px;"
-                                            />
-                                        </div>
-                                        <div style="display: flex; flex-direction: column; gap: 4px;">
-                                            <button onclick="savePhoneNumber(this)" style="cursor: pointer; border: none; background: none;">
-                                                💾
-                                            </button>
-                                        </div>
+                        row.innerHTML = `
+                            <td><input type="checkbox" class="row-checkbox" data-row-id="${rowUniqueId}" ${isChecked ? 'checked' : ''}></td>
+                            <td><button onclick="toggleDetails('${rowUniqueId}-details', this)">▶</button></td>
+                            <td>${rowDataItem.reportNumber}</td>
+                            <td>${rowDataItem.crashDate}</td>
+                            <td>${rowDataItem.driverName}</td>
+                            <td>
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <div style="display: flex; flex-direction: column; gap: 4px;">
+                                        <input
+                                            type="text"
+                                            value="${motorista.phone2?.split(',')[0]?.trim() || ''}"
+                                            data-passenger-id="${motorista.id || ''}"
+                                            class="phoneInput phoneInputA"
+                                            style="width: 110px; padding: 4px;"
+                                        />
+                                        <input
+                                            type="text"
+                                            value="${motorista.phone2?.split(',')[1]?.trim() || ''}"
+                                            data-passenger-id="${motorista.id || ''}"
+                                            class="phoneInput phoneInputB"
+                                            style="width: 110px; padding: 4px;"
+                                        />
                                     </div>
-                                </td>
-                                <td>${fullInsuranceDetailsHTML}</td> <td>${fullCrashSeverityHTML}</td>   <td>${rowDataItem.age}</td>
-                                <td>${rowDataItem.gender}</td>
-                                <td>${rowDataItem.address}</td>
-                                <td>${rowDataItem.state}</td>
-                                <td>${rowDataItem.city}</td>
-                                <td>${
-                                    folder.toLowerCase() === "texas"
-                                        ? '❌'
-                                        : `<a href="${rowDataItem.reportPDFUrl}" target="_blank">📄</a>`
-                                }</td>
-                                <td style="${getMilesCellStyle(rowDataItem.distanceFromClinic)}">${rowDataItem.distanceFromClinic}</td>
-                            `;
+                                    <div style="display: flex; flex-direction: column; gap: 4px;">
+                                        <button
+                                            class="sendReportToChat"
+                                            data-id="${rowDataItem.reportNumber}"
+                                            title="Send report to chat"
+                                            style="background: none; border: none; cursor: pointer; font-size: 1.2em; color: #34d0db;"
+                                        >
+                                            <i class="fas fa-phone"></i>
+                                        </button>
+                                        <button
+                                            onclick="savePhoneNumber(this)"
+                                            title="Save phone number"
+                                            style="cursor: pointer; border: none; background: none;">
+                                            💾
+                                        </button>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>${fullInsuranceDetailsHTML}</td> 
+                            <td>${fullCrashSeverityHTML}</td> 
+                            <td>${rowDataItem.age}</td>
+                            <td>${rowDataItem.gender}</td>
+                            <td>${rowDataItem.address}</td>
+                            <td>${rowDataItem.state}</td>
+                            <td>${rowDataItem.city}</td>
+                            <td>${
+                                folder.toLowerCase() === "texas"
+                                    ? '❌'
+                                    : `<a href="${rowDataItem.reportPDFUrl}" target="_blank">📄</a>`
+                            }</td>
+                            <td style="${getMilesCellStyle(rowDataItem.distanceFromClinic)}">${fullDistanceToClinicHTML}</td>
+                        `;
 
-                            const detailsRow = document.createElement("tr");
-                            detailsRow.classList.add("details-row");
-                            detailsRow.style.display = "none";
-                            detailsRow.id = `${rowUniqueId}-details`;
-                            detailsRow.innerHTML = `<td colspan="15">${renderGenericDetails(incidente)}</td>`; // Colspan aumentado para 15
+                        // Cria a linha de detalhes oculta
+                        const detailsRow = document.createElement("tr");
+                        detailsRow.classList.add("details-row");
+                        detailsRow.style.display = "none";
+                        detailsRow.id = `${rowUniqueId}-details`;
+                        detailsRow.innerHTML = `<td colspan="15">${renderGenericDetails(incidente)}</td>`;
 
-                            tableBody.appendChild(row);
-                            tableBody.appendChild(detailsRow);
-
-                        });
+                        tableBody.appendChild(row);
+                        tableBody.appendChild(detailsRow);
                     });
                 });
 
+                // Adiciona listeners aos checkboxes, atualiza o estado do "Selecionar Todos" e do botão de download
                 addCheckboxListenersToCurrentPage();
-                updateSelectAllCheckboxState(); // Atualiza o estado do checkbox "selecionar todos"
-                updateDownloadButton(); // Atualiza o contador no botão de download
+                updateSelectAllCheckboxState();
+                updateDownloadButton();
+                updateAssignButton()
 
+                // Esconde o indicador de carregamento e mostra a tabela
                 loadingDiv.style.display = "none";
                 tableContainer.style.display = "block";
 
@@ -1042,6 +1270,7 @@
                         }
                     }
                     updateDownloadButton();
+                    updateAssignButton()
                     updateSelectAllCheckboxState(); // Atualiza o checkbox do cabeçalho
                 });
             });
@@ -1079,8 +1308,21 @@
         function updateDownloadButton() {
             const button = document.getElementById('download-csv-button');
             const count = selectedRowDataForExport.length;
-            button.textContent = `Selected Reports (${count})`;
+            button.textContent = `Download Reports (${count})`;
             button.disabled = count === 0;
+        }
+
+        function updateAssignButton() {
+            const assignReportBtn = document.getElementById('assign-button');
+            if (assignReportBtn) {
+                const count = selectedItemIds.size; // Alterado aqui
+                assignReportBtn.textContent = `Assign Reports (${count})`;
+                assignReportBtn.disabled = count === 0;
+            }
+            const deleteAssignmentBtn = document.getElementById('delete-assignment-btn');
+            if (deleteAssignmentBtn) {
+                deleteAssignmentBtn.disabled = selectedItemIds.size === 0;
+            }
         }
 
         function nextPage() {
@@ -1114,10 +1356,17 @@
         }
 
         document.addEventListener("click", function(e) {
-            if (e.target && e.target.classList.contains("sendReportToChat")) {
-                const reportNumber = e.target.getAttribute("data-id");
+            let target = e.target;
 
-                const row = e.target.closest("tr");
+            // Se clicou no ícone <i>, sobe até o botão
+            if (target.tagName === 'I') {
+                target = target.closest("button");
+            }
+
+            if (target && target.classList.contains("sendReportToChat")) {
+                const reportNumber = target.getAttribute("data-id");
+
+                const row = target.closest("tr");
                 const stateCell = row ? row.cells[11] : null; // 11 = índice da coluna "state"
                 const reportState = stateCell ? stateCell.textContent.trim() : "";
 
@@ -1128,26 +1377,6 @@
                 }
             }
         });
-
-
-
-        function populateStateSelect() {
-            const select = document.getElementById('filter-state');
-            select.innerHTML = '<option value="">All States</option>';
-            states.forEach(({ name, abbr }) => {
-                const option = document.createElement('option');
-                option.value = abbr;
-                option.textContent = `${abbr} - ${name}`;
-                select.appendChild(option);
-            });
-        }
-
-        function getFullStateName(abbrOrName) {
-            const found = states.find(
-                s => s.abbr.toLowerCase() === abbrOrName?.toLowerCase() || s.name.toLowerCase() === abbrOrName?.toLowerCase()
-            );
-            return found ? `${found.abbr}` : abbrOrName || "--";
-        }
 
         function toggleDetails(id, button) {
             const detailsRow = document.getElementById(id);
@@ -1163,17 +1392,18 @@
             const numberOfVehicles = Array.isArray(incident.vehicles) ? incident.vehicles.length : 0;
 
             let html = `
-                <div class="incident-details">
-                    <h3>Accident Details - ${incident.report_number || '--'}</h3>
-                    <div class="general-info">
-                        <p><strong>Date & Time:</strong> ${dateTime}</p>
-                        <p><strong>Location:</strong> ${incident.street || '--'}, ${city}, ${state}</p>
-                        ${incident.weather_condition ? `<p><strong>Weather:</strong> ${incident.weather_condition}</p>` : ''}
-                        ${incident.road_condition ? `<p><strong>Road Condition:</strong> ${incident.road_condition}</p>` : ''}
-                        ${incident.crash_severity ? `<p><strong>Severity:</strong> ${incident.crash_severity}</p>` : ''}
-                        ${incident.narrative ? `<p><strong>Narrative:</strong> ${incident.narrative}</p>` : ''}
-                        ${incident.notes ? `<p><strong>Notes:</strong> ${incident.notes}</p>` : ''}
-                    </div>
+                <div class="incident-details-container" style="display: flex; gap: 20px;">
+                    <div class="incident-details" style="flex: 1;">
+                        <h3>Accident Details - ${incident.report_number || '--'}</h3>
+                        <div class="general-info">
+                            <p><strong>Date & Time:</strong> ${dateTime}</p>
+                            <p><strong>Location:</strong> ${incident.street || '--'}, ${city}, ${state}</p>
+                            ${incident.weather_condition ? `<p><strong>Weather:</strong> ${incident.weather_condition}</p>` : ''}
+                            ${incident.road_condition ? `<p><strong>Road Condition:</strong> ${incident.road_condition}</p>` : ''}
+                            ${incident.crash_severity ? `<p><strong>Severity:</strong> ${incident.crash_severity}</p>` : ''}
+                            ${incident.narrative ? `<p><strong>Narrative:</strong> ${incident.narrative}</p>` : ''}
+                            ${incident.notes ? `<p><strong>Notes:</strong> ${incident.notes}</p>` : ''}
+                        </div>
             `;
 
             if (numberOfVehicles > 0) {
@@ -1206,7 +1436,15 @@
                 html += `</div>`;
             }
 
-            html += `</div>`;
+            html += `</div> <!-- end of left column -->`;
+
+            html += `
+                <div class="audit-history" style="flex: 1; display: flex; align-items: center; justify-content: center; background: #f5f5f5;">
+                    <p style="text-align: center;">Audit History (under development)</p>
+                </div>
+                </div> <!-- end of container -->
+            `;
+
             return html;
         }
 
@@ -1271,143 +1509,32 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            populateStateSelect();
             fetchData();
             updateDownloadButton(); // Inicializa o estado do botão
-        });
+            updateAssignButton();
+            populateMarketerFilterDropdown();
+
+           // Adicionar listeners para o modal de atribuição
+            if (closeAssignBtn) {
+                closeAssignBtn.addEventListener('click', closeAssignModal);
+            }
+            if (confirmAssignBtn) {
+                confirmAssignBtn.addEventListener('click', performAssignment);
+            }
+            
+            // Listener global para fechar o modal ao clicar fora (modificado para incluir o novo modal)
+            window.addEventListener('click', function(event) {
+                if (event.target == uploadModal) {
+                    closeUploadModal();
+                }
+                if (event.target == assignModal) { // Adicionado
+                    closeAssignModal();
+                }
+            });
+                });
     </script>
 
     <script>
-        // --- Variáveis e funções para o Popup de ATRIBUIÇÃO ---
-        const assignmentPopup = document.getElementById("assignmentPopup");
-        const assignmentTableBody = document.getElementById("assignmentTableBody");
-        const saveAssignmentsBtn = document.getElementById("saveAssignmentsBtn");
-
-        // Array de exemplo para os 6 Marketers
-        const marketers = [
-            { id: 'marketer1', name: 'Marketer Alpha' },
-            { id: 'marketer2', name: 'Marketer Beta' },
-            { id: 'marketer3', name: 'Marketer Gamma' },
-            { id: 'marketer4', name: 'Marketer Delta' },
-            { id: 'marketer5', name: 'Marketer Epsilon' },
-            { id: 'marketer6', name: 'Marketer Zeta' }
-        ];
-
-        // Simulação de dados de atribuição: estado do folder -> ID do marketer
-        let folderStateAssignments = {
-            'CA': 'marketer1',
-            'NY': 'marketer3',
-            'TX': 'marketer2'
-            // Outros estados seriam undefined até serem atribuídos
-        };
-
-        // Função para abrir o popup de atribuição
-        function openAssignmentPopup() {
-            if (assignmentPopup) {
-                assignmentPopup.style.display = "flex";
-                populateAssignmentTable(); // Preenche a tabela toda vez que o modal é aberto
-            } else {
-                console.error("Element with ID 'assignmentPopup' not found. Cannot open assignment popup.");
-            }
-        }
-
-        // Função para fechar o popup de atribuição
-        function closeAssignmentPopup() {
-            if (assignmentPopup) {
-                assignmentPopup.style.display = "none";
-            }
-        }
-
-        // Função para popular a tabela de atribuição
-        function populateAssignmentTable() {
-            assignmentTableBody.innerHTML = ''; // Limpa a tabela antes de preencher
-
-            if (typeof states === 'undefined' || states.length === 0) {
-                console.warn("Global 'states' array is empty or undefined. Cannot populate assignment table fully.");
-                // Você pode adicionar uma mensagem na tabela ou carregar de uma fonte aqui
-                const row = document.createElement('tr');
-                row.innerHTML = `<td colspan="3" style="text-align: center; color: gray;">No states available to assign.</td>`;
-                assignmentTableBody.appendChild(row);
-                return;
-            }
-
-            states.forEach(state => {
-                const row = document.createElement('tr');
-                const currentStateAbbr = state.abbr;
-                // Pega o ID do marketer atribuído, se houver, ou string vazia
-                const assignedMarketerId = folderStateAssignments[currentStateAbbr] || '';
-
-                row.innerHTML = `
-                    <td>${state.name} (${currentStateAbbr})</td>
-                    <td>
-                        <select data-state-abbr="${currentStateAbbr}">
-                            <option value="">-- Select Marketer --</option>
-                            ${marketers.map(marketer => `
-                                <option value="${marketer.id}" ${assignedMarketerId === marketer.id ? 'selected' : ''}>
-                                    ${marketer.name}
-                                </option>
-                            `).join('')}
-                        </select>
-                    </td>
-                    <td>
-                        <button class="remove-btn" data-state-abbr="${currentStateAbbr}">Remove</button>
-                    </td>
-                `;
-                assignmentTableBody.appendChild(row);
-            });
-
-            // Adiciona event listeners para os botões de remover
-            document.querySelectorAll('#assignmentTable .remove-btn').forEach(button => {
-                button.onclick = function() {
-                    const stateAbbrToRemove = this.dataset.stateAbbr;
-                    delete folderStateAssignments[stateAbbrToRemove]; // Remove a atribuição
-                    populateAssignmentTable(); // Repopula a tabela para refletir a mudança
-                };
-            });
-        }
-
-        // Função para salvar as atribuições
-        saveAssignmentsBtn.onclick = function() {
-            const newAssignments = {};
-            assignmentTableBody.querySelectorAll('tr').forEach(row => {
-                const selectElement = row.querySelector('select');
-                // Verifica se o selectElement existe (para ignorar a linha de "No states available")
-                if (selectElement) {
-                    const stateAbbr = selectElement.dataset.stateAbbr;
-                    const selectedMarketerId = selectElement.value;
-
-                    if (selectedMarketerId) { // Só salva se um marketer foi selecionado
-                        newAssignments[stateAbbr] = selectedMarketerId;
-                    }
-                }
-            });
-
-            folderStateAssignments = newAssignments; // Atualiza o objeto de atribuições
-            console.log("Marketer Assignments Saved:", folderStateAssignments);
-            alert("Marketer assignments saved successfully!");
-            closeAssignmentPopup(); // Fecha o modal após salvar
-
-            // IMPORTANTE: Aqui você faria uma chamada para o seu backend para salvar `folderStateAssignments`
-            /*
-            fetch('/api/save-marketer-assignments', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(folderStateAssignments)
-            })
-            .then(response => response.json())
-            .then(data => {
-                console.log('Success:', data);
-                alert("Marketer assignments saved successfully!");
-                closeAssignmentPopup();
-            })
-            .catch((error) => {
-                console.error('Error saving assignments:', error);
-                alert("Error saving assignments.");
-            });
-            */
-        };
-
-
         // --- Funcionalidade: Popup de Upload (mantido) ---
         const uploadModal = document.getElementById("uploadModal");
         const fileInput = document.getElementById("fileInput");
@@ -1457,18 +1584,309 @@
 
             // Global click listener para fechar modais ao clicar fora
             window.onclick = function(event) {
-                if (assignmentPopup && event.target == assignmentPopup) {
-                    closeAssignmentPopup();
-                }
                 if (uploadModal && event.target == uploadModal) {
                     closeUploadModal();
                 }
             };
 
-            // Chama populateStateSelect e fetchData no carregamento da página
-            populateStateSelect();
             fetchData();
         });
+
+        // --- INÍCIO: LÓGICA DO MODAL DE ATRIBUIÇÃO ---
+
+        // Pega as referências dos elementos do novo modal
+        const assignModal = document.getElementById("assignModal");
+        const closeAssignBtn = document.getElementById("closeAssignModalBtn");
+        const confirmAssignBtn = document.getElementById("confirm-assign-button");
+        const marketerSelect = document.getElementById("modal-marketer-select");
+        const assignCountSpan = document.getElementById("assign-count");
+        const assignStatus = document.getElementById("assign-status");
+
+
+        /**
+         * Abre o modal de atribuição, mas somente se houver reports selecionados.
+         */
+        async function openAssignModal() {
+            if (selectedItemIds.size === 0) {
+                alert("Please select at least one report to assign.");
+                return;
+            }
+            
+            // Atualiza a contagem de reports no texto do modal
+            assignCountSpan.textContent = selectedItemIds.size;
+            
+            // Limpa o status e reativa o botão de confirmação
+            assignStatus.textContent = '';
+            confirmAssignBtn.disabled = false;
+            confirmAssignBtn.textContent = 'Confirm Assignment';
+
+            // Mostra o modal
+            assignModal.style.display = "flex";
+            
+            // Busca e popula a lista de marketers
+            await populateMarketersDropdown();
+        }
+
+        /**
+         * Fecha o modal de atribuição.
+         */
+        function closeAssignModal() {
+            assignModal.style.display = "none";
+        }
+
+        /**
+         * Busca a lista de marketers da API e popula o dropdown DENTRO DO MODAL.
+         */
+        async function populateMarketersDropdown() {
+            const apiUrl = 'https://8162-52-116-202-144.ngrok-free.app/marketer-users/';
+            marketerSelect.innerHTML = '<option value="" disabled>Carregando...</option>'; // Feedback visual
+
+            try {
+                const response = await fetch(apiUrl);
+                if (!response.ok) throw new Error(`Erro na API: ${response.status}`);
+                
+                const marketers = await response.json();
+                marketerSelect.innerHTML = '<option value="" disabled selected>Select a Marketer</option>';
+
+                marketers.forEach(marketer => {
+                    const option = document.createElement('option');
+                    option.value = marketer.id;
+                    option.textContent = marketer.full_name || marketer.username;
+                    marketerSelect.appendChild(option);
+                });
+
+            } catch (error) {
+                console.error('Failed to load marketers:', error);
+                marketerSelect.innerHTML = '<option value="" disabled>Error loading</option>';
+            }
+        }
+
+
+        /**
+         * Executa a lógica de atribuição quando o botão de confirmação no modal é clicado.
+         */
+        async function performAssignment() {
+            const marketerId = marketerSelect.value;
+
+            // 1. Validação
+            if (!marketerId) {
+                alert('Por favor, selecione um marketer.');
+                return;
+            }
+
+            // 2. Coleta os IDs dos passageiros (usando os dados já carregados)
+            const passengerIdsToAssign = [];
+            selectedItemIds.forEach(rowId => {
+                const rowData = currentlyDisplayedData.find(item => item.id === rowId);
+                if (rowData && rowData.originalMotorista && rowData.originalMotorista.id) {
+                    passengerIdsToAssign.push(rowData.originalMotorista.id);
+                }
+            });
+
+            if (passengerIdsToAssign.length === 0) {
+                alert('Erro: Não foi possível encontrar os dados dos passageiros selecionados.');
+                return;
+            }
+            
+            // 3. Feedback visual e desativação do botão
+            confirmAssignBtn.disabled = true;
+            assignStatus.textContent = 'Atribuindo...';
+            assignStatus.style.color = 'orange';
+
+            const apiUrl = 'https://8162-52-116-202-144.ngrok-free.app/assign-marketer-users/';
+            let successCount = 0;
+            let errorCount = 0;
+
+            // 4. Loop para fazer as chamadas à API
+            for (const passengerId of passengerIdsToAssign) {
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            passenger_id: passengerId,
+                            marketer_user_ids: [parseInt(marketerId, 10)]
+                        })
+                    });
+                    if (response.ok) {
+                        successCount++;
+                    } else {
+                        errorCount++;
+                        console.error(`Falha ao atribuir passageiro ${passengerId}:`, await response.text());
+                    }
+                } catch (error) {
+                    errorCount++;
+                    console.error(`Erro de rede ao atribuir passageiro ${passengerId}:`, error);
+                }
+            }
+
+            // 5. Feedback final e limpeza
+            alert(`${successCount} reports successfully assigned.${errorCount > 0 ? `\n${errorCount} failed.` : ''}`);
+
+            closeAssignModal(); // Fecha o modal
+            
+            selectedItemIds.clear(); // Limpa a seleção de checkboxes
+            fetchData(); // Recarrega os dados da tabela para refletir as mudanças
+        }
+
+
+        // --- FIM: LÓGICA DO MODAL DE ATRIBUIÇÃO ---
+    
+    </script>
+        
+        
+    <script>
+        let passengersWithMarketersForDeletion = [];
+
+        // Funções para abrir e fechar o modal de deleção
+        function openDeleteAssignmentModal() {
+            document.getElementById('deleteAssignmentModal').style.display = 'flex';
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        // Event Listener para o novo botão
+        document.addEventListener('DOMContentLoaded', () => {
+
+            const deleteAssignmentBtn = document.getElementById('delete-assignment-btn');
+            if (deleteAssignmentBtn) {
+                deleteAssignmentBtn.addEventListener('click', prepareDeleteAssignmentModal);
+            }
+
+            const confirmDeleteAssignmentBtn = document.getElementById('confirm-delete-assignment-btn');
+            if (confirmDeleteAssignmentBtn) {
+                confirmDeleteAssignmentBtn.addEventListener('click', confirmDeleteAssignments);
+            }
+        });
+
+        // Função para preparar o modal de deleção
+        async function prepareDeleteAssignmentModal() {
+            passengersWithMarketersForDeletion = []; // Limpa a lista anterior
+            const marketerListDiv = document.getElementById('marketerListToDelete');
+            marketerListDiv.innerHTML = '<p>Searching for marketers in selected reports...</p>';
+            
+            const uniqueMarketerUsernames = new Set();
+            
+            // Coleta os dados completos dos itens selecionados
+            const selectedReportsData = currentlyDisplayedData.filter(item => selectedItemIds.has(item.id));
+
+            // Itera sobre os relatórios selecionados
+            for (const report of selectedReportsData) {
+                // A API de vocês já tem o passageiro no "originalMotorista"
+                const passenger = report.originalMotorista;
+
+                if (passenger && passenger.marketer_users && passenger.marketer_users.length > 0) {
+                    // Adiciona o passageiro completo à lista para deleção, incluindo o ID do passageiro
+                    passengersWithMarketersForDeletion.push({
+                        passengerId: passenger.id,
+                        marketers: passenger.marketer_users
+                    });
+
+                    // Coleta os usernames únicos dos marketers encontrados
+                    passenger.marketer_users.forEach(marketer => {
+                        uniqueMarketerUsernames.add(JSON.stringify({
+                            id: marketer.id,
+                            username: marketer.username,
+                            full_name: marketer.full_name
+                        }));
+                    });
+                }
+            }
+
+            // Popula o modal com os marketers únicos encontrados
+            if (uniqueMarketerUsernames.size > 0) {
+                marketerListDiv.innerHTML = '<h3 style="font-weight: normal; font-size: 15px">Select Marketer(s) to Delete:</h3>';
+                uniqueMarketerUsernames.forEach(marketerString => {
+                    const marketer = JSON.parse(marketerString);
+                    const label = document.createElement('label');
+                    label.innerHTML = `
+                        <input type="checkbox" name="marketerToDelete" value="${marketer.id}" data-username="${marketer.username}">
+                        ${marketer.full_name || marketer.username}
+                    `;
+                    marketerListDiv.appendChild(label);
+                    label.style.fontSize = '15px';
+                    marketerListDiv.appendChild(document.createElement('br'));
+                });
+            } else {
+                marketerListDiv.innerHTML = '<p>No marketers found in the selected reports to delete.</p>';
+                document.getElementById('confirm-delete-assignment-btn').disabled = true; // Desabilita o botão se não houver marketers
+            }
+            document.getElementById('confirm-delete-assignment-btn').disabled = uniqueMarketerUsernames.size === 0; // Garante que o botão está habilitado/desabilitado corretamente
+            openDeleteAssignmentModal();
+        }
+
+        // Função para confirmar a deleção
+        async function confirmDeleteAssignments() {
+            const selectedMarketerCheckboxes = document.querySelectorAll('#marketerListToDelete input[name="marketerToDelete"]:checked');
+
+            if (selectedMarketerCheckboxes.length === 0) {
+                alert("Please select at least one marketer to delete.");
+                return;
+            }
+
+            const marketersToDelete = Array.from(selectedMarketerCheckboxes).map(checkbox => ({
+                id: checkbox.value,
+                username: checkbox.dataset.username
+            }));
+
+            // Confirmação adicional antes de prosseguir
+            if (!confirm(`Are you sure you want to delete assignments for the selected marketer(s)? This action cannot be undone.`)) {
+                return;
+            }
+
+            // Array para armazenar as requisições DELETE
+            const deletePromises = [];
+            const deleteErrors = [];
+
+            for (const passengerData of passengersWithMarketersForDeletion) {
+                for (const marketerToDelete of marketersToDelete) {
+                    // Verifica se este passageiro realmente tem o marketer que queremos deletar
+                    const hasMarketer = passengerData.marketers.some(m => m.id.toString() === marketerToDelete.id);
+                    if (hasMarketer) {
+                        const deleteUrl = `https://8162-52-116-202-144.ngrok-free.app/assign-marketer-users/?passenger_id=${passengerData.passengerId}&marketer_user_id=${marketerToDelete.id}`;
+                        
+                        deletePromises.push(
+                            fetch(deleteUrl, {
+                                method: 'DELETE',
+                                headers: {
+                                    'accept': 'application/json'
+                                    // Adicione headers de autenticação se sua API precisar (e.g., 'Authorization': `Bearer ${token}`)
+                                }
+                            })
+                            .then(response => {
+                                if (!response.ok) {
+                                    return response.json().then(errorData => {
+                                        throw new Error(`HTTP error! Status: ${response.status}, Details: ${JSON.stringify(errorData)}`);
+                                    });
+                                }
+                                return response.json(); // Ou response.text() se a API não retornar JSON em DELETE
+                            })
+                            .catch(error => {
+                                console.error(`Error deleting assignment for passenger ${passengerData.passengerId} and marketer ${marketerToDelete.username}:`, error);
+                                deleteErrors.push(`Failed to delete for passenger ${passengerData.passengerId} and marketer ${marketerToDelete.username}: ${error.message}`);
+                            })
+                        );
+                    }
+                }
+            }
+
+            // Espera todas as requisições DELETE serem concluídas
+            await Promise.all(deletePromises);
+
+            closeModal('deleteAssignmentModal');
+            
+            if (deleteErrors.length > 0) {
+                alert("Some assignments failed to delete:\n" + deleteErrors.join("\n"));
+            } else {
+                alert("Marketer assignments deleted successfully!");
+            }
+
+            // Recarrega os dados da tabela para refletir as mudanças
+            fetchData(); 
+        }
+
     </script>
 
 </body>
