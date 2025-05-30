@@ -109,6 +109,14 @@ def incident_search_proxy():
 
     headers = {'ngrok-skip-browser-warning': 'true'}
 
+    # ❗ Verificação do e-mail
+    if current_user_email not in _marketer_email_to_username_map:
+        return jsonify({
+            "error": "Unauthorized user",
+            "message": "Please request access to bpessoa@rel8ed.to"
+        }), 403
+    print(f"DEBUG: Usuário autenticado: {current_user_email}")
+
     # Verifica a role do usuário usando os dados da API de marketers
     marketer_data = next(
         (m for m in _marketer_email_to_username_map.items() if m[0] == current_user_email),
