@@ -824,9 +824,6 @@
     </div>
 
     <script>
-        // Declaração de IS_ADMIN como uma variável global (ou encapsulada, dependendo da sua arquitetura)
-        let IS_ADMIN = false; // Valor padrão, será atualizado após a requisição
-
         // Função para buscar o status de admin
         async function checkAdminStatusAndInitialize() {
             try {
@@ -837,23 +834,36 @@
                 const data = await response.json();
                 IS_ADMIN = data.is_admin; // Atualiza a variável global
 
-                // Agora que IS_ADMIN está definido, execute a lógica dependente dela
+                // AGORA SIM, ACESSE OS ELEMENTOS DO DOM, POIS ESTAMOS PRONTOS
                 const roleDisplay = document.getElementById('user-role-display');
                 const marketerFilterContainer = document.getElementById('marketer-filter-container');
                 const assignButton = document.getElementById('assign-selected-btn');
 
-                if (IS_ADMIN) {
-                    roleDisplay.textContent = 'Admin';
-                    marketerFilterContainer.style.display = 'block';
-                    assignButton.style.display = 'inline-block';
-                    populateMarketerFilterDropdown();
+                // Adicione verificações de null para maior robustez, embora o ideal seja que os elementos existam
+                if (roleDisplay) {
+                    roleDisplay.textContent = IS_ADMIN ? 'Admin' : 'Marketer';
                 } else {
-                    roleDisplay.textContent = 'Marketer';
-                    marketerFilterContainer.style.display = 'none';
-                    assignButton.style.display = 'none';
+                    console.warn("Elemento com ID 'user-role-display' não encontrado.");
                 }
 
-                // Garanta que fetchData seja chamado APÓS IS_ADMIN ser definido
+                if (marketerFilterContainer) {
+                    marketerFilterContainer.style.display = IS_ADMIN ? 'block' : 'none';
+                } else {
+                    console.warn("Elemento com ID 'marketer-filter-container' não encontrado.");
+                }
+
+                if (assignButton) {
+                    assignButton.style.display = IS_ADMIN ? 'inline-block' : 'none';
+                } else {
+                    console.warn("Elemento com ID 'assign-selected-btn' não encontrado.");
+                }
+                
+                // Popule o dropdown apenas se for admin e o container existir
+                if (IS_ADMIN && marketerFilterContainer) {
+                    populateMarketerFilterDropdown();
+                }
+
+                // Garanta que fetchData seja chamado APÓS IS_ADMIN ser definido e os elementos serem manipulados
                 fetchData();
 
             } catch (error) {
@@ -1170,13 +1180,7 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            const roleDisplay = document.getElementById('user-role-display');
-            const marketerFilterContainer = document.getElementById('marketer-filter-container');
-            const assignButton = document.getElementById('assign-selected-btn');
-
-            checkAdminStatusAndInitialize(); // Inicia o processo
-
-            fetchData();
+            checkAdminStatusAndInitialize();
         });
 
         async function savePhoneNumber(button) {
