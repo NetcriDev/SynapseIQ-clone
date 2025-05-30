@@ -1111,8 +1111,8 @@
                 tableContainer.style.display = "block";
 
             } catch (error) {
-                console.error('Erro ao carregar os dados:', error);
-                loadingDiv.innerHTML = `<div style="color: red; text-align: center;">Erro ao carregar os dados. <br>(${error.message})</div>`;
+                console.error('Erro loading data:', error);
+                loadingDiv.innerHTML = `<div style="color: red; text-align: center;">Erro loading data. <br>(${error.message})</div>`;
                 tableContainer.style.display = "none";
             }
         }
