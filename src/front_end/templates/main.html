@@ -865,17 +865,15 @@
             currentFilters.from = document.getElementById('filter-from').value;
             currentFilters.to = document.getElementById('filter-to').value;
             currentFilters.website = document.getElementById('filter-website').value;
-            currentFilters.marketerId = document.getElementById('filter-marketer').value; // <<< NOVA LINHA
+            // O marketerId do dropdown agora é um filtro SECUNDÁRIO, o principal vem do backend
+            currentFilters.marketerId = document.getElementById('filter-marketer').value; 
 
-            // ***** NOVA LÓGICA: Ler o estado dos toggles AQUI *****
             for (const filterName in booleanFilterStates) {
                 const toggleElement = document.getElementById(`toggle-${filterName}`);
                 if (toggleElement) {
                     booleanFilterStates[filterName] = toggleElement.checked;
                 }
             }
-            // ****************************************************
-
             currentPage = 1;
             fetchData();
         }
@@ -884,11 +882,11 @@
             document.getElementById('filter-from').value = '';
             document.getElementById('filter-to').value = '';
             document.getElementById('filter-website').value = '';
-            document.getElementById('filter-marketer').value = ''; // <<< NOVA LINHA
+            // Manter o dropdown de marketer como 'Todos os Marketers' no reset
+            document.getElementById('filter-marketer').value = ''; 
 
-            currentFilters = { from: '', to: '', website: '', marketerId: '' }; // <<< MODIFICADA
+            currentFilters = { from: '', to: '', website: '', marketerId: '' }; 
 
-            // Reseta o estado de todos os toggles booleanos para 'false' e desmarca visualmente
             for (const filterName in booleanFilterStates) {
                 booleanFilterStates[filterName] = false; 
                 const toggleElement = document.getElementById(`toggle-${filterName}`);
@@ -903,17 +901,17 @@
 
         /**
          * Busca a lista de marketers da API e popula o dropdown de FILTRO.
+         * Este endpoint agora aponta para o seu Flask proxy.
          */
         async function populateMarketerFilterDropdown() {
             const selectElement = document.getElementById('filter-marketer');
-            // Certifique-se que o elemento existe antes de prosseguir
             if (!selectElement) {
                 console.error("Elemento #filter-marketer não encontrado para popular o dropdown de filtro.");
                 return;
             }
-            const apiUrl = 'https://8162-52-116-202-144.ngrok-free.app/marketer-users/';
+            // Chama o endpoint no seu próprio Flask que fará o proxy para a API externa de marketers
+            const apiUrl = '/marketer-users'; 
 
-            // Mantém a opção "Todos os Marketers" e adiciona um "Carregando..." temporário
             selectElement.innerHTML = '<option value="">All Marketers</option><option value="" disabled>Carregando...</option>';
 
             try {
@@ -923,7 +921,6 @@
                 }
                 const marketers = await response.json();
 
-                // Limpa as opções, exceto "Todos os Marketers"
                 selectElement.innerHTML = '<option value="">All Marketers</option>'; 
 
                 marketers.forEach(marketer => {
@@ -935,64 +932,54 @@
 
             } catch (error) {
                 console.error('Falha ao carregar marketers para o filtro:', error);
-                // Restaura para apenas "Todos os Marketers" em caso de erro
                 selectElement.innerHTML = '<option value="">All Marketers</option><option value="" disabled>Erro ao carregar</option>';
             }
         }
 
+
         async function fetchData() {
-            // Desestrutura o objeto currentFilters para pegar 'from', 'to' e 'website'
             const { from, to, website, marketerId } = currentFilters; 
 
-            // Elementos do DOM para feedback visual (carregamento, tabela)
             const loadingDiv = document.getElementById("loading");
             const tableContainer = document.querySelector(".table-container");
             const tableBody = document.getElementById("table-body");
 
-            // Atualiza o número da página exibido
             document.getElementById("page-number").textContent = `Page ${currentPage}`;
             
-            // Esconde a tabela e mostra o indicador de carregamento
             tableContainer.style.display = "none";
             loadingDiv.style.display = "flex";
             
-            // Desmarca o checkbox "Selecionar Todos" ao carregar nova página
             document.getElementById('select-all-current-page').checked = false;
 
-            // Constrói a URL base da API com a página atual e o tamanho da página
-            let url = `https://8162-52-116-202-144.ngrok-free.app/incident/search?page=${currentPage}&page_size=${pageSize}`;
+            // Chamar o SEU ENDPOINT DO FLASK (proxy) em vez da API externa diretamente
+            let url = `/incident_search_proxy?page=${currentPage}&page_size=${pageSize}`; 
             
-            // Adiciona os filtros de data se eles existirem
             if (from) url += `&accident_from=${from}`;
             if (to) url += `&accident_to=${to}`;
-            
-            // **NOVO: Adiciona o filtro de website à URL se ele existir**
             if (website) url += `&website=${encodeURIComponent(website)}`;
 
-            // Adiciona o filtro de marketer ID se ele existir <<< NOVA LÓGICA
+            // Agora, o `marketerId` do dropdown é apenas um filtro adicional que o backend pode usar
+            // se tiver permissão (e.g., admin). Para marketers normais, o filtro principal é o email logado.
+            // Se um marketer normal for forçado a ver apenas os seus, este parâmetro pode ser ignorado no Flask.
             if (marketerId) url += `&marketer_username=${encodeURIComponent(marketerId)}`;
-            //  ↑↑↑ ATENÇÃO: Confirme se 'marketer_id' é o nome correto do parâmetro da sua API backend!
-
-            // Adiciona os filtros booleanos (toggles) à URL
+            
             for (const filterName in booleanFilterStates) {
-                if (booleanFilterStates[filterName]) { // Se o toggle estiver ativado (true)
-                    url += `&${filterName}=True`; // Adiciona o filtro com "True" à URL
+                if (booleanFilterStates[filterName]) { 
+                    url += `&${filterName}=True`; 
                 }
             }
 
             try {
-                // Faz a requisição à API
+                // Faça a requisição para o seu backend Flask
                 const response = await fetch(url);
                 
-                // Verifica se a resposta da rede foi bem-sucedida
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
                 
-                // Converte a resposta para JSON e armazena os dados brutos da API
+                // Os dados já virão filtrados do Flask
                 currentApiData = await response.json();
 
-                // Limpa o corpo da tabela e a lista de dados atualmente exibidos
                 tableBody.innerHTML = '';
                 currentlyDisplayedData = [];
 
@@ -1020,19 +1007,7 @@
 
                     // Itera sobre os passageiros (ou motoristas) para criar as linhas da tabela
                      passageiros.forEach((motorista, passengerIndex) => {
-                        // **LÓGICA DE FILTRAGEM ATUALIZADA**
-                        // Se um marketerId específico foi selecionado NO FILTRO DO SELECT,
-                        // E este passageiro NÃO tem marketers,
-                        // OU tem marketers mas está vazio,
-                        // OU tem marketers mas nenhum corresponde ao selecionado,
-                        // então pule este passageiro.
-                        if (currentFilters.marketerId && currentFilters.marketerId !== "") { // Verifica se um marketer específico FOI selecionado
-                            if (!motorista.marketer_users || 
-                                motorista.marketer_users.length === 0 || 
-                                !motorista.marketer_users.some(m => m.username === currentFilters.marketerId)) {
-                                return; // Pula este passageiro se não corresponde ao filtro específico
-                            }
-                        }
+                        
                         // Se o filtro de marketerId NÃO está selecionado (ou seja, "Todos os Marketers"),
                         // Constrói o nome completo do motorista/passageiro
                         const nameParts = [motorista.first_name, motorista.middle_name, motorista.last_name]
