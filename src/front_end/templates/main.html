@@ -1009,8 +1009,8 @@
 
                         return veiculo.passengers
                             .filter(passenger => {
-                                // Se nenhum filtro de marketer está ativo, aceita todos
-                                if (!selectedMarketerUsername) return Array.isArray(passenger.marketer_users) && passenger.marketer_users.length > 0;
+                                // Se nenhum filtro de marketer está ativo, aceita todos passageiros (sem filtro)
+                                if (!selectedMarketerUsername) return true;
 
                                 // Se o passageiro tem lista de marketers
                                 if (Array.isArray(passenger.marketer_users)) {
@@ -1028,6 +1028,7 @@
                                 vehicleId: veiculo.id
                             }));
                     });
+
 
                     passageiros.forEach((motorista, passengerIndex) => {
                         const nameParts = [motorista.first_name, motorista.middle_name, motorista.last_name]
