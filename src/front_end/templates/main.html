@@ -939,7 +939,8 @@
 
 
         async function fetchData() {
-            const { from, to, website, marketerId } = currentFilters; 
+            // Os filtros que serão enviados ao backend.
+            const { from, to, website } = currentFilters; 
 
             const loadingDiv = document.getElementById("loading");
             const tableContainer = document.querySelector(".table-container");
@@ -952,17 +953,14 @@
             
             document.getElementById('select-all-current-page').checked = false;
 
-            // Chamar o SEU ENDPOINT DO FLASK (proxy) em vez da API externa diretamente
             let url = `/incident_search_proxy?page=${currentPage}&page_size=${pageSize}`; 
             
             if (from) url += `&accident_from=${from}`;
             if (to) url += `&accident_to=${to}`;
             if (website) url += `&website=${encodeURIComponent(website)}`;
 
-            // Agora, o `marketerId` do dropdown é apenas um filtro adicional que o backend pode usar
-            // se tiver permissão (e.g., admin). Para marketers normais, o filtro principal é o email logado.
-            // Se um marketer normal for forçado a ver apenas os seus, este parâmetro pode ser ignorado no Flask.
-            if (marketerId) url += `&marketer_username=${encodeURIComponent(marketerId)}`;
+            // O filtro de marketer_username não é adicionado aqui no frontend.
+            // O backend o adicionará automaticamente com base no usuário logado.
             
             for (const filterName in booleanFilterStates) {
                 if (booleanFilterStates[filterName]) { 
@@ -971,51 +969,42 @@
             }
 
             try {
-                // Faça a requisição para o seu backend Flask
                 const response = await fetch(url);
                 
                 if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                    // Adicionando detalhes do erro para depuração
+                    const errorBody = await response.text();
+                    console.error('API Error Response Body:', errorBody);
+                    throw new Error(`HTTP error! status: ${response.status}. Details: ${errorBody}`);
                 }
                 
-                // Os dados já virão filtrados do Flask
                 currentApiData = await response.json();
 
                 tableBody.innerHTML = '';
                 currentlyDisplayedData = [];
 
-                // Itera sobre os incidentes e seus veículos/passageiros para popular a tabela
-                currentApiData.forEach((incidente, incidentIndex) => {
-                    // Extrai a pasta do caminho do documento para determinar o tipo de link do PDF
+                currentApiData.items.forEach((incidente, incidentIndex) => {
                     const caminho = incidente.original_document_location?.replace(/\\/g, "/");
                     const partes = caminho?.split("/");
-                    const folder = partes?.[3] || "Texas"; // Default para "Texas" se não houver pasta
+                    const folder = partes?.[3] || "Texas"; 
 
-                    // Garante que haja pelo menos um "passageiro" (o motorista se não houver passageiros explícitos)
                     const passageiros = incidente.vehicles.flatMap((veiculo, vehicleIndex) => {
                         if (veiculo.passengers?.length) {
-                            // Retorna os passageiros do veículo, incluindo o índice e id do veículo
                             return veiculo.passengers.map(p => ({
                                 ...p,
                                 vehicleIndex,
                                 vehicleId: veiculo.id
                             }));
                         } else {
-                            // Se não houver passageiros, retorna um array vazio (não retorna o motorista)
                             return [];
                         }
                     });
 
-                    // Itera sobre os passageiros (ou motoristas) para criar as linhas da tabela
-                     passageiros.forEach((motorista, passengerIndex) => {
-                        
-                        // Se o filtro de marketerId NÃO está selecionado (ou seja, "Todos os Marketers"),
-                        // Constrói o nome completo do motorista/passageiro
+                    passageiros.forEach((motorista, passengerIndex) => {
                         const nameParts = [motorista.first_name, motorista.middle_name, motorista.last_name]
                             .filter(part => part && part.trim() !== "");
                         const driverName = nameParts.length > 0 ? nameParts.join(" ") : (motorista.name || "--");
 
-                        // Constrói os detalhes de seguro
                         const insuranceDetails = [
                             incidente.vehicles[motorista.vehicleIndex].insurance_company ? `Insurance Company: ${incidente.vehicles[motorista.vehicleIndex].insurance_company}` : '',
                             incidente.vehicles[motorista.vehicleIndex].driver_license ? `License: ${incidente.vehicles[motorista.vehicleIndex].driver_license}` : '',
@@ -1023,24 +1012,20 @@
                         ].filter(Boolean).join('; ') || '--';
                         const fullInsuranceDetailsHTML = insuranceDetails.replace(/; /g, '<br>');
 
-                        // Constrói os detalhes de severidade do acidente e ferimento
                         const crashSeverity = [
                             incidente.crash_severity ? `Crash: ${incidente.crash_severity}` : '',
                             motorista.injury_severity ? `Type: ${motorista.injury_severity}` : ''
                         ].filter(Boolean).join('; ') || '--';
                         const fullCrashSeverityHTML = crashSeverity.replace(/; /g, '<br>');
 
-                        // Constrói os detalhes de distância para a clínica
                         const distanceFromClinic = [
                             incidente.nearest_hope_d ? `Miles: ${incidente.nearest_hope_d}` : '',
                             incidente.name_nearest_hope ? `Center: ${incidente.name_nearest_hope}` : ''
                         ].filter(Boolean).join('; ') || '--';
                         const fullDistanceToClinicHTML = distanceFromClinic.replace(/; /g, '<br>');
 
-                        // Cria um ID único para a linha da tabela
                         const rowUniqueId = `incident_${incidente.report_number || incidentIndex}_vehicle_${motorista.vehicleIndex}_person_${passengerIndex}_${(driverName || 'unknown').replace(/\s+/g, '_')}`;
 
-                        // Cria um objeto com os dados da linha para exportação e seleção
                         const rowDataItem = {
                             id: rowUniqueId,
                             reportNumber: incidente.report_number || '--',
@@ -1052,7 +1037,7 @@
                             age: motorista.age || "--",
                             gender: motorista.gender || "--",
                             address: incidente.vehicles[motorista.vehicleIndex].owner_address || "--",
-                            state: incidente.state || "--", // Agora exibe a abreviação diretamente
+                            state: incidente.state || "--", 
                             city: incidente.city || "--",
                             reportPDFUrl: folder?.toLowerCase() === "minnesota" ?
                                 incidente.source_url :
@@ -1064,7 +1049,6 @@
                         };
                         currentlyDisplayedData.push(rowDataItem);
 
-                        // Cria a linha da tabela
                         const row = document.createElement("tr");
                         const isChecked = selectedItemIds.has(rowUniqueId);
 
@@ -1077,34 +1061,14 @@
                             <td>
                                 <div style="display: flex; align-items: center; gap: 8px;">
                                     <div style="display: flex; flex-direction: column; gap: 4px;">
-                                        <input
-                                            type="text"
-                                            value="${motorista.phone2?.split(',')[0]?.trim() || ''}"
-                                            data-passenger-id="${motorista.id || ''}"
-                                            class="phoneInput phoneInputA"
-                                            style="width: 110px; padding: 4px;"
-                                        />
-                                        <input
-                                            type="text"
-                                            value="${motorista.phone2?.split(',')[1]?.trim() || ''}"
-                                            data-passenger-id="${motorista.id || ''}"
-                                            class="phoneInput phoneInputB"
-                                            style="width: 110px; padding: 4px;"
-                                        />
+                                        <input type="text" value="${motorista.phone2?.split(',')[0]?.trim() || ''}" data-passenger-id="${motorista.id || ''}" class="phoneInput phoneInputA" style="width: 110px; padding: 4px;"/>
+                                        <input type="text" value="${motorista.phone2?.split(',')[1]?.trim() || ''}" data-passenger-id="${motorista.id || ''}" class="phoneInput phoneInputB" style="width: 110px; padding: 4px;"/>
                                     </div>
                                     <div style="display: flex; flex-direction: column; gap: 4px;">
-                                        <button
-                                            class="sendReportToChat"
-                                            data-id="${rowDataItem.reportNumber}"
-                                            title="Send report to chat"
-                                            style="background: none; border: none; cursor: pointer; font-size: 1.2em; color: #34d0db;"
-                                        >
+                                        <button class="sendReportToChat" data-id="${rowDataItem.reportNumber}" title="Send report to chat" style="background: none; border: none; cursor: pointer; font-size: 1.2em; color: #34d0db;">
                                             <i class="fas fa-phone"></i>
                                         </button>
-                                        <button
-                                            onclick="savePhoneNumber(this)"
-                                            title="Save phone number"
-                                            style="cursor: pointer; border: none; background: none;">
+                                        <button onclick="savePhoneNumber(this)" title="Save phone number" style="cursor: pointer; border: none; background: none;">
                                             💾
                                         </button>
                                     </div>
@@ -1125,7 +1089,6 @@
                             <td style="${getMilesCellStyle(rowDataItem.distanceFromClinic)}">${fullDistanceToClinicHTML}</td>
                         `;
 
-                        // Cria a linha de detalhes oculta
                         const detailsRow = document.createElement("tr");
                         detailsRow.classList.add("details-row");
                         detailsRow.style.display = "none";
@@ -1137,13 +1100,11 @@
                     });
                 });
 
-                // Adiciona listeners aos checkboxes, atualiza o estado do "Selecionar Todos" e do botão de download
                 addCheckboxListenersToCurrentPage();
                 updateSelectAllCheckboxState();
                 updateDownloadButton();
-                updateAssignButton()
+                updateAssignButton();
 
-                // Esconde o indicador de carregamento e mostra a tabela
                 loadingDiv.style.display = "none";
                 tableContainer.style.display = "block";
 
@@ -1153,7 +1114,6 @@
                 tableContainer.style.display = "none";
             }
         }
-
         async function savePhoneNumber(button) {
             const row = button.closest("tr");
             const inputA = row.querySelector(".phoneInputA");
