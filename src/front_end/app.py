@@ -132,7 +132,12 @@ def incident_search_proxy():
 
     try:
         response.raise_for_status() 
-        all_incidents = response.json().get('items', [])
+        all_incidents = response.json()
+        
+        if not isinstance(all_incidents, list):
+            print(f"AVISO: A API externa não retornou uma lista. Conteúdo: {all_incidents}")
+            all_incidents = [] # Garante que all_incidents seja sempre uma lista
+        # ***********************
         
         return jsonify({'items': all_incidents}), response.status_code
     except requests.exceptions.RequestException as e:
