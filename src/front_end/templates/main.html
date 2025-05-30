@@ -990,33 +990,44 @@
                     const partes = caminho?.split("/");
                     const folder = partes?.[3] || "Texas"; 
 
+                    // const passageiros = incidente.vehicles.flatMap((veiculo, vehicleIndex) => {
+                    //     if (veiculo.passengers?.length) {
+                    //         return veiculo.passengers.map(p => ({
+                    //             ...p,
+                    //             vehicleIndex,
+                    //             vehicleId: veiculo.id
+                    //         }));
+                    //     } else {
+                    //         return [];
+                    //     }
+                    // });
+
                     const selectedMarketerUsername = currentFilters.marketerId;
 
                     const passageiros = incidente.vehicles.flatMap((veiculo, vehicleIndex) => {
                         if (!veiculo.passengers?.length) return [];
 
-                        if (!selectedMarketerUsername) {
-                            // Sem filtro ativo, retorna todos passageiros direto (com vehicle info)
-                            return veiculo.passengers.map(passenger => ({
-                                ...passenger,
-                                vehicleIndex,
-                                vehicleId: veiculo.id
-                            }));
-                        }
-
-                        // Se filtro ativo, filtra apenas passageiros com marketer correspondente
                         return veiculo.passengers
-                            .filter(passenger => 
-                                Array.isArray(passenger.marketer_users) &&
-                                passenger.marketer_users.some(mu => mu.username === selectedMarketerUsername)
-                            )
+                            .filter(passenger => {
+                                // Se nenhum filtro de marketer está ativo, aceita todos
+                                if (!selectedMarketerUsername) return Array.isArray(passenger.marketer_users) && passenger.marketer_users.length > 0;
+
+                                // Se o passageiro tem lista de marketers
+                                if (Array.isArray(passenger.marketer_users)) {
+                                    return passenger.marketer_users.some(
+                                        mu => mu.username === selectedMarketerUsername
+                                    );
+                                }
+
+                                // Se não tiver marketers associados, exclui
+                                return false;
+                            })
                             .map(passenger => ({
                                 ...passenger,
                                 vehicleIndex,
                                 vehicleId: veiculo.id
                             }));
                     });
-
 
                     passageiros.forEach((motorista, passengerIndex) => {
                         const nameParts = [motorista.first_name, motorista.middle_name, motorista.last_name]
