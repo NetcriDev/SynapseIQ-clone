@@ -662,8 +662,7 @@
         </div>
     </header>
 
-    <h2 style="padding-left: 10px; margin: 2px; margin-top: 10px;">Welcome, <span id="user-email">{{ user_email }}</span>!</h1>
-    <p style="padding-left: 10px; margin: 2px;">Your Role: <span id="user-role-display"></span></p>
+    <h2 style="padding-left: 10px; margin: 2px;">Welcome, <span id="user-email">{{ user_email }}</span>!</h1>
 
     <main class="main-content">
         <div id="loading">
@@ -824,76 +823,20 @@
         </div>
     </div>
 
-    
     <script>
-        // DECLARE IS_ADMIN AQUI NO TOPO DO SEU SCRIPT
-        let IS_ADMIN = false; // Valor padrão, será atualizado após a verificação de admin
-
-        // Função para buscar o status de admin
-        async function checkAdminStatusAndInitialize() {
-            try {
-                const response = await fetch('/user_is_admin');
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                const data = await response.json();
-                IS_ADMIN = data.is_admin; // Atualiza a variável global
-
-                // AGORA SIM, ACESSE OS ELEMENTOS DO DOM, POIS ESTAMOS PRONTOS
-                const roleDisplay = document.getElementById('user-role-display');
-                const marketerFilterContainer = document.getElementById('filter-marketer');
-                const assignButton = document.getElementById('assign-button');
-
-                // Adicione verificações de null para maior robustez, embora o ideal seja que os elementos existam
-                if (roleDisplay) {
-                    roleDisplay.textContent = IS_ADMIN ? 'Admin' : 'Marketer';
-                } else {
-                    console.warn("Elemento com ID 'user-role-display' não encontrado.");
-                }
-
-                if (marketerFilterContainer) {
-                    marketerFilterContainer.style.display = IS_ADMIN ? 'block' : 'none';
-                } else {
-                    console.warn("Elemento com ID 'filter-marketer' não encontrado.");
-                }
-
-                if (assignButton) {
-                    assignButton.style.display = IS_ADMIN ? 'inline-block' : 'none';
-                } else {
-                    console.warn("Elemento com ID 'assign-button' não encontrado.");
-                }
-                
-                // Popule o dropdown apenas se for admin e o container existir
-                if (IS_ADMIN && marketerFilterContainer) {
-                    populateMarketerFilterDropdown();
-                }
-
-                // Garanta que fetchData seja chamado APÓS IS_ADMIN ser definido e os elementos serem manipulados
-                fetchData();
-
-            } catch (error) {
-                console.error('Erro ao verificar status de admin:', error);
-                // Lidar com o erro, talvez desabilitar funcionalidades de admin por segurança
-                const roleDisplay = document.getElementById('user-role-display');
-                if (roleDisplay) {
-                    roleDisplay.textContent = 'Erro ao carregar role';
-                }
-                fetchData(); // Tentar buscar dados mesmo com erro no status, mas como não-admin
-            }
-        }
 
         window.watsonAssistantChatOptions = {
-        integrationID: "aa6251d5-7615-46fd-9a89-dcce1a75b536", // The ID of this integration.
-        region: "us-south", // The region your integration is hosted in.
-        serviceInstanceID: "1fe70761-3293-40e8-94d4-3dab7c3a289a", // The ID of your service instance.
-        //   onLoad: async (instance) => { await instance.render(); 
-        onLoad: async (instance) => {
-            window.g_wa_instance = instance; // armazena globalmente
-            await instance.render();
-        },
-        headerConfig:{
-            showRestartButton: true
-        },// The ID of your service instance.
+            integrationID: "aa6251d5-7615-46fd-9a89-dcce1a75b536", // The ID of this integration.
+            region: "us-south", // The region your integration is hosted in.
+            serviceInstanceID: "1fe70761-3293-40e8-94d4-3dab7c3a289a", // The ID of your service instance.
+            //   onLoad: async (instance) => { await instance.render(); 
+            onLoad: async (instance) => {
+                window.g_wa_instance = instance; // armazena globalmente
+                await instance.render();
+            },
+            headerConfig:{
+                showRestartButton: true
+            },// The ID of your service instance.
         };
         setTimeout(function(){
             const t=document.createElement('script');
@@ -925,13 +868,8 @@
             currentFilters.from = document.getElementById('filter-from').value;
             currentFilters.to = document.getElementById('filter-to').value;
             currentFilters.website = document.getElementById('filter-website').value;
-
-            // Apenas para admins: obtém o valor do dropdown de marketer
-            if (IS_ADMIN) {
-                currentFilters.marketer_username = document.getElementById('filter-marketer').value;
-            } else {
-                currentFilters.marketer_username = ''; // Garante que não envie esse filtro para não-admins
-            }
+            // O marketerId do dropdown agora é um filtro SECUNDÁRIO, o principal vem do backend
+            currentFilters.marketerId = document.getElementById('filter-marketer').value; 
 
             for (const filterName in booleanFilterStates) {
                 const toggleElement = document.getElementById(`toggle-${filterName}`);
@@ -947,18 +885,16 @@
             document.getElementById('filter-from').value = '';
             document.getElementById('filter-to').value = '';
             document.getElementById('filter-website').value = '';
+            // Manter o dropdown de marketer como 'Todos os Marketers' no reset
+            document.getElementById('filter-marketer').value = ''; 
 
-            currentFilters = { from: '', to: '', website: '', marketer_username: '' };
-
-            if (IS_ADMIN) {
-                document.getElementById('filter-marketer').value = ''; // Reseta o dropdown de marketer
-            }
+            currentFilters = { from: '', to: '', website: '', marketerId: '' }; 
 
             for (const filterName in booleanFilterStates) {
-                booleanFilterStates[filterName] = false;
+                booleanFilterStates[filterName] = false; 
                 const toggleElement = document.getElementById(`toggle-${filterName}`);
                 if (toggleElement) {
-                    toggleElement.checked = false;
+                    toggleElement.checked = false; 
                 }
             }
 
@@ -971,88 +907,88 @@
          * Este endpoint agora aponta para o seu Flask proxy.
          */
         async function populateMarketerFilterDropdown() {
-            const marketerFilterDropdown = document.getElementById('filter-marketer');
-            if (marketerFilterDropdown && IS_ADMIN) { // Apenas popule se for admin
-                try {
-                    const response = await fetch('/marketer-users');
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-                    const marketers = await response.json();
+            const selectElement = document.getElementById('filter-marketer');
+            if (!selectElement) {
+                console.error("Elemento #filter-marketer não encontrado para popular o dropdown de filtro.");
+                return;
+            }
+            // Chama o endpoint no seu próprio Flask que fará o proxy para a API externa de marketers
+            const apiUrl = '/marketer-users'; 
 
-                    // Limpa opções existentes, exceto a "All Marketers"
-                    marketerFilterDropdown.innerHTML = '<option value="">All Marketers</option>';
+            selectElement.innerHTML = '<option value="">All Marketers</option><option value="" disabled>Carregando...</option>';
 
-                    marketers.forEach(marketer => {
-                        // AJUSTE AQUI: Confirme se o campo para exibir é 'username' ou 'name' e o valor é 'username' ou 'id'
-                        const option = document.createElement('option');
-                        option.value = marketer.username; // O valor que será enviado para o backend
-                        option.textContent = marketer.name || marketer.username; // O texto que aparece no dropdown
-                        marketerFilterDropdown.appendChild(option);
-                    });
-                } catch (error) {
-                    console.error('Erro ao carregar os marketers:', error);
-                    // Opcional: Mostrar uma mensagem de erro no dropdown
-                    const option = document.createElement('option');
-                    option.value = "";
-                    option.textContent = "Error loading marketers";
-                    marketerFilterDropdown.appendChild(option);
+            try {
+                const response = await fetch(apiUrl);
+                if (!response.ok) {
+                    throw new Error(`Erro na API ao buscar marketers: ${response.status}`);
                 }
+                const marketers = await response.json();
+
+                selectElement.innerHTML = '<option value="">All Marketers</option>'; 
+
+                marketers.forEach(marketer => {
+                    const option = document.createElement('option');
+                    option.value = marketer.username;
+                    option.textContent = marketer.full_name || marketer.username;
+                    selectElement.appendChild(option);
+                });
+
+            } catch (error) {
+                console.error('Falha ao carregar marketers para o filtro:', error);
+                selectElement.innerHTML = '<option value="">All Marketers</option><option value="" disabled>Erro ao carregar</option>';
             }
         }
 
+
         async function fetchData() {
-            const { from, to, website, marketer_username } = currentFilters;
+            // Os filtros que serão enviados ao backend.
+            const { from, to, website } = currentFilters; 
 
             const loadingDiv = document.getElementById("loading");
             const tableContainer = document.querySelector(".table-container");
             const tableBody = document.getElementById("table-body");
 
             document.getElementById("page-number").textContent = `Page ${currentPage}`;
-
+            
             tableContainer.style.display = "none";
             loadingDiv.style.display = "flex";
-
+            
             document.getElementById('select-all-current-page').checked = false;
 
-            let url = `/incident_search_proxy?page=${currentPage}&page_size=${pageSize}`;
-
+            let url = `/incident_search_proxy?page=${currentPage}&page_size=${pageSize}`; 
+            
             if (from) url += `&accident_from=${from}`;
             if (to) url += `&accident_to=${to}`;
             if (website) url += `&website=${encodeURIComponent(website)}`;
 
-            // Adiciona o filtro de marketer_username SE houver um selecionado (e for admin)
-            // Ou se for não-admin, o backend vai adicionar o filtro automaticamente
-            if (marketer_username && IS_ADMIN) { // Apenas adiciona se admin e selecionou um marketer específico
-                url += `&marketer_username=${encodeURIComponent(marketer_username)}`;
-            }
-            // Se for admin e marketer_username for vazio, significa "todos os marketers",
-            // e o backend já sabe que não deve adicionar o filtro.
-
+            // O filtro de marketer_username não é adicionado aqui no frontend.
+            // O backend o adicionará automaticamente com base no usuário logado.
+            
             for (const filterName in booleanFilterStates) {
-                if (booleanFilterStates[filterName]) {
-                    url += `&${filterName}=True`;
+                if (booleanFilterStates[filterName]) { 
+                    url += `&${filterName}=True`; 
                 }
             }
 
             try {
                 const response = await fetch(url);
-
+                
                 if (!response.ok) {
+                    // Adicionando detalhes do erro para depuração
                     const errorBody = await response.text();
                     console.error('API Error Response Body:', errorBody);
                     throw new Error(`HTTP error! status: ${response.status}. Details: ${errorBody}`);
                 }
-
+                
                 currentApiData = await response.json();
 
                 tableBody.innerHTML = '';
                 currentlyDisplayedData = [];
 
-                currentApiData.items.forEach((incidente, incidentIndex) => { // Ainda espera 'items' aqui
+                currentApiData.items.forEach((incidente, incidentIndex) => {
                     const caminho = incidente.original_document_location?.replace(/\\/g, "/");
                     const partes = caminho?.split("/");
-                    const folder = partes?.[3] || "Texas";
+                    const folder = partes?.[3] || "Texas"; 
 
                     const passageiros = incidente.vehicles.flatMap((veiculo, vehicleIndex) => {
                         if (veiculo.passengers?.length) {
@@ -1103,7 +1039,7 @@
                             age: motorista.age || "--",
                             gender: motorista.gender || "--",
                             address: incidente.vehicles[motorista.vehicleIndex].owner_address || "--",
-                            state: incidente.state || "--",
+                            state: incidente.state || "--", 
                             city: incidente.city || "--",
                             reportPDFUrl: folder?.toLowerCase() === "minnesota" ?
                                 incidente.source_url :
@@ -1119,41 +1055,41 @@
                         const isChecked = selectedItemIds.has(rowUniqueId);
 
                         row.innerHTML = `
-                                <td><input type="checkbox" class="row-checkbox" data-row-id="${rowUniqueId}" ${isChecked ? 'checked' : ''}></td>
-                                <td><button onclick="toggleDetails('${rowUniqueId}-details', this)">▶</button></td>
-                                <td>${rowDataItem.reportNumber}</td>
-                                <td>${rowDataItem.crashDate}</td>
-                                <td>${rowDataItem.driverName}</td>
-                                <td>
-                                    <div style="display: flex; align-items: center; gap: 8px;">
-                                        <div style="display: flex; flex-direction: column; gap: 4px;">
-                                            <input type="text" value="${motorista.phone2?.split(',')[0]?.trim() || ''}" data-passenger-id="${motorista.id || ''}" class="phoneInput phoneInputA" style="width: 110px; padding: 4px;"/>
-                                            <input type="text" value="${motorista.phone2?.split(',')[1]?.trim() || ''}" data-passenger-id="${motorista.id || ''}" class="phoneInput phoneInputB" style="width: 110px; padding: 4px;"/>
-                                        </div>
-                                        <div style="display: flex; flex-direction: column; gap: 4px;">
-                                            <button class="sendReportToChat" data-id="${rowDataItem.reportNumber}" title="Send report to chat" style="background: none; border: none; cursor: pointer; font-size: 1.2em; color: #34d0db;">
-                                                <i class="fas fa-phone"></i>
-                                            </button>
-                                            <button onclick="savePhoneNumber(this)" title="Save phone number" style="cursor: pointer; border: none; background: none;">
-                                                💾
-                                            </button>
-                                        </div>
+                            <td><input type="checkbox" class="row-checkbox" data-row-id="${rowUniqueId}" ${isChecked ? 'checked' : ''}></td>
+                            <td><button onclick="toggleDetails('${rowUniqueId}-details', this)">▶</button></td>
+                            <td>${rowDataItem.reportNumber}</td>
+                            <td>${rowDataItem.crashDate}</td>
+                            <td>${rowDataItem.driverName}</td>
+                            <td>
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <div style="display: flex; flex-direction: column; gap: 4px;">
+                                        <input type="text" value="${motorista.phone2?.split(',')[0]?.trim() || ''}" data-passenger-id="${motorista.id || ''}" class="phoneInput phoneInputA" style="width: 110px; padding: 4px;"/>
+                                        <input type="text" value="${motorista.phone2?.split(',')[1]?.trim() || ''}" data-passenger-id="${motorista.id || ''}" class="phoneInput phoneInputB" style="width: 110px; padding: 4px;"/>
                                     </div>
-                                </td>
-                                <td>${fullInsuranceDetailsHTML}</td>
-                                <td>${fullCrashSeverityHTML}</td>
-                                <td>${rowDataItem.age}</td>
-                                <td>${rowDataItem.gender}</td>
-                                <td>${rowDataItem.address}</td>
-                                <td>${rowDataItem.state}</td>
-                                <td>${rowDataItem.city}</td>
-                                <td>${
-                                    folder.toLowerCase() === "texas"
-                                        ? '❌'
-                                        : `<a href="${rowDataItem.reportPDFUrl}" target="_blank">📄</a>`
-                                }</td>
-                                <td style="${getMilesCellStyle(rowDataItem.distanceFromClinic)}">${fullDistanceToClinicHTML}</td>
-                            `;
+                                    <div style="display: flex; flex-direction: column; gap: 4px;">
+                                        <button class="sendReportToChat" data-id="${rowDataItem.reportNumber}" title="Send report to chat" style="background: none; border: none; cursor: pointer; font-size: 1.2em; color: #34d0db;">
+                                            <i class="fas fa-phone"></i>
+                                        </button>
+                                        <button onclick="savePhoneNumber(this)" title="Save phone number" style="cursor: pointer; border: none; background: none;">
+                                            💾
+                                        </button>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>${fullInsuranceDetailsHTML}</td> 
+                            <td>${fullCrashSeverityHTML}</td> 
+                            <td>${rowDataItem.age}</td>
+                            <td>${rowDataItem.gender}</td>
+                            <td>${rowDataItem.address}</td>
+                            <td>${rowDataItem.state}</td>
+                            <td>${rowDataItem.city}</td>
+                            <td>${
+                                folder.toLowerCase() === "texas"
+                                    ? '❌'
+                                    : `<a href="${rowDataItem.reportPDFUrl}" target="_blank">📄</a>`
+                            }</td>
+                            <td style="${getMilesCellStyle(rowDataItem.distanceFromClinic)}">${fullDistanceToClinicHTML}</td>
+                        `;
 
                         const detailsRow = document.createElement("tr");
                         detailsRow.classList.add("details-row");
@@ -1169,7 +1105,7 @@
                 addCheckboxListenersToCurrentPage();
                 updateSelectAllCheckboxState();
                 updateDownloadButton();
-                updateAssignButton(); // Atualiza o estado do botão de atribuição
+                updateAssignButton();
 
                 loadingDiv.style.display = "none";
                 tableContainer.style.display = "block";
@@ -1180,11 +1116,6 @@
                 tableContainer.style.display = "none";
             }
         }
-
-        document.addEventListener('DOMContentLoaded', () => {
-            checkAdminStatusAndInitialize();
-        });
-
         async function savePhoneNumber(button) {
             const row = button.closest("tr");
             const inputA = row.querySelector(".phoneInputA");
