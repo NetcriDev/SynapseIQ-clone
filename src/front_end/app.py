@@ -1,4 +1,4 @@
-from flask import Flask, render_template, jsonify, session, redirect, url_for, request # Importe 'request'
+from flask import Flask, render_template, jsonify, session, redirect, url_for, request
 from authlib.integrations.flask_client import OAuth
 from functools import wraps
 from six.moves.urllib.parse import urlencode
@@ -6,14 +6,13 @@ import requests
 
 app = Flask(__name__)
 
-# Auth0 init
+# Auth0 init (mantido como está)
 PROFILE_KEY = 'profile'
 JWT_PAYLOAD_KEY = 'jwt_payload'
-#
 AUTH0_CLIENT_ID="RYJg443VOd2t6cX9CrtD6F0PZgqEILQX"
 AUTH0_DOMAIN="rel8edto.us.auth0.com"
 AUTH0_CLIENT_SECRET="HEo_aOEuEKiHHL9yKFG4F8uqL1ZvgGzW935t8Jp1J-jQ-IZLFYPeGVqI4KxAKFy6"
-AUTH0_CALLBACK_URL="https://synapse.rel8ed.to/callback" # Mantenha seu URL de callback
+AUTH0_CALLBACK_URL="https://synapse.rel8ed.to/callback"
 
 app.secret_key = 'ThisIsTheSecretKey'
 oauth = OAuth(app)
@@ -31,8 +30,8 @@ auth0 = oauth.register(
 )
 
 def getroles(userid):
-    # Sua função getroles existente
-    import requests
+    # Sua função getroles existente, ainda é útil para manter a estrutura
+    # mas as roles não serão usadas para lógica de acesso neste momento.
     headers = {'content-type': 'application/json'}
     data = {"client_id":AUTH0_CLIENT_ID,"client_secret":AUTH0_CLIENT_SECRET,"audience":"https://rel8edto.us.auth0.com/api/v2/","grant_type":"client_credentials"}
     response = requests.post('https://rel8edto.us.auth0.com/oauth/token', headers=headers, json=data)
@@ -53,68 +52,100 @@ def requires_auth(f):
 @app.route('/')
 @requires_auth
 def main_page():
-    user_roles = session[JWT_PAYLOAD_KEY]['roles']
+    # As roles ainda são buscadas, mas a lógica 'is_admin' foi removida do template.
+    user_roles = session[JWT_PAYLOAD_KEY]['roles'] # Apenas para manter a estrutura do JWT payload
     user_id = session[JWT_PAYLOAD_KEY]['sub'] 
-    user_email = session[JWT_PAYLOAD_KEY].get('email') # Obter o email do usuário logado
+    user_email = session[JWT_PAYLOAD_KEY].get('email')
+    
     print("Roles:", user_roles)
     print("User ID:", user_id) 
-    print("User Email:", user_email) # Adicionado para debug
-    # Passar o email para o template, se necessário para exibição
+    print("User Email:", user_email)
+
+    # Note que 'is_admin' não é mais passado para o template.
     return render_template('main.html', user_id=user_id, user_email=user_email)
 
 
-# Endpoint da sua API externa
 EXTERNAL_SEARCH_API_BASE_URL = "https://8162-52-116-202-144.ngrok-free.app/incident/search"
 EXTERNAL_MARKETER_API_URL = "https://8162-52-116-202-144.ngrok-free.app/marketer-users/"
 
-@app.route('/incident_search_proxy') # Renomeado para evitar conflito e clareza
+# Variável global para armazenar o mapeamento de e-mail para username
+# Isso será populado na inicialização do app.
+_marketer_email_to_username_map = {}
+
+def update_marketer_email_map():
+    """
+    Busca usuários marketers da API externa e constrói um mapeamento
+    de email para username.
+    """
+    global _marketer_email_to_username_map
+    headers = {'ngrok-skip-browser-warning': 'true'}
+    try:
+        response = requests.get(EXTERNAL_MARKETER_API_URL, headers=headers)
+        response.raise_for_status()
+        marketers_data = response.json()
+        
+        # ASSUMÇÃO: Cada objeto de marketer tem um campo 'email' e 'username'.
+        # AJUSTE AQUI se seus campos tiverem outros nomes (ex: 'marketer_email', 'id')
+        new_map = {m.get('email'): m.get('username') for m in marketers_data if m.get('email') and m.get('username')}
+        _marketer_email_to_username_map = new_map
+        print(f"DEBUG: Mapeamento de email do Marketer atualizado: {_marketer_email_to_username_map}")
+    except requests.exceptions.RequestException as e:
+        print(f"Erro ao buscar usuários marketers para o mapeamento: {e}")
+        # Em caso de erro, o mapa pode ficar vazio, levando a problemas no filtro.
+        # Considere uma melhor manipulação de erros aqui.
+
+# Esta função será chamada na inicialização do aplicativo
+# para carregar o mapeamento de marketers.
+with app.app_context():
+    update_marketer_email_map()
+
+
+@app.route('/incident_search_proxy')
 @requires_auth
 def incident_search_proxy():
-    # O email do usuário logado, que será usado para filtrar os resultados da API externa
     current_user_email = session[JWT_PAYLOAD_KEY].get('email')
     
-    # Construir os parâmetros para a API externa a partir dos parâmetros de query do frontend
-    # Use request.args para obter todos os parâmetros de query do request do frontend
     api_params = dict(request.args) 
     
-    # Remover o marketerId enviado pelo frontend se ele existir, pois o filtro principal será pelo email
-    # A menos que você tenha um cenário onde admins possam ver todos, ignore este passo
-    if 'marketer_username' in api_params:
-        del api_params['marketer_username']
+    # Remove qualquer filtro de marketer_username vindo do frontend,
+    # pois sempre aplicaremos o filtro baseado no usuário logado.
+    api_params.pop('marketer_username', None)
 
-    # Adicionar o filtro do email do usuário logado nos parâmetros da API externa
-    # ATENÇÃO: Confirme com sua API externa se o parâmetro para filtrar por email do marketer é 'marketer_email'
-    # ou 'marketer_user_email' ou similar. Estou assumindo 'marketer_user_email' com base no seu exemplo.
-    api_params['marketer_user_email'] = current_user_email
+    # Encontra o username do marketer correspondente ao e-mail do usuário logado
+    marketer_username_to_filter = _marketer_email_to_username_map.get(current_user_email)
+    
+    if marketer_username_to_filter:
+        # Se encontramos um username, adicionamos ele como filtro para a API externa
+        api_params['marketer_username'] = marketer_username_to_filter
+        print(f"DEBUG: Filtrando por marketer_username: {marketer_username_to_filter} (para o email: {current_user_email})")
+    else:
+        print(f"AVISO: Email do usuário logado ({current_user_email}) NÃO encontrado no mapeamento de marketers. Nenhum filtro de marketer será aplicado.")
+        # Se o email não for encontrado, a API externa pode retornar todos os dados
+        # ou nenhum dado, dependendo da sua implementação.
+        # Idealmente, todos os usuários que acessam esta rota devem estar mapeados como marketers.
 
-    # Adicionar ngrok-skip-browser-warning para a requisição à API externa
     headers = {'ngrok-skip-browser-warning': 'true'}
-
-    # Montar a URL completa para a API externa
-    # urlencode transforma o dicionário de parâmetros em string de query (ex: param1=val1&param2=val2)
     full_api_url = f"{EXTERNAL_SEARCH_API_BASE_URL}?{urlencode(api_params)}"
-    print(f"Calling external API: {full_api_url}") # Para debug
+    print(f"DEBUG: Chamando API externa: {full_api_url}") 
     
     response = requests.get(full_api_url, headers=headers)
 
     try:
-        response.raise_for_status() # Lança um erro para status de erro HTTP (4xx ou 5xx)
-        all_incidents = response.json().get('items', []) # Supondo que a resposta tem uma chave 'items'
-        
-        # A lógica de filtragem adicional em Python aqui seria redundante se a API externa já filtra por marketer_user_email
-        # e é a forma mais segura. Se a API externa NÃO PUDER filtrar por marketer_user_email,
-        # você teria que aplicar a lógica de filtragem que você tinha aqui, mas seria menos eficiente.
-        # Por enquanto, vou assumir que a API externa suporta o filtro 'marketer_user_email'.
+        response.raise_for_status() 
+        all_incidents = response.json().get('items', [])
         
         return jsonify({'items': all_incidents}), response.status_code
     except requests.exceptions.RequestException as e:
-        print(f"Error fetching data from API: {e}")
-        # Retorna um erro JSON para que o frontend possa lidar com ele
-        return jsonify({"error": str(e)}), response.status_code if response else 500
+        print(f"Erro ao buscar dados da API: {e}")
+        error_details = response.text if response else "Sem resposta detalhada"
+        print(f"Conteúdo da Resposta da API (em erro): {error_details}")
+        return jsonify({"error": str(e), "api_response": error_details}), response.status_code if response else 500
 
-@app.route('/marketer-users') # Endpoint para buscar lista de marketers (para dropdown)
+@app.route('/marketer-users') 
 @requires_auth
 def get_marketer_users():
+    # Esta rota pode ser usada para popular dropdowns no futuro,
+    # mas no momento não terá uso direto sem a lógica de admin.
     headers = {'ngrok-skip-browser-warning': 'true'}
     try:
         response = requests.get(EXTERNAL_MARKETER_API_URL, headers=headers)
@@ -122,7 +153,7 @@ def get_marketer_users():
         marketers = response.json()
         return jsonify(marketers), response.status_code
     except requests.exceptions.RequestException as e:
-        print(f"Error fetching marketer users: {e}")
+        print(f"Erro ao buscar usuários marketers: {e}")
         return jsonify({"error": str(e)}), response.status_code if response else 500
 
 
@@ -143,7 +174,7 @@ def callback_handling():
     resp = auth0.get('userinfo')
     userinfo = resp.json()
     userid = userinfo['sub']
-    userinfo['roles'] = getroles(userid)
+    userinfo['roles'] = getroles(userid) # Roles ainda são buscadas, mas não usadas para lógica de acesso aqui
     session[JWT_PAYLOAD_KEY] = userinfo
     session[PROFILE_KEY] = {
         'user_id': userinfo['sub'],
@@ -153,4 +184,6 @@ def callback_handling():
     return redirect('/')
 
 if __name__ == '__main__':
+    # Garante que o mapeamento de marketers seja carregado na inicialização
+    update_marketer_email_map() 
     app.run(host='0.0.0.0', port=5000, debug=True)
