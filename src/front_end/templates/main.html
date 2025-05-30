@@ -996,15 +996,13 @@
                         if (!veiculo.passengers?.length) return [];
 
                         return veiculo.passengers
-                            
                             .filter(passenger => {
-                                // Se não há filtro de marketer ativo,
-                                // retorna apenas passageiros que têm marketer_users não vazio
                                 if (!selectedMarketerUsername) {
-                                    return Array.isArray(passenger.marketer_users) && passenger.marketer_users.length > 0;
+                                    // Sem filtro de marketer ativo -> mostra todos passageiros (sem filtro)
+                                    return true;
                                 }
 
-                                // Se há filtro, filtra só os passageiros com o username do marketer
+                                // Se filtro ativo -> mostra só passageiros que tenham marketer_users com username filtrado
                                 return Array.isArray(passenger.marketer_users) &&
                                     passenger.marketer_users.some(mu => mu.username === selectedMarketerUsername);
                             })
