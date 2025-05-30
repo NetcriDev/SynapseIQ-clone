@@ -1001,32 +1001,12 @@
                     //         return [];
                     //     }
                     // });
-
-                    // Se o usuário for admin, mostra todos os passageiros; se marketer, filtra só os assigned
-                    const isAdmin = "{{ user_role }}" === "admin";
-                    const selectedMarketerUsername = currentFilters.marketerId;
-
                     const passageiros = incidente.vehicles.flatMap((veiculo, vehicleIndex) => {
-                        if (!veiculo.passengers?.length) return [];
-
-                        return veiculo.passengers
-                            .filter(passenger => {
-                                if (isAdmin) return true; // Admin vê todos
-                                if (!selectedMarketerUsername) return false; // Não mostra nada se marketer não está selecionado
-                                // Só mostra se o marketer está associado ao passageiro
-                                if (Array.isArray(passenger.marketer_users)) {
-                                    return passenger.marketer_users.some(
-                                        mu => mu.username === selectedMarketerUsername
-                                    );
-                                }
-                                return false;
-                            })
-                            .map(passenger => ({
-                                ...passenger,
-                                vehicleIndex,
-                                vehicleId: veiculo.id
-                            }));
+                        return veiculo.passengers?.length ? 
+                            veiculo.passengers.map(p => ({ ...p, vehicleIndex, vehicleId: veiculo.id })) : [];
                     });
+
+
 
 
                     passageiros.forEach((motorista, passengerIndex) => {
