@@ -823,7 +823,9 @@
         </div>
     </div>
 
+    
     <script>
+
         // Função para buscar o status de admin
         async function checkAdminStatusAndInitialize() {
             try {
@@ -876,22 +878,19 @@
                 fetchData(); // Tentar buscar dados mesmo com erro no status, mas como não-admin
             }
         }
-    </script>
 
-    <script>
-
-            window.watsonAssistantChatOptions = {
-            integrationID: "aa6251d5-7615-46fd-9a89-dcce1a75b536", // The ID of this integration.
-            region: "us-south", // The region your integration is hosted in.
-            serviceInstanceID: "1fe70761-3293-40e8-94d4-3dab7c3a289a", // The ID of your service instance.
-            //   onLoad: async (instance) => { await instance.render(); 
-            onLoad: async (instance) => {
-                window.g_wa_instance = instance; // armazena globalmente
-                await instance.render();
-            },
-            headerConfig:{
-                showRestartButton: true
-            },// The ID of your service instance.
+        window.watsonAssistantChatOptions = {
+        integrationID: "aa6251d5-7615-46fd-9a89-dcce1a75b536", // The ID of this integration.
+        region: "us-south", // The region your integration is hosted in.
+        serviceInstanceID: "1fe70761-3293-40e8-94d4-3dab7c3a289a", // The ID of your service instance.
+        //   onLoad: async (instance) => { await instance.render(); 
+        onLoad: async (instance) => {
+            window.g_wa_instance = instance; // armazena globalmente
+            await instance.render();
+        },
+        headerConfig:{
+            showRestartButton: true
+        },// The ID of your service instance.
         };
         setTimeout(function(){
             const t=document.createElement('script');
@@ -923,7 +922,7 @@
             currentFilters.from = document.getElementById('filter-from').value;
             currentFilters.to = document.getElementById('filter-to').value;
             currentFilters.website = document.getElementById('filter-website').value;
-            
+
             // Apenas para admins: obtém o valor do dropdown de marketer
             if (IS_ADMIN) {
                 currentFilters.marketer_username = document.getElementById('filter-marketer').value;
@@ -945,18 +944,18 @@
             document.getElementById('filter-from').value = '';
             document.getElementById('filter-to').value = '';
             document.getElementById('filter-website').value = '';
-            
-            currentFilters = { from: '', to: '', website: '', marketer_username: '' }; 
+
+            currentFilters = { from: '', to: '', website: '', marketer_username: '' };
 
             if (IS_ADMIN) {
                 document.getElementById('filter-marketer').value = ''; // Reseta o dropdown de marketer
             }
 
             for (const filterName in booleanFilterStates) {
-                booleanFilterStates[filterName] = false; 
+                booleanFilterStates[filterName] = false;
                 const toggleElement = document.getElementById(`toggle-${filterName}`);
                 if (toggleElement) {
-                    toggleElement.checked = false; 
+                    toggleElement.checked = false;
                 }
             }
 
@@ -977,10 +976,10 @@
                         throw new Error(`HTTP error! status: ${response.status}`);
                     }
                     const marketers = await response.json();
-                    
+
                     // Limpa opções existentes, exceto a "All Marketers"
-                    marketerFilterDropdown.innerHTML = '<option value="">All Marketers</option>'; 
-                    
+                    marketerFilterDropdown.innerHTML = '<option value="">All Marketers</option>';
+
                     marketers.forEach(marketer => {
                         // AJUSTE AQUI: Confirme se o campo para exibir é 'username' ou 'name' e o valor é 'username' ou 'id'
                         const option = document.createElement('option');
@@ -1000,21 +999,21 @@
         }
 
         async function fetchData() {
-            const { from, to, website, marketer_username } = currentFilters; 
+            const { from, to, website, marketer_username } = currentFilters;
 
             const loadingDiv = document.getElementById("loading");
             const tableContainer = document.querySelector(".table-container");
             const tableBody = document.getElementById("table-body");
 
             document.getElementById("page-number").textContent = `Page ${currentPage}`;
-            
+
             tableContainer.style.display = "none";
             loadingDiv.style.display = "flex";
-            
+
             document.getElementById('select-all-current-page').checked = false;
 
-            let url = `/incident_search_proxy?page=${currentPage}&page_size=${pageSize}`; 
-            
+            let url = `/incident_search_proxy?page=${currentPage}&page_size=${pageSize}`;
+
             if (from) url += `&accident_from=${from}`;
             if (to) url += `&accident_to=${to}`;
             if (website) url += `&website=${encodeURIComponent(website)}`;
@@ -1028,20 +1027,20 @@
             // e o backend já sabe que não deve adicionar o filtro.
 
             for (const filterName in booleanFilterStates) {
-                if (booleanFilterStates[filterName]) { 
-                    url += `&${filterName}=True`; 
+                if (booleanFilterStates[filterName]) {
+                    url += `&${filterName}=True`;
                 }
             }
 
             try {
                 const response = await fetch(url);
-                
+
                 if (!response.ok) {
                     const errorBody = await response.text();
                     console.error('API Error Response Body:', errorBody);
                     throw new Error(`HTTP error! status: ${response.status}. Details: ${errorBody}`);
                 }
-                
+
                 currentApiData = await response.json();
 
                 tableBody.innerHTML = '';
@@ -1050,7 +1049,7 @@
                 currentApiData.items.forEach((incidente, incidentIndex) => { // Ainda espera 'items' aqui
                     const caminho = incidente.original_document_location?.replace(/\\/g, "/");
                     const partes = caminho?.split("/");
-                    const folder = partes?.[3] || "Texas"; 
+                    const folder = partes?.[3] || "Texas";
 
                     const passageiros = incidente.vehicles.flatMap((veiculo, vehicleIndex) => {
                         if (veiculo.passengers?.length) {
@@ -1101,7 +1100,7 @@
                             age: motorista.age || "--",
                             gender: motorista.gender || "--",
                             address: incidente.vehicles[motorista.vehicleIndex].owner_address || "--",
-                            state: incidente.state || "--", 
+                            state: incidente.state || "--",
                             city: incidente.city || "--",
                             reportPDFUrl: folder?.toLowerCase() === "minnesota" ?
                                 incidente.source_url :
@@ -1117,41 +1116,41 @@
                         const isChecked = selectedItemIds.has(rowUniqueId);
 
                         row.innerHTML = `
-                            <td><input type="checkbox" class="row-checkbox" data-row-id="${rowUniqueId}" ${isChecked ? 'checked' : ''}></td>
-                            <td><button onclick="toggleDetails('${rowUniqueId}-details', this)">▶</button></td>
-                            <td>${rowDataItem.reportNumber}</td>
-                            <td>${rowDataItem.crashDate}</td>
-                            <td>${rowDataItem.driverName}</td>
-                            <td>
-                                <div style="display: flex; align-items: center; gap: 8px;">
-                                    <div style="display: flex; flex-direction: column; gap: 4px;">
-                                        <input type="text" value="${motorista.phone2?.split(',')[0]?.trim() || ''}" data-passenger-id="${motorista.id || ''}" class="phoneInput phoneInputA" style="width: 110px; padding: 4px;"/>
-                                        <input type="text" value="${motorista.phone2?.split(',')[1]?.trim() || ''}" data-passenger-id="${motorista.id || ''}" class="phoneInput phoneInputB" style="width: 110px; padding: 4px;"/>
+                                <td><input type="checkbox" class="row-checkbox" data-row-id="${rowUniqueId}" ${isChecked ? 'checked' : ''}></td>
+                                <td><button onclick="toggleDetails('${rowUniqueId}-details', this)">▶</button></td>
+                                <td>${rowDataItem.reportNumber}</td>
+                                <td>${rowDataItem.crashDate}</td>
+                                <td>${rowDataItem.driverName}</td>
+                                <td>
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <div style="display: flex; flex-direction: column; gap: 4px;">
+                                            <input type="text" value="${motorista.phone2?.split(',')[0]?.trim() || ''}" data-passenger-id="${motorista.id || ''}" class="phoneInput phoneInputA" style="width: 110px; padding: 4px;"/>
+                                            <input type="text" value="${motorista.phone2?.split(',')[1]?.trim() || ''}" data-passenger-id="${motorista.id || ''}" class="phoneInput phoneInputB" style="width: 110px; padding: 4px;"/>
+                                        </div>
+                                        <div style="display: flex; flex-direction: column; gap: 4px;">
+                                            <button class="sendReportToChat" data-id="${rowDataItem.reportNumber}" title="Send report to chat" style="background: none; border: none; cursor: pointer; font-size: 1.2em; color: #34d0db;">
+                                                <i class="fas fa-phone"></i>
+                                            </button>
+                                            <button onclick="savePhoneNumber(this)" title="Save phone number" style="cursor: pointer; border: none; background: none;">
+                                                💾
+                                            </button>
+                                        </div>
                                     </div>
-                                    <div style="display: flex; flex-direction: column; gap: 4px;">
-                                        <button class="sendReportToChat" data-id="${rowDataItem.reportNumber}" title="Send report to chat" style="background: none; border: none; cursor: pointer; font-size: 1.2em; color: #34d0db;">
-                                            <i class="fas fa-phone"></i>
-                                        </button>
-                                        <button onclick="savePhoneNumber(this)" title="Save phone number" style="cursor: pointer; border: none; background: none;">
-                                            💾
-                                        </button>
-                                    </div>
-                                </div>
-                            </td>
-                            <td>${fullInsuranceDetailsHTML}</td> 
-                            <td>${fullCrashSeverityHTML}</td> 
-                            <td>${rowDataItem.age}</td>
-                            <td>${rowDataItem.gender}</td>
-                            <td>${rowDataItem.address}</td>
-                            <td>${rowDataItem.state}</td>
-                            <td>${rowDataItem.city}</td>
-                            <td>${
-                                folder.toLowerCase() === "texas"
-                                    ? '❌'
-                                    : `<a href="${rowDataItem.reportPDFUrl}" target="_blank">📄</a>`
-                            }</td>
-                            <td style="${getMilesCellStyle(rowDataItem.distanceFromClinic)}">${fullDistanceToClinicHTML}</td>
-                        `;
+                                </td>
+                                <td>${fullInsuranceDetailsHTML}</td>
+                                <td>${fullCrashSeverityHTML}</td>
+                                <td>${rowDataItem.age}</td>
+                                <td>${rowDataItem.gender}</td>
+                                <td>${rowDataItem.address}</td>
+                                <td>${rowDataItem.state}</td>
+                                <td>${rowDataItem.city}</td>
+                                <td>${
+                                    folder.toLowerCase() === "texas"
+                                        ? '❌'
+                                        : `<a href="${rowDataItem.reportPDFUrl}" target="_blank">📄</a>`
+                                }</td>
+                                <td style="${getMilesCellStyle(rowDataItem.distanceFromClinic)}">${fullDistanceToClinicHTML}</td>
+                            `;
 
                         const detailsRow = document.createElement("tr");
                         detailsRow.classList.add("details-row");
