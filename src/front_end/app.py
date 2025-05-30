@@ -104,47 +104,56 @@ with app.app_context():
 @requires_auth
 def incident_search_proxy():
     current_user_email = session[JWT_PAYLOAD_KEY].get('email')
-    
-    api_params = dict(request.args) 
-    
-    # Remove qualquer filtro de marketer_username vindo do frontend,
-    # pois sempre aplicaremos o filtro baseado no usuário logado.
+    api_params = dict(request.args)
     api_params.pop('marketer_username', None)
 
-    # Encontra o username do marketer correspondente ao e-mail do usuário logado
-    marketer_username_to_filter = _marketer_email_to_username_map.get(current_user_email)
-    
-    if marketer_username_to_filter:
-        # Se encontramos um username, adicionamos ele como filtro para a API externa
-        api_params['marketer_username'] = marketer_username_to_filter
-        print(f"DEBUG: Filtrando por marketer_username: {marketer_username_to_filter} (para o email: {current_user_email})")
-    else:
-        print(f"AVISO: Email do usuário logado ({current_user_email}) NÃO encontrado no mapeamento de marketers. Nenhum filtro de marketer será aplicado.")
-        # Se o email não for encontrado, a API externa pode retornar todos os dados
-        # ou nenhum dado, dependendo da sua implementação.
-        # Idealmente, todos os usuários que acessam esta rota devem estar mapeados como marketers.
-
     headers = {'ngrok-skip-browser-warning': 'true'}
+
+    # Verifica a role do usuário usando os dados da API de marketers
+    marketer_data = next(
+        (m for m in _marketer_email_to_username_map.items() if m[0] == current_user_email),
+        None
+    )
+
+    # Alternativamente, refazemos a chamada para garantir role atualizada
+    try:
+        marketers_response = requests.get(EXTERNAL_MARKETER_API_URL, headers=headers)
+        marketers_response.raise_for_status()
+        marketers = marketers_response.json()
+
+        user_info = next((m for m in marketers if m.get('email') == current_user_email), None)
+        if user_info:
+            role = user_info.get('role')
+            username = user_info.get('username')
+            print(f"DEBUG: Usuário '{current_user_email}' tem role '{role}'")
+
+            if role == "marketing":
+                api_params['marketer_username'] = username
+                print(f"DEBUG: Aplicando filtro de marketer_username: {username}")
+            elif role == "admin":
+                print("DEBUG: Usuário é admin. Nenhum filtro aplicado.")
+            else:
+                print(f"DEBUG: Role '{role}' não reconhecida. Nenhum filtro aplicado.")
+        else:
+            print(f"AVISO: Usuário {current_user_email} não encontrado na lista de marketers.")
+    except requests.exceptions.RequestException as e:
+        print(f"Erro ao buscar dados de usuários marketers: {e}")
+        return jsonify({"error": str(e)}), 500
+
     full_api_url = f"{EXTERNAL_SEARCH_API_BASE_URL}?{urlencode(api_params)}"
     print(f"DEBUG: Chamando API externa: {full_api_url}") 
     
-    response = requests.get(full_api_url, headers=headers)
-
     try:
-        response.raise_for_status() 
+        response = requests.get(full_api_url, headers=headers)
+        response.raise_for_status()
         all_incidents = response.json()
-        
         if not isinstance(all_incidents, list):
             print(f"AVISO: A API externa não retornou uma lista. Conteúdo: {all_incidents}")
-            all_incidents = [] # Garante que all_incidents seja sempre uma lista
-        # ***********************
-        
+            all_incidents = []
         return jsonify({'items': all_incidents}), response.status_code
     except requests.exceptions.RequestException as e:
         print(f"Erro ao buscar dados da API: {e}")
-        error_details = response.text if response else "Sem resposta detalhada"
-        print(f"Conteúdo da Resposta da API (em erro): {error_details}")
-        return jsonify({"error": str(e), "api_response": error_details}), response.status_code if response else 500
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/marketer-users') 
 @requires_auth
