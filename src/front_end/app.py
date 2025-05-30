@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request, session, redirect, url_for
+from flask import Flask, jsonify,render_template, request, session, redirect, url_for
 import requests # Importa a biblioteca para fazer requisições HTTP
 import os
 
@@ -36,7 +36,7 @@ def main_page():
     # Renderize seu main.html aqui
     # Você pode passar o status de admin diretamente para o template se preferir,
     # mas a abordagem com /user_is_admin é mais limpa para o JS
-    return app.send_static_file('main.html') # Assumindo que main.html está na pasta 'static'
+    return render_template('main.html') # Assumindo que main.html está na pasta 'static'
 
 # Endpoint que o JavaScript chama para verificar o status de admin
 @app.route('/user_is_admin')
