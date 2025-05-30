@@ -108,22 +108,9 @@ def incident_search_proxy():
     api_params.pop('marketer_username', None)
 
     headers = {'ngrok-skip-browser-warning': 'true'}
-
-    # ❗ Verificação do e-mail
-    if current_user_email not in _marketer_email_to_username_map:
-        return jsonify({
-            "error": "Unauthorized user",
-            "message": "Please request access to bpessoa@rel8ed.to"
-        }), 403
     print(f"DEBUG: Usuário autenticado: {current_user_email}")
 
-    # Verifica a role do usuário usando os dados da API de marketers
-    marketer_data = next(
-        (m for m in _marketer_email_to_username_map.items() if m[0] == current_user_email),
-        None
-    )
-
-    # Alternativamente, refazemos a chamada para garantir role atualizada
+    # Busca os dados de marketers para verificar a role do usuário
     try:
         marketers_response = requests.get(EXTERNAL_MARKETER_API_URL, headers=headers)
         marketers_response.raise_for_status()
@@ -144,10 +131,15 @@ def incident_search_proxy():
                 print(f"DEBUG: Role '{role}' não reconhecida. Nenhum filtro aplicado.")
         else:
             print(f"AVISO: Usuário {current_user_email} não encontrado na lista de marketers.")
+            return jsonify({
+                "error": "Unauthorized user",
+                "message": "Please request access to bpessoa@rel8ed.to"
+            }), 403
     except requests.exceptions.RequestException as e:
         print(f"Erro ao buscar dados de usuários marketers: {e}")
         return jsonify({"error": str(e)}), 500
 
+    # Monta a URL final com os parâmetros aplicados
     full_api_url = f"{EXTERNAL_SEARCH_API_BASE_URL}?{urlencode(api_params)}"
     print(f"DEBUG: Chamando API externa: {full_api_url}") 
     
@@ -162,6 +154,7 @@ def incident_search_proxy():
     except requests.exceptions.RequestException as e:
         print(f"Erro ao buscar dados da API: {e}")
         return jsonify({"error": str(e)}), 500
+
 
 @app.route('/marketer-users') 
 @requires_auth
