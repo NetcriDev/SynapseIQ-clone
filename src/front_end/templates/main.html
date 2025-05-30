@@ -996,18 +996,18 @@
                         if (!veiculo.passengers?.length) return [];
 
                         return veiculo.passengers
-                            return veiculo.passengers
-                                .filter(passenger => {
-                                    // Se não há filtro de marketer ativo,
-                                    // retorna apenas passageiros que têm marketer_users não vazio
-                                    if (!selectedMarketerUsername) {
-                                        return Array.isArray(passenger.marketer_users) && passenger.marketer_users.length > 0;
-                                    }
+                            
+                            .filter(passenger => {
+                                // Se não há filtro de marketer ativo,
+                                // retorna apenas passageiros que têm marketer_users não vazio
+                                if (!selectedMarketerUsername) {
+                                    return Array.isArray(passenger.marketer_users) && passenger.marketer_users.length > 0;
+                                }
 
-                                    // Se há filtro, filtra só os passageiros com o username do marketer
-                                    return Array.isArray(passenger.marketer_users) &&
-                                        passenger.marketer_users.some(mu => mu.username === selectedMarketerUsername);
-                                })
+                                // Se há filtro, filtra só os passageiros com o username do marketer
+                                return Array.isArray(passenger.marketer_users) &&
+                                    passenger.marketer_users.some(mu => mu.username === selectedMarketerUsername);
+                            })
 
                             .map(passenger => ({
                                 ...passenger,
