@@ -662,9 +662,7 @@
         </div>
     </header>
 
-    <h1>Welcome, <span id="user-role-display">Marketer</span>!</h1>
-    <p>Your Email: <span id="user-email">{{ user_email }}</span></p> 
-    <p><a href="/logout">Logout</a></p>
+    <h2 style="padding-left: 10px; margin: 2px;">Welcome, <span id="user-email">{{ user_email }}</span>!</h1>
 
     <main class="main-content">
         <div id="loading">
@@ -826,8 +824,13 @@
     </div>
 
     <script>
+         // Variável global para armazenar o status de admin
+        const IS_ADMIN = {{ is_admin | tojson }}; // Jinja2 injeta o valor booleano do Flask
+    </script>
 
-        window.watsonAssistantChatOptions = {
+    <script>
+
+            window.watsonAssistantChatOptions = {
             integrationID: "aa6251d5-7615-46fd-9a89-dcce1a75b536", // The ID of this integration.
             region: "us-south", // The region your integration is hosted in.
             serviceInstanceID: "1fe70761-3293-40e8-94d4-3dab7c3a289a", // The ID of your service instance.
@@ -870,8 +873,13 @@
             currentFilters.from = document.getElementById('filter-from').value;
             currentFilters.to = document.getElementById('filter-to').value;
             currentFilters.website = document.getElementById('filter-website').value;
-            // O marketerId do dropdown agora é um filtro SECUNDÁRIO, o principal vem do backend
-            currentFilters.marketerId = document.getElementById('filter-marketer').value; 
+            
+            // Apenas para admins: obtém o valor do dropdown de marketer
+            if (IS_ADMIN) {
+                currentFilters.marketer_username = document.getElementById('filter-marketer').value;
+            } else {
+                currentFilters.marketer_username = ''; // Garante que não envie esse filtro para não-admins
+            }
 
             for (const filterName in booleanFilterStates) {
                 const toggleElement = document.getElementById(`toggle-${filterName}`);
@@ -887,10 +895,12 @@
             document.getElementById('filter-from').value = '';
             document.getElementById('filter-to').value = '';
             document.getElementById('filter-website').value = '';
-            // Manter o dropdown de marketer como 'Todos os Marketers' no reset
-            document.getElementById('filter-marketer').value = ''; 
+            
+            currentFilters = { from: '', to: '', website: '', marketer_username: '' }; 
 
-            currentFilters = { from: '', to: '', website: '', marketerId: '' }; 
+            if (IS_ADMIN) {
+                document.getElementById('filter-marketer').value = ''; // Reseta o dropdown de marketer
+            }
 
             for (const filterName in booleanFilterStates) {
                 booleanFilterStates[filterName] = false; 
@@ -909,42 +919,38 @@
          * Este endpoint agora aponta para o seu Flask proxy.
          */
         async function populateMarketerFilterDropdown() {
-            const selectElement = document.getElementById('filter-marketer');
-            if (!selectElement) {
-                console.error("Elemento #filter-marketer não encontrado para popular o dropdown de filtro.");
-                return;
-            }
-            // Chama o endpoint no seu próprio Flask que fará o proxy para a API externa de marketers
-            const apiUrl = '/marketer-users'; 
-
-            selectElement.innerHTML = '<option value="">All Marketers</option><option value="" disabled>Carregando...</option>';
-
-            try {
-                const response = await fetch(apiUrl);
-                if (!response.ok) {
-                    throw new Error(`Erro na API ao buscar marketers: ${response.status}`);
-                }
-                const marketers = await response.json();
-
-                selectElement.innerHTML = '<option value="">All Marketers</option>'; 
-
-                marketers.forEach(marketer => {
+            const marketerFilterDropdown = document.getElementById('filter-marketer');
+            if (marketerFilterDropdown && IS_ADMIN) { // Apenas popule se for admin
+                try {
+                    const response = await fetch('/marketer-users');
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    const marketers = await response.json();
+                    
+                    // Limpa opções existentes, exceto a "All Marketers"
+                    marketerFilterDropdown.innerHTML = '<option value="">All Marketers</option>'; 
+                    
+                    marketers.forEach(marketer => {
+                        // AJUSTE AQUI: Confirme se o campo para exibir é 'username' ou 'name' e o valor é 'username' ou 'id'
+                        const option = document.createElement('option');
+                        option.value = marketer.username; // O valor que será enviado para o backend
+                        option.textContent = marketer.name || marketer.username; // O texto que aparece no dropdown
+                        marketerFilterDropdown.appendChild(option);
+                    });
+                } catch (error) {
+                    console.error('Erro ao carregar os marketers:', error);
+                    // Opcional: Mostrar uma mensagem de erro no dropdown
                     const option = document.createElement('option');
-                    option.value = marketer.username;
-                    option.textContent = marketer.full_name || marketer.username;
-                    selectElement.appendChild(option);
-                });
-
-            } catch (error) {
-                console.error('Falha ao carregar marketers para o filtro:', error);
-                selectElement.innerHTML = '<option value="">All Marketers</option><option value="" disabled>Erro ao carregar</option>';
+                    option.value = "";
+                    option.textContent = "Error loading marketers";
+                    marketerFilterDropdown.appendChild(option);
+                }
             }
         }
 
-
         async function fetchData() {
-            // Os filtros que serão enviados ao backend.
-            const { from, to, website } = currentFilters; 
+            const { from, to, website, marketer_username } = currentFilters; 
 
             const loadingDiv = document.getElementById("loading");
             const tableContainer = document.querySelector(".table-container");
@@ -963,9 +969,14 @@
             if (to) url += `&accident_to=${to}`;
             if (website) url += `&website=${encodeURIComponent(website)}`;
 
-            // O filtro de marketer_username não é adicionado aqui no frontend.
-            // O backend o adicionará automaticamente com base no usuário logado.
-            
+            // Adiciona o filtro de marketer_username SE houver um selecionado (e for admin)
+            // Ou se for não-admin, o backend vai adicionar o filtro automaticamente
+            if (marketer_username && IS_ADMIN) { // Apenas adiciona se admin e selecionou um marketer específico
+                url += `&marketer_username=${encodeURIComponent(marketer_username)}`;
+            }
+            // Se for admin e marketer_username for vazio, significa "todos os marketers",
+            // e o backend já sabe que não deve adicionar o filtro.
+
             for (const filterName in booleanFilterStates) {
                 if (booleanFilterStates[filterName]) { 
                     url += `&${filterName}=True`; 
@@ -976,7 +987,6 @@
                 const response = await fetch(url);
                 
                 if (!response.ok) {
-                    // Adicionando detalhes do erro para depuração
                     const errorBody = await response.text();
                     console.error('API Error Response Body:', errorBody);
                     throw new Error(`HTTP error! status: ${response.status}. Details: ${errorBody}`);
@@ -987,7 +997,7 @@
                 tableBody.innerHTML = '';
                 currentlyDisplayedData = [];
 
-                currentApiData.items.forEach((incidente, incidentIndex) => {
+                currentApiData.items.forEach((incidente, incidentIndex) => { // Ainda espera 'items' aqui
                     const caminho = incidente.original_document_location?.replace(/\\/g, "/");
                     const partes = caminho?.split("/");
                     const folder = partes?.[3] || "Texas"; 
@@ -1107,7 +1117,7 @@
                 addCheckboxListenersToCurrentPage();
                 updateSelectAllCheckboxState();
                 updateDownloadButton();
-                updateAssignButton();
+                updateAssignButton(); // Atualiza o estado do botão de atribuição
 
                 loadingDiv.style.display = "none";
                 tableContainer.style.display = "block";
@@ -1118,6 +1128,26 @@
                 tableContainer.style.display = "none";
             }
         }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const roleDisplay = document.getElementById('user-role-display');
+            const marketerFilterContainer = document.getElementById('marketer-filter-container');
+            const assignButton = document.getElementById('assign-selected-btn');
+
+            if (IS_ADMIN) {
+                roleDisplay.textContent = 'Admin';
+                marketerFilterContainer.style.display = 'block'; // Mostra o dropdown de marketer
+                assignButton.style.display = 'inline-block'; // Mostra o botão de atribuição
+                populateMarketerFilterDropdown(); // Popula o dropdown
+            } else {
+                roleDisplay.textContent = 'Marketer';
+                marketerFilterContainer.style.display = 'none'; // Garante que esteja escondido para marketers
+                assignButton.style.display = 'none'; // Garante que esteja escondido para marketers
+            }
+
+            fetchData();
+        });
+
         async function savePhoneNumber(button) {
             const row = button.closest("tr");
             const inputA = row.querySelector(".phoneInputA");
@@ -1254,14 +1284,17 @@
 
         function updateAssignButton() {
             const assignReportBtn = document.getElementById('assign-button');
-            if (assignReportBtn) {
+            const deleteAssignmentBtn = document.getElementById('delete-assignment-btn');
+            // O botão de atribuição só é habilitado se for admin E houver itens selecionados
+            if (IS_ADMIN && selectedItemIds.size > 0) {
+                assignButton.disabled = false;
                 const count = selectedItemIds.size; // Alterado aqui
                 assignReportBtn.textContent = `Assign Reports (${count})`;
                 assignReportBtn.disabled = count === 0;
-            }
-            const deleteAssignmentBtn = document.getElementById('delete-assignment-btn');
-            if (deleteAssignmentBtn) {
                 deleteAssignmentBtn.disabled = selectedItemIds.size === 0;
+            } else {
+                assignButton.disabled = true;
+                deleteAssignmentBtn.disabled =true;
             }
         }
 
