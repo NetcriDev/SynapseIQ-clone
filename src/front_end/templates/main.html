@@ -824,8 +824,48 @@
     </div>
 
     <script>
-         // Variável global para armazenar o status de admin
-        const IS_ADMIN = {{ is_admin | tojson }}; // Jinja2 injeta o valor booleano do Flask
+        // Declaração de IS_ADMIN como uma variável global (ou encapsulada, dependendo da sua arquitetura)
+        let IS_ADMIN = false; // Valor padrão, será atualizado após a requisição
+
+        // Função para buscar o status de admin
+        async function checkAdminStatusAndInitialize() {
+            try {
+                const response = await fetch('/user_is_admin');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                IS_ADMIN = data.is_admin; // Atualiza a variável global
+
+                // Agora que IS_ADMIN está definido, execute a lógica dependente dela
+                const roleDisplay = document.getElementById('user-role-display');
+                const marketerFilterContainer = document.getElementById('marketer-filter-container');
+                const assignButton = document.getElementById('assign-selected-btn');
+
+                if (IS_ADMIN) {
+                    roleDisplay.textContent = 'Admin';
+                    marketerFilterContainer.style.display = 'block';
+                    assignButton.style.display = 'inline-block';
+                    populateMarketerFilterDropdown();
+                } else {
+                    roleDisplay.textContent = 'Marketer';
+                    marketerFilterContainer.style.display = 'none';
+                    assignButton.style.display = 'none';
+                }
+
+                // Garanta que fetchData seja chamado APÓS IS_ADMIN ser definido
+                fetchData();
+
+            } catch (error) {
+                console.error('Erro ao verificar status de admin:', error);
+                // Lidar com o erro, talvez desabilitar funcionalidades de admin por segurança
+                const roleDisplay = document.getElementById('user-role-display');
+                if (roleDisplay) {
+                    roleDisplay.textContent = 'Erro ao carregar role';
+                }
+                fetchData(); // Tentar buscar dados mesmo com erro no status, mas como não-admin
+            }
+        }
     </script>
 
     <script>
@@ -1134,16 +1174,7 @@
             const marketerFilterContainer = document.getElementById('marketer-filter-container');
             const assignButton = document.getElementById('assign-selected-btn');
 
-            if (IS_ADMIN) {
-                roleDisplay.textContent = 'Admin';
-                marketerFilterContainer.style.display = 'block'; // Mostra o dropdown de marketer
-                assignButton.style.display = 'inline-block'; // Mostra o botão de atribuição
-                populateMarketerFilterDropdown(); // Popula o dropdown
-            } else {
-                roleDisplay.textContent = 'Marketer';
-                marketerFilterContainer.style.display = 'none'; // Garante que esteja escondido para marketers
-                assignButton.style.display = 'none'; // Garante que esteja escondido para marketers
-            }
+            checkAdminStatusAndInitialize(); // Inicia o processo
 
             fetchData();
         });

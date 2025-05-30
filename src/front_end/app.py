@@ -166,6 +166,16 @@ def get_marketer_users():
         print(f"Erro ao buscar usuários marketers para o dropdown: {e}")
         return jsonify({"error": str(e)}), response.status_code if response else 500
 
+@app.route('/user_is_admin')
+@requires_auth
+def user_is_admin():
+    """
+    Retorna um JSON indicando se o usuário logado possui a role 'admin'.
+    """
+    user_roles = session[JWT_PAYLOAD_KEY]['roles']
+    is_admin_status = 'admin' in user_roles
+    return jsonify({'is_admin': is_admin_status})
+
 
 # Auth functions (mantidas como estão)
 @app.route('/login')
