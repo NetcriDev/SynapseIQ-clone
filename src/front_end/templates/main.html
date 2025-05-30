@@ -1002,7 +1002,7 @@
                     //     }
                     // });
 
-                    // Se o usuário for admin, não filtra por marketer (mostra todos)
+                    // Se o usuário for admin, mostra todos os passageiros; se marketer, filtra só os assigned
                     const isAdmin = "{{ user_role }}" === "admin";
                     const selectedMarketerUsername = currentFilters.marketerId;
 
@@ -1011,17 +1011,14 @@
 
                         return veiculo.passengers
                             .filter(passenger => {
-                                // Admin vê todos, só filtra se NÃO for admin e marketer está selecionado
-                                if (isAdmin || !selectedMarketerUsername) return true;
-
-                                // Se o passageiro tem lista de marketers
+                                if (isAdmin) return true; // Admin vê todos
+                                if (!selectedMarketerUsername) return false; // Não mostra nada se marketer não está selecionado
+                                // Só mostra se o marketer está associado ao passageiro
                                 if (Array.isArray(passenger.marketer_users)) {
                                     return passenger.marketer_users.some(
                                         mu => mu.username === selectedMarketerUsername
                                     );
                                 }
-
-                                // Se não tiver marketers associados, exclui
                                 return false;
                             })
                             .map(passenger => ({
