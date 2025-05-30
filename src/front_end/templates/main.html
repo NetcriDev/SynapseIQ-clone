@@ -995,24 +995,28 @@
                     const passageiros = incidente.vehicles.flatMap((veiculo, vehicleIndex) => {
                         if (!veiculo.passengers?.length) return [];
 
+                        if (!selectedMarketerUsername) {
+                            // Sem filtro ativo, retorna todos passageiros direto (com vehicle info)
+                            return veiculo.passengers.map(passenger => ({
+                                ...passenger,
+                                vehicleIndex,
+                                vehicleId: veiculo.id
+                            }));
+                        }
+
+                        // Se filtro ativo, filtra apenas passageiros com marketer correspondente
                         return veiculo.passengers
-                            .filter(passenger => {
-                                if (!selectedMarketerUsername) {
-                                    // Sem filtro de marketer ativo -> mostra todos passageiros (sem filtro)
-                                    return true;
-                                }
-
-                                // Se filtro ativo -> mostra só passageiros que tenham marketer_users com username filtrado
-                                return Array.isArray(passenger.marketer_users) &&
-                                    passenger.marketer_users.some(mu => mu.username === selectedMarketerUsername);
-                            })
-
+                            .filter(passenger => 
+                                Array.isArray(passenger.marketer_users) &&
+                                passenger.marketer_users.some(mu => mu.username === selectedMarketerUsername)
+                            )
                             .map(passenger => ({
                                 ...passenger,
                                 vehicleIndex,
                                 vehicleId: veiculo.id
                             }));
                     });
+
 
                     passageiros.forEach((motorista, passengerIndex) => {
                         const nameParts = [motorista.first_name, motorista.middle_name, motorista.last_name]
