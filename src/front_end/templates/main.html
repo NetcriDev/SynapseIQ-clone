@@ -1112,7 +1112,18 @@
 
             } catch (error) {
                 console.error('Erro ao carregar os dados:', error);
-                loadingDiv.innerHTML = `<div style="color: red; text-align: center;">Erro ao carregar os dados. <br>(${error.message})</div>`;
+                
+                if (error.message.includes("403")) {
+                    loadingDiv.innerHTML = `<div style="color: red; text-align: center;">
+                        Access denied.<br>
+                        Please request access to <a href="mailto:bpessoa@rel8ed.to">bpessoa@rel8ed.to</a>.
+                    </div>`;
+                } else {
+                    loadingDiv.innerHTML = `<div style="color: red; text-align: center;">
+                        Erro ao carregar os dados. <br>(${error.message})
+                    </div>`;
+                }
+                
                 tableContainer.style.display = "none";
             }
         }
