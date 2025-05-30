@@ -1002,6 +1002,8 @@
                     //     }
                     // });
 
+                    // Se o usuário for admin, não filtra por marketer (mostra todos)
+                    const isAdmin = "{{ user_role }}" === "admin";
                     const selectedMarketerUsername = currentFilters.marketerId;
 
                     const passageiros = incidente.vehicles.flatMap((veiculo, vehicleIndex) => {
@@ -1009,8 +1011,8 @@
 
                         return veiculo.passengers
                             .filter(passenger => {
-                                // Se nenhum filtro de marketer está ativo, aceita todos passageiros (sem filtro)
-                                if (!selectedMarketerUsername) return true;
+                                // Admin vê todos, só filtra se NÃO for admin e marketer está selecionado
+                                if (isAdmin || !selectedMarketerUsername) return true;
 
                                 // Se o passageiro tem lista de marketers
                                 if (Array.isArray(passenger.marketer_users)) {
