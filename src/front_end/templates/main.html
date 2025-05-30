@@ -1284,17 +1284,14 @@
 
         function updateAssignButton() {
             const assignReportBtn = document.getElementById('assign-button');
-            const deleteAssignmentBtn = document.getElementById('delete-assignment-btn');
-            // O botão de atribuição só é habilitado se for admin E houver itens selecionados
-            if (IS_ADMIN && selectedItemIds.size > 0) {
-                assignButton.disabled = false;
+            if (assignReportBtn) {
                 const count = selectedItemIds.size; // Alterado aqui
                 assignReportBtn.textContent = `Assign Reports (${count})`;
                 assignReportBtn.disabled = count === 0;
+            }
+            const deleteAssignmentBtn = document.getElementById('delete-assignment-btn');
+            if (deleteAssignmentBtn) {
                 deleteAssignmentBtn.disabled = selectedItemIds.size === 0;
-            } else {
-                assignButton.disabled = true;
-                deleteAssignmentBtn.disabled =true;
             }
         }
 
