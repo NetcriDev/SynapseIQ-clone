@@ -91,10 +91,10 @@ def incident_search_proxy():
     api_params = dict(request.args) 
 
     headers = {'ngrok-skip-browser-warning': 'true'}
-    print(f"DEBUG: Usuário autenticado: {current_user_email}")
 
-    target_marketer_username = None # Variável para armazenar o username do marketer a ser filtrado
-    
+    target_marketer_username = None 
+    user_is_admin = False # Flag para facilitar a lógica de filtragem
+
     try:
         marketers_response = requests.get(EXTERNAL_MARKETER_API_URL, headers=headers)
         marketers_response.raise_for_status()
@@ -105,39 +105,29 @@ def incident_search_proxy():
         if user_info:
             role = user_info.get('role')
             username = user_info.get('username')
-            print(f"DEBUG: Usuário '{current_user_email}' tem role '{role}'")
 
             if role == "marketing":
                 target_marketer_username = username
-                print(f"DEBUG: Usuário marketing. Filtrando por seu próprio username: {target_marketer_username}")
             elif role == "admin":
-                # Se o admin selecionou um marketer no dropdown, use esse.
-                # Caso contrário, se o campo for vazio, significa "todos os marketers",
-                # então target_marketer_username permanecerá None.
+                user_is_admin = True
                 requested_marketer = api_params.get('marketer_username')
                 if requested_marketer:
                     target_marketer_username = requested_marketer
-                print(f"DEBUG: Usuário é admin. Filtro de marketer_username solicitado: {target_marketer_username if target_marketer_username else 'Nenhum'}")
             else:
-                print(f"DEBUG: Role '{role}' não reconhecida. Acesso negado.")
                 return jsonify({
                     "error": "Unauthorized role",
                     "message": "Your role is not recognized. Please contact support."
                 }), 403
         else:
-            print(f"AVISO: Usuário {current_user_email} não encontrado na lista de marketers.")
             return jsonify({
                 "error": "Unauthorized user",
                 "message": "Please request access to bpessoa@rel8ed.to"
             }), 403
     except requests.exceptions.RequestException as e:
-        print(f"Erro ao buscar dados de usuários marketers: {e}")
         return jsonify({"error": str(e)}), 500
 
-    # Remova 'marketer_username' dos parâmetros da API externa, pois faremos a filtragem interna
     api_params.pop('marketer_username', None) 
     full_api_url = f"{EXTERNAL_SEARCH_API_BASE_URL}?{urlencode(api_params)}"
-    print(f"DEBUG: Chamando API externa: {full_api_url}") 
     
     try:
         response = requests.get(full_api_url, headers=headers)
@@ -145,10 +135,8 @@ def incident_search_proxy():
         all_incidents = response.json()
         
         if not isinstance(all_incidents, list):
-            print(f"AVISO: A API externa não retornou uma lista. Conteúdo: {all_incidents}")
             all_incidents = []
 
-        # --- NOVA LÓGICA DE FILTRAGEM DOS PASSAGEIROS ---
         filtered_incidents = []
         for incident in all_incidents:
             if 'vehicles' in incident and isinstance(incident['vehicles'], list):
@@ -157,40 +145,42 @@ def incident_search_proxy():
                     if 'passengers' in vehicle and isinstance(vehicle['passengers'], list):
                         new_passengers = []
                         for passenger in vehicle['passengers']:
-                            # Verifique se o passageiro tem 'marketer_users' e se não está vazio
+                            # Garante que 'marketer_users' existe e é uma lista (pode estar vazia)
                             if 'marketer_users' in passenger and isinstance(passenger['marketer_users'], list):
                                 if target_marketer_username:
-                                    # Se um marketer específico é o alvo, filtre por ele
+                                    # Lógica para marketing OU admin com filtro específico
+                                    # Só adiciona se o marketer_username alvo estiver na lista do passageiro
+                                    found_match = False
                                     for marketer in passenger['marketer_users']:
                                         if marketer.get('username') == target_marketer_username:
                                             new_passengers.append(passenger)
-                                            break # Adiciona o passageiro e passa para o próximo
+                                            found_match = True
+                                            break 
                                 else:
-                                    # Se não há um marketer alvo (admin sem filtro), 
-                                    # inclua passageiros que NÃO TÊM marketer_users vazio
-                                    # (ou seja, que têm algum marketer atribuído)
-                                    if passenger['marketer_users']:
-                                        new_passengers.append(passenger)
-                            # Se não houver 'marketer_users' ou for [], não adicionar para 'marketing' ou 'admin' sem filtro
-                            # (A lógica do `target_marketer_username` já trata isso, mas é bom ser explícito)
+                                    # Lógica para admin com "All Marketers" selecionado
+                                    # Inclui o passageiro SE ele TIVER ALGUM marketer atribuído,
+                                    # ou seja, se a lista 'marketer_users' não estiver vazia.
+                                    # Se a intenção é ver *todos* os passageiros para admin (mesmo sem marketer), 
+                                    # você deve remover essa condição 'passenger['marketer_users']'
+                                    if user_is_admin: # Apenas admin entra aqui
+                                        if passenger['marketer_users']: # Só inclui se a lista de marketers não estiver vazia
+                                            new_passengers.append(passenger)
+                            # else: // Se você quiser incluir passageiros sem 'marketer_users' para admin "All Marketers",
+                            #     if user_is_admin and not target_marketer_username:
+                            #         new_passengers.append(passenger) # Adiciona se for admin e não há filtro específico
                         
-                        # Adicione o veículo apenas se ele tiver passageiros após a filtragem
                         if new_passengers:
                             new_vehicle = vehicle.copy()
                             new_vehicle['passengers'] = new_passengers
                             new_vehicles.append(new_vehicle)
                 
-                # Adicione o incidente apenas se ele tiver veículos com passageiros após a filtragem
                 if new_vehicles:
                     new_incident = incident.copy()
                     new_incident['vehicles'] = new_vehicles
                     filtered_incidents.append(new_incident)
-            # Se o incidente não tem 'vehicles' ou 'passengers' ele é ignorado por esta filtragem
-        # --- FIM DA NOVA LÓGICA DE FILTRAGEM ---
-
+        
         return jsonify({'items': filtered_incidents}), response.status_code
     except requests.exceptions.RequestException as e:
-        print(f"Erro ao buscar dados da API: {e}")
         return jsonify({"error": str(e)}), 500
 
 
@@ -204,7 +194,6 @@ def get_marketer_users():
         marketers = response.json()
         return jsonify(marketers), response.status_code
     except requests.exceptions.RequestException as e:
-        print(f"Erro ao buscar usuários marketers: {e}")
         return jsonify({"error": str(e)}), response.status_code if response else 500
 
 
