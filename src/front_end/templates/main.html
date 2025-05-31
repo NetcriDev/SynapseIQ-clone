@@ -990,25 +990,18 @@
                     const partes = caminho?.split("/");
                     const folder = partes?.[3] || "Texas"; 
 
-                    // const passageiros = incidente.vehicles.flatMap((veiculo, vehicleIndex) => {
-                    //     if (veiculo.passengers?.length) {
-                    //         return veiculo.passengers.map(p => ({
-                    //             ...p,
-                    //             vehicleIndex,
-                    //             vehicleId: veiculo.id
-                    //         }));
-                    //     } else {
-                    //         return [];
-                    //     }
-                    // });
                     const passageiros = incidente.vehicles.flatMap((veiculo, vehicleIndex) => {
-                        return veiculo.passengers?.length ? 
-                            veiculo.passengers.map(p => ({ ...p, vehicleIndex, vehicleId: veiculo.id })) : [];
+                        if (veiculo.passengers?.length) {
+                            return veiculo.passengers.map(p => ({
+                                ...p,
+                                vehicleIndex,
+                                vehicleId: veiculo.id
+                            }));
+                        } else {
+                            return [];
+                        }
                     });
-
-
-
-
+                    
                     passageiros.forEach((motorista, passengerIndex) => {
                         const nameParts = [motorista.first_name, motorista.middle_name, motorista.last_name]
                             .filter(part => part && part.trim() !== "");
