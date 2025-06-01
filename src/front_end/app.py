@@ -50,15 +50,15 @@ def requires_auth(f):
 @app.route('/')
 @requires_auth
 def main_page():
-    user_roles = session[JWT_PAYLOAD_KEY]['roles']
     user_id = session[JWT_PAYLOAD_KEY]['sub'] 
     user_email = session[JWT_PAYLOAD_KEY].get('email')
     
-    print("Roles:", user_roles)
     print("User ID:", user_id) 
     print("User Email:", user_email)
 
-    return render_template('main.html', user_id=user_id, user_email=user_email)
+    return render_template('main.html', 
+                           user_id=user_id, 
+                           user_email=user_email)
 
 EXTERNAL_SEARCH_API_BASE_URL = "https://8162-52-116-202-144.ngrok-free.app/incident/search"
 EXTERNAL_MARKETER_API_URL = "https://8162-52-116-202-144.ngrok-free.app/marketer-users/"
@@ -111,14 +111,14 @@ def incident_search_proxy():
                 print(f"DEBUG: Usuário marketing. Aplicando filtro forçado de marketer_username: {username}")
             elif role == "admin":
                 # Usuários admin podem usar o filtro do dropdown.
-                # Se 'marketer_username' foi enviado pelo frontend (dropdown), ele já está em api_params.
-                # Não fazemos nada se o valor é vazio, pois "All Marketers" significa não filtrar por marketer.
+                # Se 'marketer_username' NÃO foi enviado ou é vazio, significa "All Marketers".
+                # Nesse caso, NENHUM parâmetro marketer_username deve ser enviado para a API externa.
                 if 'marketer_username' in api_params and api_params['marketer_username'] == '':
                     api_params.pop('marketer_username') # Remove se for vazio (All Marketers)
+                # Se 'marketer_username' foi enviado e tem um valor, ele será usado.
                 print(f"DEBUG: Usuário é admin. Filtro de marketer_username: {api_params.get('marketer_username', 'Nenhum')}")
             else:
                 print(f"DEBUG: Role '{role}' não reconhecida. Nenhum filtro aplicado, mas deve ser tratado no frontend.")
-                # Considerar retornar um erro 403 aqui se roles não reconhecidas não devem ver dados
                 return jsonify({
                     "error": "Unauthorized role",
                     "message": "Your role is not recognized. Please contact support."
@@ -164,6 +164,42 @@ def get_marketer_users():
     except requests.exceptions.RequestException as e:
         print(f"Erro ao buscar usuários marketers: {e}")
         return jsonify({"error": str(e)}), response.status_code if response else 500
+    
+@app.route('/user-info')
+@requires_auth
+def get_user_info():
+    """
+    Retorna as informações do usuário logado (username e status de admin)
+    como JSON para o frontend.
+    """
+    current_user_email = session[JWT_PAYLOAD_KEY].get('email')
+    
+    current_user_username = None
+    is_admin_user = False
+
+    try:
+        headers = {'ngrok-skip-browser-warning': 'true'}
+        marketers_response = requests.get(EXTERNAL_MARKeter_API_URL, headers=headers)
+        marketers_response.raise_for_status()
+        marketers = marketers_response.json()
+        user_info = next((m for m in marketers if m.get('email') == current_user_email), None)
+        
+        if user_info:
+            current_user_username = user_info.get('username')
+            if user_info.get('role') == 'admin':
+                is_admin_user = True
+        else:
+            print(f"AVISO: Usuário {current_user_email} não encontrado na lista de marketers ao buscar user-info.")
+
+    except requests.exceptions.RequestException as e:
+        print(f"Erro ao buscar dados de usuários marketers para /user-info: {e}")
+        # Decida como lidar com isso: pode retornar False/None ou um erro HTTP.
+        # Por simplicidade, vamos retornar None/False em caso de erro na API de marketers.
+
+    return jsonify({
+        'current_user_username': current_user_username,
+        'is_admin_user': is_admin_user
+    })
 
 # Auth functions (mantidas como estão)
 @app.route('/login')

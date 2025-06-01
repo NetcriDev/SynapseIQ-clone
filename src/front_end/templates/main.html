@@ -941,7 +941,12 @@
 
 
         async function fetchData() {
-            // Os filtros que serão enviados ao backend.
+            // Verifique se as informações do usuário já foram carregadas
+            if (currentUserUsername === null && !isAdminUser) {
+                console.warn("fetchData chamado antes das informações do usuário estarem disponíveis. Aguardando...");
+                return; 
+            }
+
             const { from, to, website, marketerId} = currentFilters; 
 
             const loadingDiv = document.getElementById("loading");
@@ -961,9 +966,18 @@
             if (to) url += `&accident_to=${to}`;
             if (website) url += `&website=${encodeURIComponent(website)}`;
 
-            // O filtro de marketer_username não é adicionado aqui no frontend.
-            if (marketerId) url += `&marketer_username=${encodeURIComponent(marketerId)}`;
-            // O backend o adicionará automaticamente com base no usuário logado.
+            // O filtro de marketer_username agora é enviado do frontend APENAS se o usuário for admin
+            // e se um marketer específico for selecionado no dropdown.
+            // Se isAdminUser é true e marketerId é vazio, NENHUM parâmetro marketer_username é adicionado aqui,
+            // permitindo que o backend retorne todos os dados (sem filtro de marketer).
+            if (isAdminUser && marketerId) { 
+                url += `&marketer_username=${encodeURIComponent(marketerId)}`;
+            } else if (isAdminUser && marketerId === '') {
+                // Se admin selecionou "All Marketers", não adicione o parâmetro 'marketer_username'
+                // O backend entenderá isso como sem filtro de marketer.
+            }
+            // Para usuários de marketing, o backend JÁ aplica o filtro com o username deles.
+            // Então, não precisamos adicionar o filtro marketer_username aqui para usuários de marketing.
             
             for (const filterName in booleanFilterStates) {
                 if (booleanFilterStates[filterName]) { 
@@ -975,7 +989,6 @@
                 const response = await fetch(url);
                 
                 if (!response.ok) {
-                    // Adicionando detalhes do erro para depuração
                     const errorBody = await response.text();
                     console.error('API Error Response Body:', errorBody);
                     throw new Error(`HTTP error! status: ${response.status}. Details: ${errorBody}`);
@@ -986,12 +999,14 @@
                 tableBody.innerHTML = '';
                 currentlyDisplayedData = [];
 
+                // Remova COMPLETAMENTE a lógica de filteredPassengers aqui.
+                // A filtragem por marketer (e outras permissões) deve ser feita exclusivamente pelo backend.
                 currentApiData.items.forEach((incidente, incidentIndex) => {
                     const caminho = incidente.original_document_location?.replace(/\\/g, "/");
                     const partes = caminho?.split("/");
                     const folder = partes?.[3] || "Texas"; 
 
-                    const passageiros = incidente.vehicles.flatMap((veiculo, vehicleIndex) => {
+                    const allPassengersForIncident = incidente.vehicles.flatMap((veiculo, vehicleIndex) => {
                         if (veiculo.passengers?.length) {
                             return veiculo.passengers.map(p => ({
                                 ...p,
@@ -1003,7 +1018,14 @@
                         }
                     });
 
-                    passageiros.forEach((motorista, passengerIndex) => {
+                    // *** REMOVA ESTE BLOCO INTEIRO DE FILTRAGEM DE PASSAGEIROS NO FRONTEND ***
+                    // const filteredPassengers = allPassengersForIncident.filter(passenger => {
+                    //     // ... (toda a sua lógica de filtragem de passageiros aqui) ...
+                    // });
+                    // *** FIM DO BLOCO A SER REMOVIDO ***
+
+                    // Use allPassengersForIncident diretamente, pois o backend já filtrou.
+                    allPassengersForIncident.forEach((motorista, passengerIndex) => { 
                         const nameParts = [motorista.first_name, motorista.middle_name, motorista.last_name]
                             .filter(part => part && part.trim() !== "");
                         const driverName = nameParts.length > 0 ? nameParts.join(" ") : (motorista.name || "--");
@@ -1025,7 +1047,7 @@
                             incidente.nearest_hope_d ? `Miles: ${incidente.nearest_hope_d}` : '',
                             incidente.name_nearest_hope ? `Center: ${incidente.name_nearest_hope}` : ''
                         ].filter(Boolean).join('; ') || '--';
-                        const fullDistanceToClinicHTML = distanceFromClinic.replace(/; /g, '<br>');
+                        const fullDistanceToClinicHTML = distanceFromClinic.replace(/; /g, '<br');
 
                         const rowUniqueId = `incident_${incidente.report_number || incidentIndex}_vehicle_${motorista.vehicleIndex}_person_${passengerIndex}_${(driverName || 'unknown').replace(/\s+/g, '_')}`;
 
@@ -1117,6 +1139,8 @@
                 tableContainer.style.display = "none";
             }
         }
+
+        
         async function savePhoneNumber(button) {
             const row = button.closest("tr");
             const inputA = row.querySelector(".phoneInputA");
