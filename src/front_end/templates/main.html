@@ -849,6 +849,11 @@
         // selectedItemIds armazena os IDs únicos para gerenciar o estado dos checkboxes
         const selectedItemIds = new Set();
 
+        // Variáveis globais para armazenar o usuário atual e se é um admin
+        let currentUserUsername = null; // Or an empty string, depending on your default state
+        let isAdminUser = false; // Set to true if the user is an admin by default
+        
+        // Variável para armazenar o email do usuário atual
         let currentApiData = []; // Armazena os dados brutos da API para a página atual
         let currentlyDisplayedData = []; // Armazena os objetos de dados processados para a página atual
 
