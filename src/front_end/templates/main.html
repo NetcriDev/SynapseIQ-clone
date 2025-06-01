@@ -1544,12 +1544,12 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
+            fetchUserInfo();
             fetchData();
             updateDownloadButton(); // Inicializa o estado do botão
             updateAssignButton();
             populateMarketerFilterDropdown();
-            fetchUserInfo();
-
+            
            // Adicionar listeners para o modal de atribuição
             if (closeAssignBtn) {
                 closeAssignBtn.addEventListener('click', closeAssignModal);
