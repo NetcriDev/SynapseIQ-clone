@@ -53,6 +53,9 @@ def main_page():
     user_id = session[JWT_PAYLOAD_KEY]['sub'] 
     user_email = session[JWT_PAYLOAD_KEY].get('email')
     
+    # As informações do usuário agora serão buscadas pelo JavaScript via /user-info
+    # Não precisa mais passar current_user_username e is_admin_user aqui
+    
     print("User ID:", user_id) 
     print("User Email:", user_email)
 
@@ -111,14 +114,14 @@ def incident_search_proxy():
                 print(f"DEBUG: Usuário marketing. Aplicando filtro forçado de marketer_username: {username}")
             elif role == "admin":
                 # Usuários admin podem usar o filtro do dropdown.
-                # Se 'marketer_username' NÃO foi enviado ou é vazio, significa "All Marketers".
-                # Nesse caso, NENHUM parâmetro marketer_username deve ser enviado para a API externa.
+                # Se 'marketer_username' foi enviado pelo frontend (dropdown), ele já está em api_params.
+                # Não fazemos nada se o valor é vazio, pois "All Marketers" significa não filtrar por marketer.
                 if 'marketer_username' in api_params and api_params['marketer_username'] == '':
                     api_params.pop('marketer_username') # Remove se for vazio (All Marketers)
-                # Se 'marketer_username' foi enviado e tem um valor, ele será usado.
                 print(f"DEBUG: Usuário é admin. Filtro de marketer_username: {api_params.get('marketer_username', 'Nenhum')}")
             else:
                 print(f"DEBUG: Role '{role}' não reconhecida. Nenhum filtro aplicado, mas deve ser tratado no frontend.")
+                # Considerar retornar um erro 403 aqui se roles não reconhecidas não devem ver dados
                 return jsonify({
                     "error": "Unauthorized role",
                     "message": "Your role is not recognized. Please contact support."
@@ -179,7 +182,7 @@ def get_user_info():
 
     try:
         headers = {'ngrok-skip-browser-warning': 'true'}
-        marketers_response = requests.get(EXTERNAL_MARKeter_API_URL, headers=headers)
+        marketers_response = requests.get(EXTERNAL_MARKETER_API_URL, headers=headers)
         marketers_response.raise_for_status()
         marketers = marketers_response.json()
         user_info = next((m for m in marketers if m.get('email') == current_user_email), None)
