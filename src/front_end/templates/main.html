@@ -844,6 +844,10 @@
             document.head.appendChild(t);
         });
 
+        // Variáveis globais para armazenar o estado da tabela e dos filtros
+        let currentUserUsername = null; // Declare como let
+        let isAdminUser = false; // Declare como let
+
         // selectedItems agora armazena os objetos de dados das linhas selecionadas
         let selectedRowDataForExport = [];
         // selectedItemIds armazena os IDs únicos para gerenciar o estado dos checkboxes
@@ -863,6 +867,36 @@
             hasname: false,
             over18: false
         };
+
+        async function fetchUserInfo() {
+            try {
+                const response = await fetch('/user-info');
+                if (!response.ok) {
+                    const errorBody = await response.text();
+                    console.error('API Error Response Body for /user-info:', errorBody);
+                    throw new Error(`HTTP error! status: ${response.status}. Details: ${errorBody}`);
+                }
+                const userInfo = await response.json();
+                currentUserUsername = userInfo.current_user_username;
+                isAdminUser = userInfo.is_admin_user;
+                console.log("User Info Loaded:", { currentUserUsername, isAdminUser });
+
+                // Uma vez que as informações do usuário estão carregadas,
+                // você pode agora buscar os dados principais da tabela
+                // e popular o dropdown de marketers.
+                populateMarketerFilterDropdown(); // Depende de fetchUserInfo, pois admins veem todos.
+                fetchData(); // Chama a função que busca e exibe os dados da tabela
+                
+            } catch (error) {
+                console.error('Erro ao carregar informações do usuário:', error);
+                // Exiba uma mensagem de erro na UI se as informações do usuário não puderem ser carregadas
+                const loadingDiv = document.getElementById("loading");
+                loadingDiv.innerHTML = `<div style="color: red; text-align: center;">
+                                            Erro ao carregar informações do usuário. 
+                                            Por favor, tente novamente mais tarde. <br>(${error.message})
+                                        </div>`;
+            }
+        }
 
         function applyFilters() {
             currentFilters.from = document.getElementById('filter-from').value;
@@ -912,18 +946,18 @@
                 console.error("Elemento #filter-marketer não encontrado para popular o dropdown de filtro.");
                 return;
             }
-            // Chama o endpoint no seu próprio Flask que fará o proxy para a API externa de marketers
-            const apiUrl = '/marketer-users'; 
-
+            
+            // Mostra "Carregando..." enquanto busca
             selectElement.innerHTML = '<option value="">All Marketers</option><option value="" disabled>Carregando...</option>';
 
             try {
-                const response = await fetch(apiUrl);
+                const response = await fetch('/marketer-users'); // Seu endpoint de proxy de marketers
                 if (!response.ok) {
                     throw new Error(`Erro na API ao buscar marketers: ${response.status}`);
                 }
                 const marketers = await response.json();
 
+                // Limpa e adiciona a opção "All Marketers"
                 selectElement.innerHTML = '<option value="">All Marketers</option>'; 
 
                 marketers.forEach(marketer => {
@@ -933,15 +967,36 @@
                     selectElement.appendChild(option);
                 });
 
+                // Se o usuário não for admin, pré-seleciona seu próprio username
+                // E desabilita o dropdown para que ele não possa mudar.
+                if (!isAdminUser && currentUserUsername) {
+                    selectElement.value = currentUserUsername;
+                    selectElement.disabled = true;
+                    console.log(`Dropdown de marketer desabilitado e pré-selecionado para: ${currentUserUsername}`);
+                } else {
+                    selectElement.disabled = false; // Garante que esteja habilitado para admins
+                }
+
             } catch (error) {
                 console.error('Falha ao carregar marketers para o filtro:', error);
                 selectElement.innerHTML = '<option value="">All Marketers</option><option value="" disabled>Erro ao carregar</option>';
+                if (!isAdminUser) { // Se não for admin e deu erro, desabilitar de qualquer forma.
+                    selectElement.disabled = true;
+                }
             }
         }
 
 
         async function fetchData() {
-            // Os filtros que serão enviados ao backend.
+            // Verifique se as informações do usuário já foram carregadas
+            if (currentUserUsername === null && !isAdminUser) {
+                console.warn("fetchData chamado antes das informações do usuário estarem disponíveis. Aguardando...");
+                // Você pode adicionar uma lógica para atrasar ou chamar fetchUserInfo novamente,
+                // mas o ideal é que fetchData só seja chamado depois que fetchUserInfo resolver.
+                // Neste exemplo, `fetchUserInfo` já chama `fetchData` após carregar as infos.
+                return; 
+            }
+
             const { from, to, website, marketerId} = currentFilters; 
 
             const loadingDiv = document.getElementById("loading");
@@ -961,9 +1016,12 @@
             if (to) url += `&accident_to=${to}`;
             if (website) url += `&website=${encodeURIComponent(website)}`;
 
-            // O filtro de marketer_username não é adicionado aqui no frontend.
-            if (marketerId) url += `&marketer_username=${encodeURIComponent(marketerId)}`;
-            // O backend o adicionará automaticamente com base no usuário logado.
+            // O filtro de marketer_username agora é enviado do frontend apenas se o usuário for admin
+            // e se um marketer específico for selecionado no dropdown.
+            // Para usuários de marketing, o backend já aplica o filtro.
+            if (isAdminUser && marketerId) { // Só admins podem filtrar por marketerId aqui
+                url += `&marketer_username=${encodeURIComponent(marketerId)}`;
+            }
             
             for (const filterName in booleanFilterStates) {
                 if (booleanFilterStates[filterName]) { 
@@ -975,7 +1033,6 @@
                 const response = await fetch(url);
                 
                 if (!response.ok) {
-                    // Adicionando detalhes do erro para depuração
                     const errorBody = await response.text();
                     console.error('API Error Response Body:', errorBody);
                     throw new Error(`HTTP error! status: ${response.status}. Details: ${errorBody}`);
@@ -991,7 +1048,7 @@
                     const partes = caminho?.split("/");
                     const folder = partes?.[3] || "Texas"; 
 
-                    const passageiros = incidente.vehicles.flatMap((veiculo, vehicleIndex) => {
+                    const allPassengersForIncident = incidente.vehicles.flatMap((veiculo, vehicleIndex) => {
                         if (veiculo.passengers?.length) {
                             return veiculo.passengers.map(p => ({
                                 ...p,
@@ -1003,7 +1060,45 @@
                         }
                     });
 
-                    passageiros.forEach((motorista, passengerIndex) => {
+                    // Lógica de filtragem de passageiros no frontend (mantida como está)
+                    const filteredPassengers = allPassengersForIncident.filter(passenger => {
+                        if (!passenger.marketer_users || !Array.isArray(passenger.marketer_users)) {
+                            // Se não há marketer_users ou não é um array, este passageiro não tem marketer.
+                            // Admins podem vê-lo se "All Marketers" está selecionado, marketing não.
+                            // Se isAdminUser é true e currentFilters.marketerId é vazio, inclua-o.
+                            // Caso contrário, exclua-o.
+                            return isAdminUser && !currentFilters.marketerId;
+                        }
+
+                        const hasMarketerAssigned = passenger.marketer_users.some(
+                            marketer => marketer.username === currentUserUsername
+                        );
+
+                        if (isAdminUser) {
+                            // Admin:
+                            if (currentFilters.marketerId) {
+                                // Admin filtrou por um marketer específico no dropdown
+                                return passenger.marketer_users.some(
+                                    marketer => marketer.username === currentFilters.marketerId
+                                );
+                            } else {
+                                // Admin selecionou "All Marketers" (currentFilters.marketerId é vazio)
+                                // Inclui o passageiro se a lista marketer_users dele NÃO ESTÁ VAZIA,
+                                // ou se não tem marketer_users (que já foi tratado acima).
+                                return passenger.marketer_users.length > 0 || !passenger.marketer_users;
+                                
+                                // Se a intenção é que o admin veja *todos* os passageiros (mesmo sem marketer atribuído)
+                                // quando "All Marketers" é selecionado, mude a linha acima para:
+                                // return true; 
+                            }
+                        } else {
+                            // Usuário Marketing:
+                            return hasMarketerAssigned;
+                        }
+                    });
+
+
+                    filteredPassengers.forEach((motorista, passengerIndex) => {
                         const nameParts = [motorista.first_name, motorista.middle_name, motorista.last_name]
                             .filter(part => part && part.trim() !== "");
                         const driverName = nameParts.length > 0 ? nameParts.join(" ") : (motorista.name || "--");
@@ -1117,6 +1212,7 @@
                 tableContainer.style.display = "none";
             }
         }
+
         async function savePhoneNumber(button) {
             const row = button.closest("tr");
             const inputA = row.querySelector(".phoneInputA");
@@ -1452,6 +1548,7 @@
             updateDownloadButton(); // Inicializa o estado do botão
             updateAssignButton();
             populateMarketerFilterDropdown();
+            fetchUserInfo();
 
            // Adicionar listeners para o modal de atribuição
             if (closeAssignBtn) {

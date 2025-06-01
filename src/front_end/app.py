@@ -9,7 +9,7 @@ app = Flask(__name__)
 # Auth0 init (mantido como está)
 PROFILE_KEY = 'profile'
 JWT_PAYLOAD_KEY = 'jwt_payload'
-AUTH0_CLIENT_ID="RYJg443VO2t6cX9CrtD6F0PZgqEILQX"
+AUTH0_CLIENT_ID="RYJg443VOd2t6cX9CrtD6F0PZgqEILQX"
 AUTH0_DOMAIN="rel8edto.us.auth0.com"
 AUTH0_CLIENT_SECRET="HEo_aOEuEKiHHL9yKFG4F8uqL1ZvgGzW935t8Jp1J-jQ-IZLFYPeGVqI4KxAKFy6"
 AUTH0_CALLBACK_URL="https://synapse.rel8ed.to/callback"
@@ -50,16 +50,18 @@ def requires_auth(f):
 @app.route('/')
 @requires_auth
 def main_page():
-    user_roles = session[JWT_PAYLOAD_KEY]['roles']
     user_id = session[JWT_PAYLOAD_KEY]['sub'] 
     user_email = session[JWT_PAYLOAD_KEY].get('email')
     
-    print("Roles:", user_roles)
+    # As informações do usuário agora serão buscadas pelo JavaScript via /user-info
+    # Não precisa mais passar current_user_username e is_admin_user aqui
+    
     print("User ID:", user_id) 
     print("User Email:", user_email)
 
-    return render_template('main.html', user_id=user_id, user_email=user_email)
-
+    return render_template('main.html', 
+                           user_id=user_id, 
+                           user_email=user_email)
 
 EXTERNAL_SEARCH_API_BASE_URL = "https://8162-52-116-202-144.ngrok-free.app/incident/search"
 EXTERNAL_MARKETER_API_URL = "https://8162-52-116-202-144.ngrok-free.app/marketer-users/"
@@ -83,17 +85,14 @@ def update_marketer_email_map():
 with app.app_context():
     update_marketer_email_map()
 
-
 @app.route('/incident_search_proxy')
 @requires_auth
 def incident_search_proxy():
     current_user_email = session[JWT_PAYLOAD_KEY].get('email')
-    api_params = dict(request.args) 
+    api_params = dict(request.args) # Obtém todos os parâmetros da URL do frontend
 
     headers = {'ngrok-skip-browser-warning': 'true'}
-
-    target_marketer_username = None 
-    user_is_admin = False # Flag para facilitar a lógica de filtragem
+    print(f"DEBUG: Usuário autenticado: {current_user_email}")
 
     try:
         marketers_response = requests.get(EXTERNAL_MARKETER_API_URL, headers=headers)
@@ -105,88 +104,60 @@ def incident_search_proxy():
         if user_info:
             role = user_info.get('role')
             username = user_info.get('username')
+            print(f"DEBUG: Usuário '{current_user_email}' tem role '{role}'")
 
+            # LÓGICA DE FILTRAGEM DE MARKETER REVISADA
             if role == "marketing":
-                target_marketer_username = username
+                # Usuários de marketing SÓ podem ver seus próprios leads.
+                # Remove qualquer marketer_username que veio do frontend para garantir isso.
+                api_params['marketer_username'] = username
+                print(f"DEBUG: Usuário marketing. Aplicando filtro forçado de marketer_username: {username}")
             elif role == "admin":
-                user_is_admin = True
-                requested_marketer = api_params.get('marketer_username')
-                if requested_marketer:
-                    target_marketer_username = requested_marketer
+                # Usuários admin podem usar o filtro do dropdown.
+                # Se 'marketer_username' foi enviado pelo frontend (dropdown), ele já está em api_params.
+                # Não fazemos nada se o valor é vazio, pois "All Marketers" significa não filtrar por marketer.
+                if 'marketer_username' in api_params and api_params['marketer_username'] == '':
+                    api_params.pop('marketer_username') # Remove se for vazio (All Marketers)
+                print(f"DEBUG: Usuário é admin. Filtro de marketer_username: {api_params.get('marketer_username', 'Nenhum')}")
             else:
+                print(f"DEBUG: Role '{role}' não reconhecida. Nenhum filtro aplicado, mas deve ser tratado no frontend.")
+                # Considerar retornar um erro 403 aqui se roles não reconhecidas não devem ver dados
                 return jsonify({
                     "error": "Unauthorized role",
                     "message": "Your role is not recognized. Please contact support."
                 }), 403
         else:
+            print(f"AVISO: Usuário {current_user_email} não encontrado na lista de marketers.")
             return jsonify({
                 "error": "Unauthorized user",
                 "message": "Please request access to bpessoa@rel8ed.to"
             }), 403
     except requests.exceptions.RequestException as e:
+        print(f"Erro ao buscar dados de usuários marketers: {e}")
         return jsonify({"error": str(e)}), 500
 
-    api_params.pop('marketer_username', None) 
+    # Monta a URL final com os parâmetros aplicados
+    # `urlencode` já lida com parâmetros vazios e encodamento
     full_api_url = f"{EXTERNAL_SEARCH_API_BASE_URL}?{urlencode(api_params)}"
+    print(f"DEBUG: Chamando API externa: {full_api_url}") 
     
     try:
         response = requests.get(full_api_url, headers=headers)
         response.raise_for_status()
         all_incidents = response.json()
-        
         if not isinstance(all_incidents, list):
+            print(f"AVISO: A API externa não retornou uma lista. Conteúdo: {all_incidents}")
             all_incidents = []
-
-        filtered_incidents = []
-        for incident in all_incidents:
-            if 'vehicles' in incident and isinstance(incident['vehicles'], list):
-                new_vehicles = []
-                for vehicle in incident['vehicles']:
-                    if 'passengers' in vehicle and isinstance(vehicle['passengers'], list):
-                        new_passengers = []
-                        for passenger in vehicle['passengers']:
-                            # Garante que 'marketer_users' existe e é uma lista (pode estar vazia)
-                            if 'marketer_users' in passenger and isinstance(passenger['marketer_users'], list):
-                                if target_marketer_username:
-                                    # Lógica para marketing OU admin com filtro específico
-                                    # Só adiciona se o marketer_username alvo estiver na lista do passageiro
-                                    found_match = False
-                                    for marketer in passenger['marketer_users']:
-                                        if marketer.get('username') == target_marketer_username:
-                                            new_passengers.append(passenger)
-                                            found_match = True
-                                            break 
-                                else:
-                                    # Lógica para admin com "All Marketers" selecionado
-                                    # Inclui o passageiro SE ele TIVER ALGUM marketer atribuído,
-                                    # ou seja, se a lista 'marketer_users' não estiver vazia.
-                                    # Se a intenção é ver *todos* os passageiros para admin (mesmo sem marketer), 
-                                    # você deve remover essa condição 'passenger['marketer_users']'
-                                    if user_is_admin: # Apenas admin entra aqui
-                                        if passenger['marketer_users']: # Só inclui se a lista de marketers não estiver vazia
-                                            new_passengers.append(passenger)
-                            # else: // Se você quiser incluir passageiros sem 'marketer_users' para admin "All Marketers",
-                            #     if user_is_admin and not target_marketer_username:
-                            #         new_passengers.append(passenger) # Adiciona se for admin e não há filtro específico
-                        
-                        if new_passengers:
-                            new_vehicle = vehicle.copy()
-                            new_vehicle['passengers'] = new_passengers
-                            new_vehicles.append(new_vehicle)
-                
-                if new_vehicles:
-                    new_incident = incident.copy()
-                    new_incident['vehicles'] = new_vehicles
-                    filtered_incidents.append(new_incident)
-        
-        return jsonify({'items': filtered_incidents}), response.status_code
+        return jsonify({'items': all_incidents}), response.status_code
     except requests.exceptions.RequestException as e:
+        print(f"Erro ao buscar dados da API: {e}")
         return jsonify({"error": str(e)}), 500
-
 
 @app.route('/marketer-users') 
 @requires_auth
 def get_marketer_users():
+    # Essa rota já está correta para retornar a lista completa de marketers
+    # para popular o dropdown no frontend.
     headers = {'ngrok-skip-browser-warning': 'true'}
     try:
         response = requests.get(EXTERNAL_MARKETER_API_URL, headers=headers)
@@ -194,8 +165,44 @@ def get_marketer_users():
         marketers = response.json()
         return jsonify(marketers), response.status_code
     except requests.exceptions.RequestException as e:
+        print(f"Erro ao buscar usuários marketers: {e}")
         return jsonify({"error": str(e)}), response.status_code if response else 500
+    
+@app.route('/user-info')
+@requires_auth
+def get_user_info():
+    """
+    Retorna as informações do usuário logado (username e status de admin)
+    como JSON para o frontend.
+    """
+    current_user_email = session[JWT_PAYLOAD_KEY].get('email')
+    
+    current_user_username = None
+    is_admin_user = False
 
+    try:
+        headers = {'ngrok-skip-browser-warning': 'true'}
+        marketers_response = requests.get(EXTERNAL_MARKETER_API_URL, headers=headers)
+        marketers_response.raise_for_status()
+        marketers = marketers_response.json()
+        user_info = next((m for m in marketers if m.get('email') == current_user_email), None)
+        
+        if user_info:
+            current_user_username = user_info.get('username')
+            if user_info.get('role') == 'admin':
+                is_admin_user = True
+        else:
+            print(f"AVISO: Usuário {current_user_email} não encontrado na lista de marketers ao buscar user-info.")
+
+    except requests.exceptions.RequestException as e:
+        print(f"Erro ao buscar dados de usuários marketers para /user-info: {e}")
+        # Decida como lidar com isso: pode retornar False/None ou um erro HTTP.
+        # Por simplicidade, vamos retornar None/False em caso de erro na API de marketers.
+
+    return jsonify({
+        'current_user_username': current_user_username,
+        'is_admin_user': is_admin_user
+    })
 
 # Auth functions (mantidas como estão)
 @app.route('/login')
