@@ -1083,10 +1083,17 @@
                                 );
                             } else {
                                 // Admin selecionou "All Marketers" (currentFilters.marketerId é vazio)
-                                // Inclui *todos* os passageiros, mesmo os que não têm marketer atribuído.
-                                return true; //  <---  MUDEI AQUI
-                                // return passenger.marketer_users.length > 0 || !passenger.marketer_users; // Código original
+                                // Inclui o passageiro se a lista marketer_users dele NÃO ESTÁ VAZIA,
+                                // ou se não tem marketer_users (que já foi tratado acima).
+                                //return passenger.marketer_users.length > 0 || !passenger.marketer_users;
+                                
+                                // Se a intenção é que o admin veja *todos* os passageiros (mesmo sem marketer atribuído)
+                                // quando "All Marketers" é selecionado, mude a linha acima para:
+                                return true; 
                             }
+                        } else {
+                            // Usuário Marketing:
+                            return hasMarketerAssigned;
                         }
                     });
 
