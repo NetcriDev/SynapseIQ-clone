@@ -942,7 +942,7 @@
 
         async function fetchData() {
             // Os filtros que serão enviados ao backend.
-            const { from, to, website } = currentFilters; 
+            const { from, to, website, marketerId} = currentFilters; 
 
             const loadingDiv = document.getElementById("loading");
             const tableContainer = document.querySelector(".table-container");
@@ -962,6 +962,7 @@
             if (website) url += `&website=${encodeURIComponent(website)}`;
 
             // O filtro de marketer_username não é adicionado aqui no frontend.
+            if (marketerId) url += `&marketer_username=${encodeURIComponent(marketerId)}`;
             // O backend o adicionará automaticamente com base no usuário logado.
             
             for (const filterName in booleanFilterStates) {
