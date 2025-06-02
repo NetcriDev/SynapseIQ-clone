@@ -659,6 +659,11 @@
         #loading {
             display: none; /* Ou 'none' se você não quiser que ele apareça até que o JS o ative */
         }
+
+        /* No seu arquivo CSS ou em um bloco <style> */
+        #admin-actions {
+            display: none; /* Esconde por padrão */
+        }
     </style>
 </head>
 <body>
@@ -744,9 +749,9 @@
                     <button style="margin:0px" onclick="applyFilters()">Apply Filters</button>
                     <button style="margin:0px; background-color: #6c757d;" onclick="resetFilters()">Reset</button>
                 </div>
-                <div style="display: flex; flex-direction: column; gap:10px; margin-top: 30px; margin-left: 15px;">
-                    <button style="margin:0px" onclick="openAssignModal()" id="assign-button" style="margin-left: 10px;">Assign Reports (0)</button>
-                    <button style="margin:0px; background-color: #6c757d;" style="margin-left: 10px; " id="delete-assignment-btn" class="action-button" disabled>Delete Assignment</button>
+                <div style="display: flex; flex-direction: column; gap:10px; margin-top: 30px; margin-left: 15px;" id="admin-actions">
+                    <button style="margin:0px" onclick="openAssignModal()" id="assign-button">Assign Reports (0)</button>
+                    <button style="margin:0px; background-color: #6c757d;" id="delete-assignment-btn" class="action-button" disabled>Delete Assignment</button>
                 </div>
                 <button style="margin:0px; margin-top: 30px; margin-left: 15px;" onclick="downloadSelectedCSV()" id="download-csv-button" style="margin-left: 10px;">Download Reports (0)</button>
                     <i class="fas fa-upload" id="openUploadModalBtn" title="Upload Files" style="margin-left: auto; cursor: pointer; font-size: 2em;" onclick="openUploadModal()"></i>
@@ -1932,6 +1937,26 @@
             // Recarrega os dados da tabela para refletir as mudanças
             fetchData(); 
         }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            fetch('/user-info')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.is_admin_user) {
+                        // Se o usuário for admin, mostra a div com os botões
+                        document.getElementById('admin-actions').style.display = 'flex'; // ou 'block' dependendo do seu layout
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro ao buscar informações do usuário:', error);
+                    // Opcional: Tratar erros, talvez esconder os botões mesmo em caso de erro.
+                });
+        });
 
     </script>
 
