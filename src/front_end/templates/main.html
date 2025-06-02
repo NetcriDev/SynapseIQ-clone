@@ -913,6 +913,26 @@
             }
         }
 
+        document.addEventListener('DOMContentLoaded', function() {
+            fetch('/user-info')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.is_admin_user) {
+                        // Se o usuário for admin, mostra a div com os botões
+                        document.getElementById('admin-actions').style.display = 'flex'; // ou 'block' dependendo do seu layout
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro ao buscar informações do usuário:', error);
+                    // Opcional: Tratar erros, talvez esconder os botões mesmo em caso de erro.
+                });
+        });
+
         function applyFilters() {
             currentFilters.from = document.getElementById('filter-from').value;
             currentFilters.to = document.getElementById('filter-to').value;
@@ -1937,26 +1957,6 @@
             // Recarrega os dados da tabela para refletir as mudanças
             fetchData(); 
         }
-
-        document.addEventListener('DOMContentLoaded', function() {
-            fetch('/user-info')
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    if (data.is_admin_user) {
-                        // Se o usuário for admin, mostra a div com os botões
-                        document.getElementById('admin-actions').style.display = 'flex'; // ou 'block' dependendo do seu layout
-                    }
-                })
-                .catch(error => {
-                    console.error('Erro ao buscar informações do usuário:', error);
-                    // Opcional: Tratar erros, talvez esconder os botões mesmo em caso de erro.
-                });
-        });
 
     </script>
 
