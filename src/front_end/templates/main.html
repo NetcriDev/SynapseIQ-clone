@@ -859,6 +859,16 @@
             document.head.appendChild(t);
         });
 
+        // Mapeamento de estados para abreviações
+        const stateAbbreviations = {
+            "Kansas": "KS",
+            "Minnesota": "MN",
+            "Winston Salem": "WS", // Se você quiser abreviar Winston Salem também
+            "Texas": "TX",
+            "Ohio": "OH"
+            // Adicione outros estados conforme necessário
+        };
+
         // Variáveis globais para armazenar o estado da tabela e dos filtros
         let currentUserUsername = null; // Declare como let
         let isAdminUser = false; // Declare como let
@@ -1184,6 +1194,13 @@
 
                         const rowUniqueId = `incident_${incidente.report_number || incidentIndex}_vehicle_${motorista.vehicleIndex}_person_${passengerIndex}_${(driverName || 'unknown').replace(/\s+/g, '_')}`;
 
+                        // --- AQUI É ONDE VOCÊ IRÁ ADICIONAR A LÓGICA DE ABREVIAÇÃO ---
+                        // Primeiro, obtenha o estado do item de dado.
+                        const rawState = incidente.state || '--';
+                        // Use o mapeamento para obter a abreviação, ou o nome original se não houver mapeamento.
+                        const displayState = stateAbbreviations[rawState] || rawState;
+                        // --- FIM DA LÓGICA DE ABREVIAÇÃO ---
+
                         const rowDataItem = {
                             id: rowUniqueId,
                             reportNumber: incidente.report_number || '--',
@@ -1195,7 +1212,7 @@
                             age: motorista.age || "--",
                             gender: motorista.gender || "--",
                             address: incidente.vehicles[motorista.vehicleIndex].owner_address || "--",
-                            state: incidente.state || "--", 
+                            state: displayState, // <-- ATUALIZADO AQUI PARA USAR displayState
                             city: incidente.city || "--",
                             reportPDFUrl: folder?.toLowerCase() === "minnesota" ?
                                 incidente.source_url :
