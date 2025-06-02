@@ -155,16 +155,27 @@ def incident_search_proxy():
         print(f"Error fetching data from API: {e}")
         return jsonify({"error": str(e)}), 500
 
-@app.route('/marketer-users') 
+@app.route('/marketer-users')
 @requires_auth
 def get_marketer_users():
-    # This route returns the full list of marketers to populate the dropdown on the frontend.
+    """
+    This route returns the list of marketers (excluding admins)
+    to populate the dropdown on the frontend.
+    """
     headers = {'ngrok-skip-browser-warning': 'true'}
     try:
         response = requests.get(EXTERNAL_MARKETER_API_URL, headers=headers)
         response.raise_for_status()
-        marketers = response.json()
-        return jsonify(marketers), response.status_code
+        all_marketers = response.json()
+
+        # Filter out users with the role 'admin'
+        # Assuming your EXTERNAL_MARKETER_API_URL returns a 'role' key for each user
+        non_admin_marketers = [
+            marketer for marketer in all_marketers
+            if marketer.get('role') != 'admin'
+        ]
+
+        return jsonify(non_admin_marketers), response.status_code
     except requests.exceptions.RequestException as e:
         print(f"Error fetching marketer users: {e}")
         return jsonify({"error": str(e)}), response.status_code if response else 500
