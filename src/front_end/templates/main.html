@@ -914,25 +914,50 @@
         }
 
         document.addEventListener('DOMContentLoaded', function() {
+            // Esconder os botões por padrão no carregamento da página
+            const adminActionsDiv = document.getElementById('admin-actions');
+            if (adminActionsDiv) {
+                adminActionsDiv.style.display = 'none';
+            }
+
+            // Primeiro, buscar as informações do usuário
             fetch('/user-info')
                 .then(response => {
                     if (!response.ok) {
+                        // Se a resposta não for OK (ex: 403 Forbidden), você pode tratar aqui
                         throw new Error(`HTTP error! status: ${response.status}`);
                     }
                     return response.json();
                 })
                 .then(data => {
+                    console.log("Informações do usuário carregadas:", data); // Para depuração
+                    // 1. Mostrar/Esconder botões de administrador
                     if (data.is_admin_user) {
-                        // Se o usuário for admin, mostra a div com os botões
-                        document.getElementById('admin-actions').style.display = 'flex'; // ou 'block' dependendo do seu layout
+                        if (adminActionsDiv) {
+                            adminActionsDiv.style.display = 'flex'; // Mostra os botões para admins
+                        }
                     }
+
+                    // 2. Chamar fetchData APENAS DEPOIS que a informação do usuário estiver carregada
+                    // E você pode passar a role do usuário para fetchData se necessário para lógicas futuras
+                    fetchData(data.is_admin_user); // Passa a informação se é admin para fetchData
                 })
                 .catch(error => {
                     console.error('Erro ao buscar informações do usuário:', error);
-                    // Opcional: Tratar erros, talvez esconder os botões mesmo em caso de erro.
+                    // Em caso de erro ao buscar as informações do usuário,
+                    // talvez você queira esconder os botões de admin e
+                    // ainda assim tentar carregar os dados (ou não, dependendo da sua lógica de segurança)
+                    fetchData(false); // Assume que não é admin em caso de erro e tenta carregar os dados
                 });
-        });
 
+            // Certifique-se de que a função fetchData receba um parâmetro, se for usá-lo
+            // Exemplo de como sua função fetchData pode parecer (adapte conforme necessário)
+            // function fetchData(isAdmin) {
+            //     console.log(`fetchData chamado. Usuário é admin: ${isAdmin}`);
+            //     // Sua lógica de carregamento de dados aqui
+            // }
+        });
+        
         function applyFilters() {
             currentFilters.from = document.getElementById('filter-from').value;
             currentFilters.to = document.getElementById('filter-to').value;
