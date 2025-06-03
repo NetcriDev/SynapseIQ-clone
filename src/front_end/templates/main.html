@@ -1797,40 +1797,26 @@
          * Busca a lista de marketers da API e popula o dropdown DENTRO DO MODAL.
          */
         async function populateMarketersDropdown() {
-            // Mude a URL para apontar para o seu próprio endpoint Flask!
-            // Seu Flask irá então chamar a API externa e filtrar os admins.
-            const apiUrl = '/marketer-users'; 
-            const marketerSelect = document.getElementById('assign-marketer-select'); // Assumindo este ID para o dropdown da modal
-
-            if (!marketerSelect) {
-                console.error("Elemento 'assign-marketer-select' não encontrado.");
-                return;
-            }
-
+            const apiUrl = 'https://8162-52-116-202-144.ngrok-free.app/marketer-users/';
             marketerSelect.innerHTML = '<option value="" disabled>Carregando...</option>'; // Feedback visual
 
             try {
-                const response = await fetch(apiUrl); // Chamando seu Flask backend
-                if (!response.ok) throw new Error(`Erro ao carregar marketers do backend: ${response.status}`);
+                const response = await fetch(apiUrl);
+                if (!response.ok) throw new Error(`Erro na API: ${response.status}`);
                 
                 const marketers = await response.json();
-                marketerSelect.innerHTML = '<option value="" disabled selected>Select a Marketer</option>'; // Opção padrão
+                marketerSelect.innerHTML = '<option value="" disabled selected>Select a Marketer</option>';
 
                 marketers.forEach(marketer => {
                     const option = document.createElement('option');
-                    // Use o 'username' se for isso que seu backend Flask retorna após o filtro.
-                    // Se o seu backend ainda retorna 'id' e 'full_name' do jeito que o frontend espera, mantenha.
-                    // Pelo seu código Flask anterior, o backend retorna a lista filtrada da API externa,
-                    // então `marketer.username` e `marketer.email` (se você usa o email) devem estar disponíveis.
-                    // O seu backend já usa 'username' para filtrar, então é mais consistente usar 'username' aqui também.
-                    option.value = marketer.username; 
-                    option.textContent = marketer.full_name || marketer.username || marketer.email; // Mostre o nome completo, ou username, ou email
+                    option.value = marketer.id;
+                    option.textContent = marketer.full_name || marketer.username;
                     marketerSelect.appendChild(option);
                 });
 
             } catch (error) {
-                console.error('Falha ao carregar marketers para o dropdown de atribuição:', error);
-                marketerSelect.innerHTML = '<option value="" disabled>Erro ao carregar marketers</option>';
+                console.error('Failed to load marketers:', error);
+                marketerSelect.innerHTML = '<option value="" disabled>Error loading</option>';
             }
         }
 
@@ -1843,7 +1829,7 @@
 
             // 1. Validação
             if (!marketerId) {
-                alert('Please select a marketer.');
+                alert('Por favor, selecione um marketer.');
                 return;
             }
 
@@ -1857,13 +1843,13 @@
             });
 
             if (passengerIdsToAssign.length === 0) {
-                alert('Error: Not possible to find the data needed.');
+                alert('Erro: Não foi possível encontrar os dados dos passageiros selecionados.');
                 return;
             }
             
             // 3. Feedback visual e desativação do botão
             confirmAssignBtn.disabled = true;
-            assignStatus.textContent = 'Processing...';
+            assignStatus.textContent = 'Atribuindo...';
             assignStatus.style.color = 'orange';
 
             const apiUrl = 'https://8162-52-116-202-144.ngrok-free.app/assign-marketer-users/';
@@ -1885,11 +1871,11 @@
                         successCount++;
                     } else {
                         errorCount++;
-                        console.error(`Not able to assign ${passengerId}:`, await response.text());
+                        console.error(`Falha ao atribuir passageiro ${passengerId}:`, await response.text());
                     }
                 } catch (error) {
                     errorCount++;
-                    console.error(`Network error while assigning ${passengerId}:`, error);
+                    console.error(`Erro de rede ao atribuir passageiro ${passengerId}:`, error);
                 }
             }
 
