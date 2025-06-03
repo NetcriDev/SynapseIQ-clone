@@ -796,14 +796,13 @@
             <h2>Upload Files</h2>
             <br>
             <div id="uploadFormContent">
-                <p>Select one or more files to upload:</p>
                 <form id="fileUploadForm" enctype="multipart/form-data">
-                    
-                    <label for="stateSelect">Select State for Upload:</label>
+                    <p>Select a state:</p>
                     <select id="stateSelect" style="width: 100%; padding: 8px; margin-bottom: 15px;">
                         <option value="" disabled selected>Select State</option>
                         <option value="Ohio">Ohio</option>
                         </select>
+                    <p>Select one file to upload:</p>
                     <input type="file" id="fileInput" name="files[]" multiple accept=".pdf,.doc,.docx,.txt,.csv">
                     <br><br>
                     <button type="submit" id="uploadBtn">Upload</button>
