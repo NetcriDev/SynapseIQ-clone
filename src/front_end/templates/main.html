@@ -1800,10 +1800,10 @@
             // Mude a URL para apontar para o seu próprio endpoint Flask!
             // Seu Flask irá então chamar a API externa e filtrar os admins.
             const apiUrl = '/marketer-users'; 
-            const marketerSelect = document.getElementById('assign-button'); // Assumindo este ID para o dropdown da modal
+            const marketerSelect = document.getElementById('modal-marketer-select'); // Assumindo este ID para o dropdown da modal
 
             if (!marketerSelect) {
-                console.error("Elemento 'assign-button' não encontrado.");
+                console.error("Elemento 'modal-marketer-select' não encontrado.");
                 return;
             }
 
