@@ -1855,10 +1855,10 @@
          */
         async function populateMarketersDropdown() {
             const apiUrl = '/marketer-users'; // Aponta para o seu backend Flask
-            const marketerSelect = document.getElementById('assign-marketer-select');
+            const marketerSelect = document.getElementById('modal-marketer-select');
 
             if (!marketerSelect) {
-                console.error("'assign-marketer-select' element not found.");
+                console.error("'modal-marketer-select' element not found.");
                 return;
             }
 
