@@ -1854,40 +1854,35 @@
          * Busca a lista de marketers da API e popula o dropdown DENTRO DO MODAL.
          */
         async function populateMarketersDropdown() {
-            // Mude a URL para apontar para o seu próprio endpoint Flask!
-            // Seu Flask irá então chamar a API externa e filtrar os admins.
-            const apiUrl = '/marketer-users'; 
-            const marketerSelect = document.getElementById('modal-marketer-select'); // Assumindo este ID para o dropdown da modal
+            const apiUrl = '/marketer-users'; // Aponta para o seu backend Flask
+            const marketerSelect = document.getElementById('assign-marketer-select');
 
             if (!marketerSelect) {
-                console.error("Elemento 'modal-marketer-select' não encontrado.");
+                console.error("'assign-marketer-select' element not found.");
                 return;
             }
 
-            marketerSelect.innerHTML = '<option value="" disabled>Carregando...</option>'; // Feedback visual
+            marketerSelect.innerHTML = '<option value="" disabled>Loading...</option>';
 
             try {
-                const response = await fetch(apiUrl); // Chamando seu Flask backend
-                if (!response.ok) throw new Error(`Erro ao carregar marketers do backend: ${response.status}`);
+                const response = await fetch(apiUrl);
+                if (!response.ok) throw new Error(`Error loading from backend: ${response.status}`);
                 
                 const marketers = await response.json();
-                marketerSelect.innerHTML = '<option value="" disabled selected>Select a Marketer</option>'; // Opção padrão
+                marketerSelect.innerHTML = '<option value="" disabled selected>Select a Marketer</option>';
 
                 marketers.forEach(marketer => {
                     const option = document.createElement('option');
-                    // Use o 'username' se for isso que seu backend Flask retorna após o filtro.
-                    // Se o seu backend ainda retorna 'id' e 'full_name' do jeito que o frontend espera, mantenha.
-                    // Pelo seu código Flask anterior, o backend retorna a lista filtrada da API externa,
-                    // então `marketer.username` e `marketer.email` (se você usa o email) devem estar disponíveis.
-                    // O seu backend já usa 'username' para filtrar, então é mais consistente usar 'username' aqui também.
-                    option.value = marketer.username; 
-                    option.textContent = marketer.full_name || marketer.username || marketer.email; // Mostre o nome completo, ou username, ou email
+                    // *** MUDANÇA CRÍTICA AQUI: Use marketer.id novamente para o valor ***
+                    option.value = marketer.id; 
+                    // O texto exibido para o usuário ainda pode ser o nome completo ou username
+                    option.textContent = marketer.full_name || marketer.username || marketer.email; 
                     marketerSelect.appendChild(option);
                 });
 
             } catch (error) {
-                console.error('Falha ao carregar marketers para o dropdown de atribuição:', error);
-                marketerSelect.innerHTML = '<option value="" disabled>Erro ao carregar marketers</option>';
+                console.error('Failed loading marketers:', error);
+                marketerSelect.innerHTML = '<option value="" disabled>Error loading marketers</option>';
             }
         }
 
