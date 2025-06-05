@@ -30,3 +30,4 @@ python-dotenv
 rapidocr_onnxruntime==1.4.4
 passlib==1.7.4
 pydantic[email]
+python-multipart==0.0.20

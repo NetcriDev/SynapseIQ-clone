@@ -1,6 +1,7 @@
 import psycopg2
 import os
 import psycopg2.extras
+import shutil
 from typing import List, Optional, Dict
 from datetime import datetime, time
 from config.config import get_connection
@@ -12,12 +13,16 @@ from psycopg2.extras import RealDictCursor
 from src.models.models_api import CrashReportWithPassengers  # Define este modelo pydantic si no existe aún
 from src.api.notification_manager import connected_clients
 from src.services.ibm_fundational_models import WatsonXModelHandler
+from src.utils.ohio_extraction import extract_traffic_data_from_pdf
+from src.database.csv_ohio_into_db import insert_data_from_dataframe
 from dotenv import load_dotenv
 from pathlib import Path
 from math import ceil
 from passlib.context import CryptContext
 from fastapi import (FastAPI, 
-                     Query, 
+                     Query,
+                     File,
+                     UploadFile,
                      HTTPException, 
                      Response, 
                      Depends, 
@@ -34,7 +39,8 @@ from src.models.models_api import (
     ChatResponse,
     MarketerUserCreate,
     MarketerUserRead,
-    AssignMarketerUser
+    AssignMarketerUser,
+    AssignmentUpdateRequest
 )
 
 # Ruta absoluta o relativa al archivo .env
@@ -165,8 +171,7 @@ def view_incident_pdf(report_number: str, response: Response = None):
     )
 
 
-# Endpoint: Filtrado múltiple de incident_reports con paginación
-@app.get("/incident/search", response_model=List[IncidentReport])
+@app.get("/incident/search")
 def search_incidents(
     website: Optional[str] = None,
     generation_from: Optional[str] = None,
@@ -187,41 +192,48 @@ def search_incidents(
     page_size: int = 15,
     response: Response = None
 ):
-    conn = get_connection()
+    conn = psycopg2.connect(
+        dbname="crash_records_001",
+        user="synapseiq",
+        password="SynapseIQ$2025",
+        host="localhost",
+        port="5432"
+    )
     cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
     filters = []
     params = []
 
+    # --- Filtros sobre incident_reports ---
     if website:
-        filters.append("website ILIKE %s")
-        params.append(f"%{website}%")   
+        filters.append("ir.website ILIKE %s")
+        params.append(f"%{website}%")
     if generation_from:
-        filters.append("generation_date >= %s")
+        filters.append("ir.generation_date >= %s")
         params.append(parse_date(generation_from))
     if generation_to:
-        end_of_day = datetime.combine(parse_date(generation_to), time(23, 59, 59))
-        filters.append("generation_date <= %s")
-        params.append(end_of_day)
+        filters.append("ir.generation_date <= %s")
+        params.append(datetime.combine(parse_date(generation_to), time(23, 59, 59)))
     if accident_from:
-        filters.append("accident_datetime >= %s")
+        filters.append("ir.accident_datetime >= %s")
         params.append(parse_date(accident_from))
     if accident_to:
-        end_of_day = datetime.combine(parse_date(accident_to), time(23, 59, 59))
-        filters.append("accident_datetime <= %s")
-        params.append(end_of_day)
+        filters.append("ir.accident_datetime <= %s")
+        params.append(datetime.combine(parse_date(accident_to), time(23, 59, 59)))
     if zip:
-        filters.append("zip ILIKE %s")
+        filters.append("ir.zip ILIKE %s")
         params.append(f"%{zip}%")
     if state:
-        filters.append("state ILIKE %s")
+        filters.append("ir.state ILIKE %s")
         params.append(f"%{state}%")
     if city:
-        filters.append("city ILIKE %s")
+        filters.append("ir.city ILIKE %s")
         params.append(f"%{city}%")
     if crash_severity:
-        filters.append("crash_severity ILIKE %s")
+        filters.append("ir.crash_severity ILIKE %s")
         params.append(f"%{crash_severity}%")
+
+    # --- Filtros sobre passengers ---
     if hotlead:
         filters.append("p.hotlead ILIKE %s")
         params.append(f"%{hotlead}%")
@@ -237,54 +249,95 @@ def search_incidents(
     if over18:
         filters.append("p.over18 ILIKE %s")
         params.append(f"%{over18}%")
+
+    # --- Filtro sobre marketer_username ---
     if marketer_username:
-        filters.append("""
-            ir.id IN (
-                SELECT DISTINCT ir_sub.id
-                FROM incident_reports ir_sub
-                JOIN vehicles v_sub ON v_sub.incident_report_id = ir_sub.id
-                JOIN passengers p_sub ON p_sub.vehicle_id = v_sub.id
-                JOIN passenger_marketer_users pmu ON pmu.passenger_id = p_sub.id
-                JOIN marketer_users mu ON mu.id = pmu.marketer_user_id
-                WHERE mu.username ILIKE %s
-            )
-        """)
+        filters.append("mu.username ILIKE %s")
         params.append(f"%{marketer_username}%")
 
-    # Query base con JOINs para aplicar filtros de passengers
+    # --- Obtener IDs de incidentes filtrados ---
     base_query = """
+        SELECT DISTINCT ir.id, ir.accident_datetime
         FROM incident_reports ir
         JOIN vehicles v ON v.incident_report_id = ir.id
         JOIN passengers p ON p.vehicle_id = v.id
+        LEFT JOIN passenger_marketer_users pmu ON pmu.passenger_id = p.id
+        LEFT JOIN marketer_users mu ON mu.id = pmu.marketer_user_id
     """
     if filters:
         base_query += " WHERE " + " AND ".join(filters)
+    
+    base_query += " ORDER BY ir.accident_datetime DESC"
 
-    # Total para headers
-    count_query = f"SELECT COUNT(DISTINCT ir.id) {base_query}"
-    cur.execute(count_query, tuple(params))
-    total_rows = cur.fetchone()["count"]
+    cur.execute(base_query, tuple(params))
+    all_ids = [row["id"] for row in cur.fetchall()]
+    total_rows = len(all_ids)
+    paginated_ids = all_ids[(page - 1) * page_size : page * page_size]
 
-    offset = (page - 1) * page_size
+    if not paginated_ids:
+        conn.close()
+        return []
 
-    select_query = f"""
-        SELECT DISTINCT ir.* {base_query}
-        ORDER BY ir.accident_datetime DESC
-        LIMIT %s OFFSET %s
-    """
-    cur.execute(select_query, tuple(params + [page_size, offset]))
-    incidents = cur.fetchall()
+    # --- Recuperar datos completos por incidente ---
+    incidents = []
+    for incident_id in paginated_ids:
+        cur.execute("SELECT * FROM incident_reports WHERE id = %s", (incident_id,))
+        incident = cur.fetchone()
 
-    # Agregar vehículos y pasajeros por incidente
-    for incident in incidents:
-        cur.execute("SELECT * FROM vehicles WHERE incident_report_id = %s", (incident['id'],))
+        # Vehículos del incidente
+        cur.execute("SELECT * FROM vehicles WHERE incident_report_id = %s", (incident_id,))
         vehicles = cur.fetchall()
         for v in vehicles:
-            cur.execute("SELECT * FROM passengers WHERE vehicle_id = %s", (v['id'],))
-            v['passengers'] = cur.fetchall()
-        incident['vehicles'] = vehicles
+            # Pasajeros filtrados
+            passenger_query = """
+                SELECT * FROM passengers
+                WHERE vehicle_id = %s
+            """
+            passenger_filters = []
+            passenger_params = [v["id"]]
 
-    conn.close()
+            if hotlead:
+                passenger_filters.append("hotlead ILIKE %s")
+                passenger_params.append(f"%{hotlead}%")
+            if hasphone:
+                passenger_filters.append("hasphone ILIKE %s")
+                passenger_params.append(f"%{hasphone}%")
+            if hasinsurance_details:
+                passenger_filters.append("hasinsurance_details ILIKE %s")
+                passenger_params.append(f"%{hasinsurance_details}%")
+            if hasname:
+                passenger_filters.append("hasname ILIKE %s")
+                passenger_params.append(f"%{hasname}%")
+            if over18:
+                passenger_filters.append("over18 ILIKE %s")
+                passenger_params.append(f"%{over18}%")
+
+            if passenger_filters:
+                passenger_query += " AND " + " AND ".join(passenger_filters)
+
+            cur.execute(passenger_query, tuple(passenger_params))
+            passengers = cur.fetchall()
+
+            for p in passengers:
+                # Marketer users del pasajero (filtrados)
+                marketer_query = """
+                    SELECT mu.* FROM marketer_users mu
+                    JOIN passenger_marketer_users pmu ON pmu.marketer_user_id = mu.id
+                    WHERE pmu.passenger_id = %s
+                """
+                marketer_params = [p["id"]]
+                if marketer_username:
+                    marketer_query += " AND mu.username ILIKE %s"
+                    marketer_params.append(f"%{marketer_username}%")
+
+                cur.execute(marketer_query, tuple(marketer_params))
+                p["marketer_users"] = cur.fetchall()
+
+            v["passengers"] = passengers
+        incident["vehicles"] = vehicles
+        incidents.append(incident)
+
+    # Headers
     if response:
         response.headers["Access-Control-Allow-Origin"] = "*"
         response.headers["X-Total-Count"] = str(total_rows)
@@ -297,6 +350,7 @@ def search_incidents(
             "script-src 'self';"
         )
 
+    conn.close()
     return incidents
 
 
@@ -541,7 +595,7 @@ def get_text_from_pdf(report_number: str, state: str) -> str:
 # ---------------- Endpoints de chat ----------------|
 
 # Endpoint principal de chat
-@app.post("/chat", response_model=ChatResponse)
+@app.post("/chat", response_model=ChatResponse, tags=["Chat Model"])
 async def chat_with_model(request: ChatRequest):
     conn = get_connection()
     cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
@@ -595,7 +649,7 @@ async def chat_with_model(request: ChatRequest):
     return ChatResponse(response=result["response"], session_id=session_id)
 
 
-@app.get("/chat/history", response_model=Dict)
+@app.get("/chat/history", response_model=Dict, tags=["Chat Model"])
 def get_chat_history(report_number: str, state: str):
     conn = get_connection()
     cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
@@ -631,7 +685,7 @@ def get_chat_history(report_number: str, state: str):
 
 # ======= Marketer Users =======
 
-@app.post("/marketer-users/", response_model=MarketerUserRead)
+@app.post("/marketer-users/", response_model=MarketerUserRead, tags=["Marketer"])
 def create_marketer_user(user: MarketerUserCreate):
     hashed_password = pwd_context.hash(user.password)
     conn = get_connection()
@@ -652,7 +706,7 @@ def create_marketer_user(user: MarketerUserCreate):
         conn.close()
 
 
-@app.get("/marketer-users/", response_model=List[MarketerUserRead])
+@app.get("/marketer-users/", response_model=List[MarketerUserRead], tags=["Marketer"])
 def get_all_marketer_users():
     conn = get_connection()
     cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
@@ -661,7 +715,7 @@ def get_all_marketer_users():
     conn.close()
     return result
 
-@app.get("/marketer-users/{user_id}", response_model=MarketerUserRead)
+@app.get("/marketer-users/{user_id}", response_model=MarketerUserRead, tags=["Marketer"])
 def get_marketer_user(user_id: int = PathUrl(...)):
     conn = get_connection()
     cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
@@ -673,7 +727,7 @@ def get_marketer_user(user_id: int = PathUrl(...)):
     return user
 
 
-@app.put("/marketer-users/{user_id}")
+@app.put("/marketer-users/{user_id}", tags=["Marketer"])
 def update_marketer_user(
     user_id: int,
     full_name: Optional[str] = Body(default=None),
@@ -703,7 +757,7 @@ def update_marketer_user(
         raise HTTPException(status_code=400, detail="No fields provided for update")
 
     updates.append("updated_at = %s")
-    values.append(datetime.utcnow())
+    values.append(datetime.now())
 
     values.append(user_id)
 
@@ -720,7 +774,7 @@ def update_marketer_user(
     conn.close()
     return {"message": "User updated successfully"}
 
-@app.delete("/marketer-users/{user_id}")
+@app.delete("/marketer-users/{user_id}", tags=["Marketer"])
 def delete_marketer_user(user_id: int):
     conn = get_connection()
     cur = conn.cursor()
@@ -735,7 +789,7 @@ def delete_marketer_user(user_id: int):
 
 # ======= Assign marketer to passenger =======
 
-@app.post("/assign-marketer-users/")
+@app.post("/assign-marketer-users/", tags=["Marketer"])
 def assign_marketer_users(data: AssignMarketerUser):
     conn = get_connection()
     cur = conn.cursor()
@@ -751,7 +805,7 @@ def assign_marketer_users(data: AssignMarketerUser):
                 INSERT INTO passenger_marketer_users (
                     passenger_id, marketer_user_id, assigned_at, status, created_by
                 ) VALUES (%s, %s, %s, %s, %s)
-            """, (data.passenger_id, marketer_id, datetime.datetime.now(), 'active', 'system'))
+            """, (data.passenger_id, marketer_id, datetime.now(), 'active', 'system'))
         conn.commit()
         return {"message": "Assignments processed successfully"}
     except Exception as e:
@@ -760,7 +814,7 @@ def assign_marketer_users(data: AssignMarketerUser):
     finally:
         conn.close()
 
-@app.get("/passenger/{passenger_id}/marketer-users", response_model=List[MarketerUserRead])
+@app.get("/passenger/{passenger_id}/marketer-users", response_model=List[MarketerUserRead], tags=["Marketer"])
 def get_marketers_for_passenger(passenger_id: int):
     conn = get_connection()
     cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
@@ -774,29 +828,75 @@ def get_marketers_for_passenger(passenger_id: int):
     conn.close()
     return users
 
-@app.put("/assign-marketer-users/update")
+
+@app.put("/assign-marketer-users/update", summary="Update marketer assignment", tags=["Marketer"])
 def update_assignment_status(
-    passenger_id: int = Body(...),
-    marketer_user_id: int = Body(...),
-    status: Optional[str] = Body(default="active"),
-    updated_by: Optional[str] = Body(default="system")
+    payload: AssignmentUpdateRequest = Body(...)
 ):
     conn = get_connection()
     cur = conn.cursor()
+
+    # Validar que la asignación original existe
     cur.execute("""
-        UPDATE passenger_marketer_users
-        SET status = %s, updated_at = %s, updated_by = %s
+        SELECT id FROM passenger_marketer_users
         WHERE passenger_id = %s AND marketer_user_id = %s
-    """, (status, datetime.utcnow(), updated_by, passenger_id, marketer_user_id))
+    """, (payload.passenger_id, payload.current_marketer_user_id))
+    assignment = cur.fetchone()
+    
+    if not assignment:
+        conn.rollback()
+        conn.close()
+        raise HTTPException(status_code=404, detail="Asignación original no encontrada")
+
+    # Si se desea reasignar a otro marketer
+    if payload.new_marketer_user_id and payload.new_marketer_user_id != payload.current_marketer_user_id:
+        # Validar que la nueva relación no exista ya (para evitar duplicados)
+        cur.execute("""
+            SELECT 1 FROM passenger_marketer_users
+            WHERE passenger_id = %s AND marketer_user_id = %s
+        """, (payload.passenger_id, payload.new_marketer_user_id))
+        if cur.fetchone():
+            conn.rollback()
+            conn.close()
+            raise HTTPException(status_code=400, detail="Ya existe una asignación con ese marketer_user")
+
+        # Actualizar marketer_user_id y demás campos
+        cur.execute("""
+            UPDATE passenger_marketer_users
+            SET marketer_user_id = %s, status = %s, updated_at = %s, updated_by = %s
+            WHERE passenger_id = %s AND marketer_user_id = %s
+        """, (
+            payload.new_marketer_user_id,
+            payload.status,
+            datetime.now(),
+            payload.updated_by,
+            payload.passenger_id,
+            payload.current_marketer_user_id
+        ))
+    else:
+        # Solo actualizar status y metadatos
+        cur.execute("""
+            UPDATE passenger_marketer_users
+            SET status = %s, updated_at = %s, updated_by = %s
+            WHERE passenger_id = %s AND marketer_user_id = %s
+        """, (
+            payload.status,
+            datetime.now(),
+            payload.updated_by,
+            payload.passenger_id,
+            payload.current_marketer_user_id
+        ))
 
     if cur.rowcount == 0:
         conn.rollback()
-        raise HTTPException(status_code=404, detail="Assignment not found")
+        conn.close()
+        raise HTTPException(status_code=500, detail="No se pudo actualizar la asignación")
+    
     conn.commit()
     conn.close()
-    return {"message": "Assignment updated successfully"}
+    return {"message": "Asignación actualizada correctamente"}
 
-@app.delete("/assign-marketer-users/")
+@app.delete("/assign-marketer-users/", tags=["Marketer"])
 def delete_assignment(passenger_id: int, marketer_user_id: int):
     conn = get_connection()
     cur = conn.cursor()
@@ -814,7 +914,7 @@ def delete_assignment(passenger_id: int, marketer_user_id: int):
 
 
 
-@app.get("/incident/by-marketer/{marketer_user_id}")
+@app.get("/incident/by-marketer/{marketer_user_id}", tags=["Marketer"])
 def get_incidents_by_marketer(marketer_user_id: int):
     conn = get_connection()
     cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
@@ -833,6 +933,55 @@ def get_incidents_by_marketer(marketer_user_id: int):
         return incidents
     finally:
         conn.close()
+
+
+
+UPLOAD_DIR = os.getenv("OHIO_FILE_UPLOAD_PATH")
+if not UPLOAD_DIR:
+    raise RuntimeError("Falta definir OHIO_FILE_UPLOAD_PATH en el .env")
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+@app.post("/upload-pdf-ohio")
+async def upload_pdf_ohio(file: UploadFile = File(...)):
+    try:
+        if not file.filename.lower().endswith(".pdf"):
+            raise HTTPException(status_code=400, detail="El archivo debe ser un PDF")
+
+        # Guardar PDF temporal
+        temp_pdf_path = os.path.join(UPLOAD_DIR, "temporal_name_fileUI.pdf")
+        with open(temp_pdf_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+
+        # Extraer datos
+        df = extract_traffic_data_from_pdf(temp_pdf_path)
+
+        if df.empty:
+            raise HTTPException(status_code=422, detail="No se pudo extraer información del PDF")
+
+        number_report = str(df["Accident Report Number"].iloc[0])
+        if not number_report:
+            raise HTTPException(status_code=422, detail="No se encontró un número de reporte válido")
+
+        # Renombrar archivo PDF
+        final_pdf_name = f"{number_report}.pdf"
+        final_pdf_path = os.path.join(UPLOAD_DIR, final_pdf_name)
+        os.rename(temp_pdf_path, final_pdf_path)
+
+        # Guardar CSV con mismo nombre base
+        csv_filename = f"{number_report}.csv"
+        csv_path = os.path.join(UPLOAD_DIR, csv_filename)
+        df.to_csv(csv_path, index=False)
+        # Insertar en base de datos
+        insert_data_from_dataframe(df, UPLOAD_DIR)
+        return JSONResponse(status_code=200, content={
+            "message": "Processed file correctly",
+            "pdf_saved_as": final_pdf_path,
+            "csv_generated": csv_filename,
+            "rows_extracted": len(df)
+        })
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error procesando el archivo: {str(e)}")
 
 
 

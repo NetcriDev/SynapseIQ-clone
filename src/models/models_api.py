@@ -1,7 +1,8 @@
 
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 from typing import List, Optional
-from datetime import datetime 
+from datetime import datetime
+
 
 # Pydantic models
 class Passenger(BaseModel):
@@ -187,3 +188,10 @@ class MarketerUserRead(BaseModel):
 class AssignMarketerUser(BaseModel):
     passenger_id: int
     marketer_user_ids: List[int]
+
+class AssignmentUpdateRequest(BaseModel):
+    passenger_id: int = Field(..., description="ID del pasajero asignado")
+    current_marketer_user_id: int = Field(..., description="ID del marketer actual asignado")
+    new_marketer_user_id: Optional[int] = Field(None, description="Nuevo ID de marketer (si se va a reasignar)")
+    status: Optional[str] = Field("active", description="Nuevo estado de la relación (ej: active, inactive)")
+    updated_by: Optional[str] = Field("system", description="Usuario que realizó la modificación")
