@@ -790,12 +790,22 @@
         </div>
     </main>
 
+        <!-- Modal-load-data -->
     <div id="uploadModal" class="modal">
         <div class="modal-content">
-            <span class="close-button" onclick="closeUploadModal()">&times;</span>
-            <h2>Upload Files</h2>
-            <br>
-            <div id="uploadFormContent">
+            <!-- Chrome Style -->
+
+            <div class="chrome-tabs">
+                <div class="tab active" onclick="openTab('page1')">Upload</div>
+                <div class="tab" onclick="openTab('page2')">Status</div>
+            </div>
+
+           <span class="close-button" onclick="closeUploadModal()">&times;</span>
+
+            <div id="page1" class="tab-page active">
+                <br>
+                <h2>Upload Files</h2>
+                <div id="uploadFormContent">
                 <form id="fileUploadForm" enctype="multipart/form-data">
                     <p>Select a state:</p>
                     <select id="stateSelect" style="width: 100%; padding: 8px; margin-bottom: 15px;">
@@ -808,9 +818,110 @@
                     <button type="submit" id="uploadBtn">Upload</button>
                 </form>
                 <div id="uploadStatus" style="margin-top: 15px; font-weight: bold;"></div>
+                </div>
+            </div>
+            
+            <div id="page2" class="tab-page">
+                <br>
+                <h2>Upload Status (under develompent)</h2>
+                <p>Check the status of your uploads here.</p>
+                <div id="statusContent">
+                    <div class="file-history">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>File</th>
+                                    <th>Agency</th>
+                                    <th>Report N°</th>
+                                    <th>Passengers</th>
+                                    <th>Upload Date</th>
+                                    <th>Status</th>
+                                    <th>Status Date</th>
+                                </tr>
+                            </thead>
+                            <tbody id="upload-history-body">
+                                <!-- API via JavaScript -->
+                            </tbody>
+                            
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
+
+    <style>
+        /* ------------------ tabs --------------------------- */
+
+        /* Chrome style */
+        .chrome-tabs {
+            display: flex;
+            /* background: #f5f5f5; */
+            border-bottom: 1px solid #ddd;
+            padding-left: 10px;
+            position: relative; 
+            z-index: 999; 
+            width: 90%; 
+            margin-bottom: 0; 
+        }
+
+        .chrome-tabs .tab {
+            padding: 12px 20px;
+            cursor: pointer;
+            background: #e9e9e9;
+            border: 1px solid #ddd;
+            border-bottom: none;
+            border-radius: 5px 5px 0 0;
+            margin-right: 5px;
+            position: relative;
+            top: 1px; 
+        }
+
+        .chrome-tabs .tab:hover {
+            background: #f0f0f0;
+        }
+
+        .chrome-tabs .tab.active {
+            background: #fff;
+            border-bottom: 1px solid #fff; 
+            z-index: 1;
+            font-weight: bold;
+        }
+
+        /* Modal (mantenha seu estilo atual) */
+        .modal-content {
+            border-top: none; 
+        }
+
+        .tab-page {
+            display: none;
+        }
+
+        .tab-page.active {
+            display: block;
+            align-items: flex-start;
+            text-align: left;
+        }
+    </style>
+
+    <script>
+        function openTab(tabId) {
+            // remove 'active' 
+            document.querySelectorAll('.chrome-tabs .tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-page').forEach(page => {
+                page.classList.remove('active');
+            });
+
+            // apply 'active' to active page
+            const selectedTab = document.querySelector(`.tab[onclick*="${tabId}"]`);
+            const selectedPage = document.getElementById(tabId);
+            
+            if (selectedTab) selectedTab.classList.add('active');
+            if (selectedPage) selectedPage.classList.add('active');
+        }
+    </script>
 
     <div id="assignModal" class="modal">
         <div class="modal-content">
@@ -1613,7 +1724,7 @@
 
         function downloadSelectedCSV() {
             if (selectedRowDataForExport.length === 0) {
-                alert("Nenhum item selecionado para download.");
+                alert("No item selected for downlaod.");
                 return;
             }
 
