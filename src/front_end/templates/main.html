@@ -1753,12 +1753,12 @@
                     // NOVO: Lógica de upload real
                     const formData = new FormData();
                     for (let i = 0; i < files.length; i++) {
-                        formData.append('file', files[i]); // A API espera 'file' como nome do campo
+                        formData.append('files', files[i]); // A API espera 'file' (1 file) ou 'files' (2+ files) como nome do campo
                     }
 
                     let uploadEndpoint = '';
                     if (selectedState === 'Ohio') {
-                        uploadEndpoint = 'https://8162-52-116-202-144.ngrok-free.app/upload-pdf-ohio';
+                        uploadEndpoint = 'https://8162-52-116-202-144.ngrok-free.app/upload-multiple-pdfs-ohio';
                     } else {
                         // Caso você adicione outros estados no futuro e precise de endpoints diferentes
                         uploadStatus.textContent = 'Invalid state selected for upload.';
@@ -1798,6 +1798,7 @@
             } else {
                 console.error("File upload form not found.");
             }
+
             // Global click listener para fechar modais ao clicar fora
             window.onclick = function(event) {
                 if (uploadModal && event.target == uploadModal) {
