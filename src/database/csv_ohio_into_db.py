@@ -2,7 +2,7 @@ import psycopg2
 import pandas as pd
 import os
 from datetime import datetime
-from typing import Tuple
+from typing import Tuple, List, Optional
 from config.config import get_connection
 from src.utils.split_name import split_driver_name
 
@@ -138,7 +138,7 @@ def to_datetime(value):
         return None
 
 
-def insert_data_from_dataframe(df: pd.DataFrame, path_files_saved)-> None:
+def insert_data_from_dataframe(df: pd.DataFrame, path_files_saved)-> dict:
     """
     Inserts data from a DataFrame into the database.
     Args:
@@ -147,146 +147,176 @@ def insert_data_from_dataframe(df: pd.DataFrame, path_files_saved)-> None:
     """
     conn = get_connection()
     cur = conn.cursor()
+    resumen = {}
     
     for _, row in df.iterrows():
-        #print(row)
-        report_number = clean_str(row.get("Accident Report Number"))
-        crash_date = to_datetime(row.get("Crash Date"))
-        city =  extract_city_from_address(clean_str(row.get("Address")))  
-        street = clean_str(row.get("Address"))
-        address = clean_str(row.get("Address"))
-        type_ps = clean_str(row.get("TYPE"))
-        unit_fault = clean_str(row.get("Unit at Fault"))
-        generation_date = datetime.now()
-        state = "OH"
-        is_external='yes'
-        name = clean_str(row.get("Name"))
-        first, middle, last = split_driver_name(name)
-        gender = clean_str(row.get("Gender"))
-        phone1 = clean_str(row.get("Contacts_1"))
-        age = to_int(row.get("Age"))
-        year_birth = extract_year(row.get("Birth"))
-        passenger_notes = f"Minors: {clean_str(row.get('Minors'))}"
-        license_plate = clean_str(row.get("License Plate"))
-        unit_number = to_int(row.get("Unit"))  
-        insurance_company = clean_str(row.get("Unit at Fault Company"))
-        policy_number = clean_str(row.get("Unit at Fault Policy"))
-        website = "ohio"
-        unit = clean_str(row.get("Unit"))
-        unit_fault = clean_str(row.get("Unit at Fault"))
-        insure_policy = clean_str(row.get("Insurance Policy"))
-        narrative = clean_str(row.get("Narrative"))
-        unit_fault_policity = clean_str(row.get("Unit at Fault Policy"))
-        unit_fault_company = clean_str(row.get("Unit at Fault Company"))
-        notes = f"Unit at Fault: {unit_fault}; " \
-                f"Insurance Policy: {clean_str(row.get('Insurance Policy'))}; " \
-                f"Insurance Company: {clean_str(row.get('Insurance Company'))}; "
+        try:
+            #print(row)
+            report_number = clean_str(row.get("Accident Report Number"))
+            crash_date = to_datetime(row.get("Crash Date"))
+            city =  extract_city_from_address(clean_str(row.get("Address")))  
+            street = clean_str(row.get("Address"))
+            address = clean_str(row.get("Address"))
+            type_ps = clean_str(row.get("TYPE"))
+            unit_fault = clean_str(row.get("Unit at Fault"))
+            generation_date = datetime.now()
+            state = "OH"
+            is_external='yes'
+            name = clean_str(row.get("Name"))
+            first, middle, last = split_driver_name(name)
+            gender = clean_str(row.get("Gender"))
+            phone1 = clean_str(row.get("Contacts_1"))
+            age = to_int(row.get("Age"))
+            year_birth = extract_year(row.get("Birth"))
+            passenger_notes = f"Minors: {clean_str(row.get('Minors'))}"
+            license_plate = clean_str(row.get("License Plate"))
+            unit_number = to_int(row.get("Unit"))  
+            insurance_company = clean_str(row.get("Unit at Fault Company"))
+            policy_number = clean_str(row.get("Unit at Fault Policy"))
+            website = "ohio"
+            unit_fault = clean_str(row.get("Unit at Fault"))
+            narrative = clean_str(row.get("Narrative"))
+            notes = f"Unit at Fault: {unit_fault}; " \
+                    f"Insurance Policy: {clean_str(row.get('Insurance Policy'))}; " \
+                    f"Insurance Company: {clean_str(row.get('Insurance Company'))}; "
 
-        
-        # Verificar incidente por report_number y fecha
-        cur.execute("""
-            SELECT id FROM incident_reports 
-            WHERE report_number = %s AND accident_datetime = %s
-        """, (report_number, crash_date))
-        incident = cur.fetchone()
+            resumen = {
+                "report_number": report_number,
+                "incident_id": None,
+                "incident_report": None,
+                "vehicle": None,
+                "passenger": None
+            }
 
-        # Si no exoste registro
-        if incident:
-            incident_id = incident[0]
-        else:
+            # === INCIDENTE ===
+            # Verificar incidente por report_number y fecha
             cur.execute("""
-                INSERT INTO incident_reports (
-                    report_number, 
-                    internal_report_number,
-                    accident_datetime, 
-                    city, street, generation_date, 
+                SELECT id FROM incident_reports 
+                WHERE report_number = %s AND accident_datetime = %s
+            """, (report_number, crash_date))
+            incident = cur.fetchone()
+            resumen["incident_id"] = incident[0]
+
+            # Si no exoste registro
+            if incident:
+                incident_id = incident[0]
+                resumen["incident_report"] = "exists"
+                
+            else:
+                cur.execute("""
+                    INSERT INTO incident_reports (
+                        report_number, 
+                        internal_report_number,
+                        accident_datetime, 
+                        city, street, generation_date, 
+                        state,
+                        original_document_location, 
+                        narrative,
+                        website,
+                        is_external
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    RETURNING id
+                """, (report_number,
+                    "oh" + str(report_number),
+                    crash_date, 
+                    city, 
+                    street, 
+                    generation_date, 
                     state,
-                    original_document_location, 
+                    os.path.join(path_files_saved,report_number + ".pdf"),
                     narrative,
                     website,
                     is_external
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                RETURNING id
-            """, (report_number,
-                  "oh" + str(report_number),
-                  crash_date, 
-                  city, 
-                  street, 
-                  generation_date, 
-                  state,
-                  os.path.join(path_files_saved,report_number + ".pdf"),
-                  narrative,
-                  website,
-                  is_external
-                  ))
-            incident_id = cur.fetchone()[0]
+                    ))
+                incident_id = cur.fetchone()[0]
+                resumen["incident_report"] = "inserted"
+            
+            resumen["incident_id"] = incident_id
 
-        # Verificar vehículo
-        cur.execute("""
-            SELECT id FROM vehicles 
-            WHERE incident_report_id = %s AND license_plate_number = %s AND unit_number = %s
-        """, (incident_id, license_plate, unit_number))
-        vehicle = cur.fetchone()
-        if vehicle:
-            vehicle_id = vehicle[0]
-        else:
+            # === VEHÍCULO ===
+            # Verificar vehículo
             cur.execute("""
-                INSERT INTO vehicles (
-                    incident_report_id, 
+                SELECT id FROM vehicles 
+                WHERE incident_report_id = %s AND license_plate_number = %s AND unit_number = %s
+            """, (incident_id, license_plate, unit_number))
+            vehicle = cur.fetchone()
+
+            if vehicle:
+                vehicle_id = vehicle[0]
+                resumen["vehicle"] = "exists"
+            else:
+                cur.execute("""
+                    INSERT INTO vehicles (
+                        incident_report_id, 
+                        report_number,
+                        unit_number, 
+                        license_plate_number, 
+                        insurance_company, policy_number, 
+                        notes,
+                        driver_name, driver_first_name, driver_middle_name, driver_last_name, website
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id
+                """, (incident_id, 
                     report_number,
                     unit_number, 
-                    license_plate_number, 
-                    insurance_company, policy_number, 
-                    notes,
-                    driver_name, driver_first_name, driver_middle_name, driver_last_name, website
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id
-            """, (incident_id, 
-                  report_number,
-                  unit_number, 
-                  license_plate, 
-                  insurance_company, 
-                  policy_number, 
-                  notes, 
-                  name, first, middle, last, website))
-            vehicle_id = cur.fetchone()[0]
+                    license_plate, 
+                    insurance_company, 
+                    policy_number, 
+                    notes, 
+                    name, first, middle, last, website))
+                vehicle_id = cur.fetchone()[0]
+                resumen["vehicle"] = "inserted"
 
-        # Verificar pasajero
-        cur.execute("""
-            SELECT id FROM passengers
-            WHERE vehicle_id = %s AND name = %s AND gender = %s
-        """, (vehicle_id, name, gender))
-        passenger = cur.fetchone()
-        if not passenger:
+            # Verificar pasajero
             cur.execute("""
-                INSERT INTO passengers (
-                    vehicle_id,
+                SELECT id FROM passengers
+                WHERE vehicle_id = %s AND name = %s AND gender = %s
+            """, (vehicle_id, name, gender))
+            passenger = cur.fetchone()
+            if passenger:
+                resumen["passenger"] = "exists"
+            else:
+                cur.execute("""
+                    INSERT INTO passengers (
+                        vehicle_id,
+                        report_number,
+                        name, 
+                        gender, 
+                        phone1, 
+                        age, 
+                        year_birth, 
+                        notes,
+                        first_name, 
+                        middle_name,
+                        last_name, 
+                        state, city, street, role, website, insurance_company
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """, (vehicle_id, 
                     report_number,
-                    name, 
-                    gender, 
-                    phone1, 
-                    age, 
-                    year_birth, 
-                    notes,
-                    first_name, 
-                    middle_name,
-                    last_name, 
-                    state, city, street, role, website, insurance_company
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            """, (vehicle_id, 
-                  report_number,
-                  name, gender, 
-                  phone1, age, year_birth, passenger_notes, 
-                  first, middle, last, 
-                  state, 
-                  city, 
-                  street, 
-                  type_ps, 
-                  website, 
-                  insurance_company))
-    print('Datos subidos')
+                    name, gender, 
+                    phone1, age, year_birth, passenger_notes, 
+                    first, middle, last, 
+                    state, 
+                    city, 
+                    street, 
+                    type_ps, 
+                    website, 
+                    insurance_company))
+                resumen["passenger"] = "inserted"
+        except Exception as e:
+            clave = report_number or f"Error"
+
+            resumen[clave] = {
+                "report_number": clave,
+                "incident_id": None,
+                "incident_report": None,
+                "vehicle": None,
+                "passenger": None,
+                "error": str(e)
+            }
+            conn.rollback()
+            continue
+    
     conn.commit()
     cur.close()
     conn.close()
-
-
-# Ohio_06052025
+    return resumen

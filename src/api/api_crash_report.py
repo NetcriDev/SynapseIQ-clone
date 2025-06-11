@@ -7,14 +7,15 @@ from datetime import datetime, time
 from config.config import get_connection
 from src.utils.parse_date import parse_date
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
-from fastapi.responses import FileResponse
+from fastapi.responses import JSONResponse, FileResponse
 from psycopg2.extras import RealDictCursor
 from src.models.models_api import CrashReportWithPassengers  # Define este modelo pydantic si no existe aún
 from src.api.notification_manager import connected_clients
 from src.services.ibm_fundational_models import WatsonXModelHandler
 from src.utils.ohio_extraction import extract_traffic_data_from_pdf
 from src.database.csv_ohio_into_db import insert_data_from_dataframe
+from src.utils.status_pdf_utils import save_estatus_pdf
+from src.utils.triggers_airflow import trigger_airflow_dag
 from dotenv import load_dotenv
 from pathlib import Path
 from math import ceil
@@ -250,10 +251,28 @@ def search_incidents(
         filters.append("p.over18 ILIKE %s")
         params.append(f"%{over18}%")
 
-    # --- Filtro sobre marketer_username ---
+    # --- Filtro por marketer (username o email) y rol ---
     if marketer_username:
-        filters.append("mu.username ILIKE %s")
-        params.append(f"%{marketer_username}%")
+        # Buscar marketer por username o email
+        cur.execute("""
+            SELECT id, role, username FROM marketer_users 
+            WHERE username ILIKE %s OR email ILIKE %s
+            LIMIT 1
+        """, (marketer_username, marketer_username))
+        marketer_info = cur.fetchone()
+
+        if not marketer_info:
+            conn.close()
+            raise HTTPException(status_code=404, detail="Marketer user not found")
+
+        marketer_id = marketer_info["id"]
+        marketer_role = marketer_info["role"].lower()
+        marketer_username = marketer_info["username"]
+
+        if marketer_role != "admin":
+            # Si no es admin, filtrar los resultados a los pasajeros asignados a ese marketer
+            filters.append("pmu.marketer_user_id = %s")
+            params.append(marketer_id)
 
     # --- Obtener IDs de incidentes filtrados ---
     base_query = """
@@ -715,6 +734,7 @@ def get_all_marketer_users():
     conn.close()
     return result
 
+
 @app.get("/marketer-users/{user_id}", response_model=MarketerUserRead, tags=["Marketer"])
 def get_marketer_user(user_id: int = PathUrl(...)):
     conn = get_connection()
@@ -725,6 +745,7 @@ def get_marketer_user(user_id: int = PathUrl(...)):
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return user
+
 
 
 @app.put("/marketer-users/{user_id}", tags=["Marketer"])
@@ -774,6 +795,7 @@ def update_marketer_user(
     conn.close()
     return {"message": "User updated successfully"}
 
+
 @app.delete("/marketer-users/{user_id}", tags=["Marketer"])
 def delete_marketer_user(user_id: int):
     conn = get_connection()
@@ -813,6 +835,7 @@ def assign_marketer_users(data: AssignMarketerUser):
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         conn.close()
+
 
 @app.get("/passenger/{passenger_id}/marketer-users", response_model=List[MarketerUserRead], tags=["Marketer"])
 def get_marketers_for_passenger(passenger_id: int):
@@ -896,6 +919,7 @@ def update_assignment_status(
     conn.close()
     return {"message": "Asignación actualizada correctamente"}
 
+
 @app.delete("/assign-marketer-users/", tags=["Marketer"])
 def delete_assignment(passenger_id: int, marketer_user_id: int):
     conn = get_connection()
@@ -941,8 +965,19 @@ if not UPLOAD_DIR:
     raise RuntimeError("Falta definir OHIO_FILE_UPLOAD_PATH en el .env")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-@app.post("/upload-pdf-ohio")
-async def upload_pdf_ohio(file: UploadFile = File(...)):
+
+
+@app.post("/upload-pdf-ohio", tags=["upload_pdf"])
+async def upload_pdf_ohio(file: UploadFile = File(...), response: Response = None):
+    # Headers
+    if response:
+        response.headers["Access-Control-Allow-Origin"] = "*"
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'self'; "
+            "font-src 'self' https://assets.ngrok.com; "
+            "style-src 'self' 'unsafe-inline'; "
+            "script-src 'self';"
+        )
     try:
         if not file.filename.lower().endswith(".pdf"):
             raise HTTPException(status_code=400, detail="El archivo debe ser un PDF")
@@ -971,18 +1006,166 @@ async def upload_pdf_ohio(file: UploadFile = File(...)):
         csv_filename = f"{number_report}.csv"
         csv_path = os.path.join(UPLOAD_DIR, csv_filename)
         df.to_csv(csv_path, index=False)
+
         # Insertar en base de datos
-        insert_data_from_dataframe(df, UPLOAD_DIR)
+        summary = insert_data_from_dataframe(df, UPLOAD_DIR)
+
+        # Guardar en tabla de estatus de carga
+        save_result = save_estatus_pdf(
+            file_name=file.filename.lower(),
+            report_number=number_report,
+            number_passagers=len(df),
+            status = "processed" if summary.get("error") is None else "error",
+            agency="ohio",  # puedes parametrizar esto si lo necesitas
+            website="ohio",
+            state="OH",
+            city=None,
+            created_by="frontend"
+        )
+
+
+        try:
+            trigger_response = trigger_airflow_dag("incident_services_common", conf={"source": "FastAPI", "date": str(datetime.now())})
+        except Exception as e:
+            pass
+
         return JSONResponse(status_code=200, content={
-            "message": "Processed file correctly",
-            "pdf_saved_as": final_pdf_path,
-            "csv_generated": csv_filename,
-            "rows_extracted": len(df)
+            "upload_id": save_result["upload_id"],
+            "report_number": save_result["report_number"],
+            "status": save_result["status"],
+            "message": "rows_extracted" + str(len(df))
         })
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error procesando el archivo: {str(e)}")
+        # Guardar en tabla de estatus de carga
+        save_result = save_estatus_pdf(
+            file_name=file.filename.lower(),
+            report_number="",
+            number_passagers=len(df),
+            status="error",
+            agency="ohio",  # puedes parametrizar esto si lo necesitas
+            website="ohio",
+            state="OH",
+            city=None,
+            created_by="frontend"
+        )      
 
+        return JSONResponse(status_code=500, content={
+        "upload_id": None,
+        "report_number": " ",
+        "status": "error",
+        "message": str(e)
+        })
+
+
+@app.post("/upload-multiple-pdfs-ohio", tags=["upload_pdf"])
+async def upload_multiple_pdfs(files: List[UploadFile] = File(...)):
+    results = []
+
+    for file in files:
+        try:
+            if not file.filename.lower().endswith(".pdf"):
+                results.append({
+                    "filename": file.filename,
+                    "status": "error",
+                    "message": "El archivo debe ser un PDF"
+                })
+                continue
+
+            temp_pdf_path = os.path.join(UPLOAD_DIR, f"temp_{file.filename}")
+            with open(temp_pdf_path, "wb") as buffer:
+                shutil.copyfileobj(file.file, buffer)
+
+            # Extraer datos
+            df = extract_traffic_data_from_pdf(temp_pdf_path)
+
+            if df.empty:
+                results.append({
+                    "filename": file.filename,
+                    "status": "error",
+                    "message": "No se pudo extraer información del PDF"
+                })
+                os.remove(temp_pdf_path)
+                continue
+
+            number_report = str(df["Accident Report Number"].iloc[0])
+            if not number_report:
+                results.append({
+                    "filename": file.filename,
+                    "status": "error",
+                    "message": "No se encontró un número de reporte válido"
+                })
+                os.remove(temp_pdf_path)
+                continue
+
+            # Guardar PDF con nombre final
+            final_pdf_name = f"{number_report}.pdf"
+            final_pdf_path = os.path.join(UPLOAD_DIR, final_pdf_name)
+            os.rename(temp_pdf_path, final_pdf_path)
+
+            # Guardar CSV con mismo nombre base
+            csv_filename = f"{number_report}.csv"
+            csv_path = os.path.join(UPLOAD_DIR, csv_filename)
+            df.to_csv(csv_path, index=False)
+
+            # Insertar en base de datos
+            insert_data_from_dataframe(df, UPLOAD_DIR)
+
+            results.append({
+                "filename": file.filename,
+                "status": "success",
+                "pdf_saved_as": final_pdf_name,
+                "csv_generated": csv_filename,
+                "rows_extracted": len(df)
+            })
+
+        except Exception as e:
+            results.append({
+                "filename": file.filename,
+                "status": "error",
+                "message": f"Error procesando el archivo: {str(e)}"
+            })
+
+    try:
+        trigger_response = trigger_airflow_dag("incident_services_common", conf={"source": "FastAPI", "date": str(datetime.now())})
+    except Exception as e:
+        pass
+
+    return JSONResponse(status_code=207, content={"results": results})
+
+
+
+@app.get("/report-status/{report_number}", tags=["upload_pdf"])
+def get_report_status(report_number: str):
+    conn = None
+    cur = None
+    report_number = report_number.strip()
+
+    try:
+        conn = get_connection()
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+        cur.execute("""
+            SELECT * FROM upload_pdf_status
+            WHERE TRIM(report_number) = %s
+        """, (report_number,))
+
+        rows = cur.fetchall()
+
+        return {
+            "report_number": report_number,
+            "records": rows,
+            "message": "Records found" if rows else "No records found for this report_number"
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching records: {str(e)}")
+
+    finally:
+        if cur:
+            cur.close()
+        if conn:
+            conn.close()
 
 
 # @app.websocket("/ws/notifications")
