@@ -144,6 +144,13 @@ def insert_data_from_dataframe(df: pd.DataFrame, path_files_saved)-> dict:
     Args:
         df (pd.DataFrame): DataFrame containing the data to be inserted.
         path_files_saved (str): Path folder where the files are saved.
+    Returns:
+        dict: Summary of the insertion process, including:
+            report_number, 
+            incident_id, 
+            incident_report,
+            vehicle,
+            passenger
     """
     conn = get_connection()
     cur = conn.cursor()
@@ -195,13 +202,12 @@ def insert_data_from_dataframe(df: pd.DataFrame, path_files_saved)-> dict:
                 WHERE report_number = %s AND accident_datetime = %s
             """, (report_number, crash_date))
             incident = cur.fetchone()
-            resumen["incident_id"] = incident[0]
 
-            # Si no exoste registro
             if incident:
                 incident_id = incident[0]
-                resumen["incident_report"] = "exists"
-                
+                resumen["incident_report"] = "already_registered"
+                resumen["incident_id"] = incident_id
+            # if not incident:
             else:
                 cur.execute("""
                     INSERT INTO incident_reports (
@@ -230,8 +236,8 @@ def insert_data_from_dataframe(df: pd.DataFrame, path_files_saved)-> dict:
                     ))
                 incident_id = cur.fetchone()[0]
                 resumen["incident_report"] = "inserted"
-            
-            resumen["incident_id"] = incident_id
+                resumen["incident_id"] = incident_id
+        
 
             # === VEHÍCULO ===
             # Verificar vehículo
@@ -243,7 +249,7 @@ def insert_data_from_dataframe(df: pd.DataFrame, path_files_saved)-> dict:
 
             if vehicle:
                 vehicle_id = vehicle[0]
-                resumen["vehicle"] = "exists"
+                resumen["vehicle"] = "already_registered"
             else:
                 cur.execute("""
                     INSERT INTO vehicles (
@@ -264,7 +270,7 @@ def insert_data_from_dataframe(df: pd.DataFrame, path_files_saved)-> dict:
                     notes, 
                     name, first, middle, last, website))
                 vehicle_id = cur.fetchone()[0]
-                resumen["vehicle"] = "inserted"
+                resumen["vehicle"] = "already_registered"
 
             # Verificar pasajero
             cur.execute("""
@@ -273,7 +279,7 @@ def insert_data_from_dataframe(df: pd.DataFrame, path_files_saved)-> dict:
             """, (vehicle_id, name, gender))
             passenger = cur.fetchone()
             if passenger:
-                resumen["passenger"] = "exists"
+                resumen["passenger"] = "already_registered"
             else:
                 cur.execute("""
                     INSERT INTO passengers (
@@ -301,18 +307,18 @@ def insert_data_from_dataframe(df: pd.DataFrame, path_files_saved)-> dict:
                     type_ps, 
                     website, 
                     insurance_company))
-                resumen["passenger"] = "inserted"
+                resumen["passenger"] = "already_registered"
         except Exception as e:
-            clave = report_number or f"Error"
 
-            resumen[clave] = {
-                "report_number": clave,
+            resumen = {
+                "report_number": " ",
                 "incident_id": None,
-                "incident_report": None,
+                "incident_report": "Dont insert into DB by error:" + str(e),
                 "vehicle": None,
                 "passenger": None,
                 "error": str(e)
             }
+
             conn.rollback()
             continue
     

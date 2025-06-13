@@ -18,7 +18,11 @@ def save_estatus_pdf(report_number, agency,
         city (str, optional): The city associated with the report. Defaults to None.
         created_by (str, optional): The user who created the record. Defaults to "frontend".
     Returns:
-        dict: A dictionary containing the upload ID, report number, status, and a message.
+        dict: A dictionary containing the:
+        upload_id, 
+        report_number,
+        status,
+        message
     """
     conn = None
     cur = None
@@ -63,7 +67,7 @@ def save_estatus_pdf(report_number, agency,
         return {
             "upload_id": None,
             "report_number": report_number,
-            "status": "error",
+            "status": str(e),
             "message": str(e)
         }
 

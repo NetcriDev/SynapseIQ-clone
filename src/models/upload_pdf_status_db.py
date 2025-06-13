@@ -5,8 +5,7 @@ from sqlalchemy import (
     String,
     DateTime, 
     Enum, 
-    func, 
-    CheckConstraint
+    func
 )
 
 from sqlalchemy.orm import sessionmaker, declarative_base
@@ -36,16 +35,8 @@ class ReportFile(Base):
     created_by = Column(String(100), nullable=True)
     updated_by = Column(String(100), nullable=True)
 
-    # Estado del procesamiento
+    # Estado del procesamiento (sin constraint)
     status = Column(String(20), nullable=True, default="pending")
-
-    # Restricción de validación para el campo status
-    __table_args__ = (
-        CheckConstraint(
-            "status IN ('pending', 'processed', 'error')",
-            name="check_status_valid"
-        ),
-    )
 
 # Crear engine y sesión
 engine = create_engine(DATABASE_URL)

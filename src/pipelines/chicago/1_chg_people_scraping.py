@@ -9,7 +9,7 @@ os.chdir(PROJECT_ROOT)
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
-from src.connectors.kansas_w_functions import pipeline_kansas
+from src.connectors.chicago.chicago_scraping_people import pipeline_chicago
 from src.utils.logger_config import setup_logger
 
 
@@ -21,11 +21,11 @@ home_dir="home/SynapseIQ"
 logger= setup_logger("Scheduled_execution", home_dir)
 # now
 
-def kansas():
+def chicago():
     logger.info(">>> Start script: chicago")
     #Reemplazar por mi scraping 
-    pipeline_kansas(outdata_folder=os.path.join(outputdata_dir, "chicago"))
+    pipeline_chicago(outdata_folder=os.path.join(outputdata_dir, "chicago"))
     #run_msp_crash_scraper(outputdata_dir, home_path=home_dir)
-    logger.info("Finish script: kansas -----|")
+    logger.info("Finish script: chicago -----|")
 
-kansas()
+chicago()

@@ -809,6 +809,9 @@ def delete_marketer_user(user_id: int):
     return {"message": "User deleted successfully"}
 
 
+
+
+
 # ======= Assign marketer to passenger =======
 
 @app.post("/assign-marketer-users/", tags=["Marketer"])
@@ -960,6 +963,8 @@ def get_incidents_by_marketer(marketer_user_id: int):
 
 
 
+# ======= Upload Pdfs Ohio =======
+
 UPLOAD_DIR = os.getenv("OHIO_FILE_UPLOAD_PATH")
 if not UPLOAD_DIR:
     raise RuntimeError("Falta definir OHIO_FILE_UPLOAD_PATH en el .env")
@@ -1015,7 +1020,7 @@ async def upload_pdf_ohio(file: UploadFile = File(...), response: Response = Non
             file_name=file.filename.lower(),
             report_number=number_report,
             number_passagers=len(df),
-            status = "processed" if summary.get("error") is None else "error",
+            status=summary.get("incident_report", "error"),
             agency="ohio",  # puedes parametrizar esto si lo necesitas
             website="ohio",
             state="OH",
@@ -1033,7 +1038,7 @@ async def upload_pdf_ohio(file: UploadFile = File(...), response: Response = Non
             "upload_id": save_result["upload_id"],
             "report_number": save_result["report_number"],
             "status": save_result["status"],
-            "message": "rows_extracted" + str(len(df))
+            "message": "rows_extracted -> " + str(len(df))
         })
 
     except Exception as e:
@@ -1065,10 +1070,24 @@ async def upload_multiple_pdfs(files: List[UploadFile] = File(...)):
     for file in files:
         try:
             if not file.filename.lower().endswith(".pdf"):
+
+                save_result = save_estatus_pdf(
+                    file_name=file.filename.lower(),
+                    report_number="",
+                    number_passagers=0,
+                    status="The file must be a PDF",
+                    agency="ohio",
+                    website="ohio",
+                    state="OH",
+                    city=None,
+                    created_by="frontend"
+                )
+
                 results.append({
-                    "filename": file.filename,
+                    "upload_id": save_result.get("upload_id"),
+                    "report_number": " ",
                     "status": "error",
-                    "message": "El archivo debe ser un PDF"
+                    "message": "The file must be a PDF"
                 })
                 continue
 
@@ -1080,20 +1099,48 @@ async def upload_multiple_pdfs(files: List[UploadFile] = File(...)):
             df = extract_traffic_data_from_pdf(temp_pdf_path)
 
             if df.empty:
-                results.append({
-                    "filename": file.filename,
-                    "status": "error",
-                    "message": "No se pudo extraer información del PDF"
-                })
+
+                save_result = save_estatus_pdf(
+                    file_name=file.filename.lower(),
+                    report_number=" ",
+                    number_passagers=0,
+                    status="No data extracted",
+                    agency="ohio",
+                    website="ohio",
+                    state="OH",
+                    city=None,
+                    created_by="frontend"
+                )
+
                 os.remove(temp_pdf_path)
+                results.append({
+                    "upload_id": save_result.get("upload_id"),
+                    "report_number": save_result.get("report_number"),
+                    "status": "No data extracted"
+                })
                 continue
 
             number_report = str(df["Accident Report Number"].iloc[0])
+
             if not number_report:
+
+                save_result = save_estatus_pdf(
+                    file_name=file.filename.lower(),
+                    report_number="",
+                    number_passagers=0,
+                    status="number report not found in PDF",
+                    agency="ohio",
+                    website="ohio",
+                    state="OH",
+                    city=None,
+                    created_by="frontend"
+                )
+
                 results.append({
-                    "filename": file.filename,
+                    "upload_id": save_result.get("upload_id"),
+                    "report_number": save_result.get("report_number"),
                     "status": "error",
-                    "message": "No se encontró un número de reporte válido"
+                    "message": "number report not found in PDF"
                 })
                 os.remove(temp_pdf_path)
                 continue
@@ -1109,19 +1156,44 @@ async def upload_multiple_pdfs(files: List[UploadFile] = File(...)):
             df.to_csv(csv_path, index=False)
 
             # Insertar en base de datos
-            insert_data_from_dataframe(df, UPLOAD_DIR)
+            summary = insert_data_from_dataframe(df, UPLOAD_DIR)
+
+            save_result = save_estatus_pdf(
+                file_name=file.filename.lower(),
+                report_number=number_report,
+                number_passagers=len(df),
+                status=summary.get("incident_report"),
+                agency="ohio",
+                website="ohio",
+                state="OH",
+                city=None,
+                created_by="frontend"
+            )
 
             results.append({
-                "filename": file.filename,
-                "status": "success",
-                "pdf_saved_as": final_pdf_name,
-                "csv_generated": csv_filename,
-                "rows_extracted": len(df)
+                "upload_id": save_result.get("upload_id"),
+                "report_number": number_report,
+                "status": save_result.get("status"),
+                "message": "rows count - >" + str(len(df))
             })
 
         except Exception as e:
+
+            save_result = save_estatus_pdf(
+                file_name=file.filename.lower(),
+                report_number="",
+                number_passagers=0,
+                status="error",
+                agency="ohio",
+                website="ohio",
+                state="OH",
+                city=None,
+                created_by="frontend"
+            )
+                        
             results.append({
-                "filename": file.filename,
+                "upload_id": save_result.get("upload_id"),
+                "report_number": save_result.get("report_number"),
                 "status": "error",
                 "message": f"Error procesando el archivo: {str(e)}"
             })
@@ -1134,28 +1206,41 @@ async def upload_multiple_pdfs(files: List[UploadFile] = File(...)):
     return JSONResponse(status_code=207, content={"results": results})
 
 
-
-@app.get("/report-status/{report_number}", tags=["upload_pdf"])
-def get_report_status(report_number: str):
+@app.get("/report-status", tags=["upload_pdf"])
+def get_report_status(report_number: Optional[str] = Query(None, description="Número de reporte a buscar")):
+    """
+    Endpoint to get the status of uploaded PDF reports.
+    If `report_number` is provided, it will return the status of that specific report.
+    If not provided, it will return the last 100 records.
+    If no records are found, it will return a message indicating that.
+    """
     conn = None
     cur = None
-    report_number = report_number.strip()
 
     try:
         conn = get_connection()
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
-        cur.execute("""
-            SELECT * FROM upload_pdf_status
-            WHERE TRIM(report_number) = %s
-        """, (report_number,))
+        if report_number:
+            report_number = report_number.strip()
+            cur.execute("""
+                SELECT * FROM upload_pdf_status
+                WHERE TRIM(report_number) = %s
+                ORDER BY created_at DESC
+            """, (report_number,))
+        else:
+            cur.execute("""
+                SELECT * FROM upload_pdf_status
+                ORDER BY created_at DESC
+                LIMIT 100
+            """)
 
-        rows = cur.fetchall()
-
+        records = cur.fetchall()
         return {
-            "report_number": report_number,
-            "records": rows,
-            "message": "Records found" if rows else "No records found for this report_number"
+            "report_number": report_number or "ALL",
+            "records_found": len(records),
+            "records": records,
+            "message": "Records found." if records else "No records found."
         }
 
     except Exception as e:
