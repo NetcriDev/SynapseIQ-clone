@@ -1378,7 +1378,7 @@
                             city: incidente.city || "--",
                             reportPDFUrl: folder?.toLowerCase() === "minnesota" ?
                                 incidente.source_url :
-                                `https://8162-52-116-202-144.ngrok-free.app/incident/pdf/view/${incidente.pdf_id || incidente.report_number}`,
+                                `https://857f772389f9.ngrok.app/incident/pdf/view/${incidente.pdf_id || incidente.report_number}`,
                             distanceFromClinic: distanceFromClinic,
                             originalIncident: incidente,
                             originalVehicle: incidente.vehicles[motorista.vehicleIndex],
@@ -1475,7 +1475,7 @@
             }
 
             // Certifique-se de que esta URL está correta e funcional no seu backend
-            const url = `https://8162-52-116-202-144.ngrok-free.app/passenger/${passengerId}/phones`;
+            const url = `https://857f772389f9.ngrok.app/passenger/${passengerId}/phones`;
 
             try {
                 const res = await fetch(url, {
@@ -1869,7 +1869,7 @@
 
                     let uploadEndpoint = '';
                     if (selectedState === 'Ohio') {
-                        uploadEndpoint = 'https://8162-52-116-202-144.ngrok-free.app/upload-multiple-pdfs-ohio';
+                        uploadEndpoint = 'https://857f772389f9.ngrok.app/upload-multiple-pdfs-ohio';
                     } else {
                         // Caso você adicione outros estados no futuro e precise de endpoints diferentes
                         uploadStatus.textContent = 'Invalid state selected for upload.';
@@ -2030,7 +2030,7 @@
             assignStatus.textContent = 'Processing...';
             assignStatus.style.color = 'orange';
 
-            const apiUrl = 'https://8162-52-116-202-144.ngrok-free.app/assign-marketer-users/';
+            const apiUrl = 'https://857f772389f9.ngrok.app/assign-marketer-users/';
             let successCount = 0;
             let errorCount = 0;
 
@@ -2182,7 +2182,7 @@
                     // Verifica se este passageiro realmente tem o marketer que queremos deletar
                     const hasMarketer = passengerData.marketers.some(m => m.id.toString() === marketerToDelete.id);
                     if (hasMarketer) {
-                        const deleteUrl = `https://8162-52-116-202-144.ngrok-free.app/assign-marketer-users/?passenger_id=${passengerData.passengerId}&marketer_user_id=${marketerToDelete.id}`;
+                        const deleteUrl = `https://857f772389f9.ngrok.app/assign-marketer-users/?passenger_id=${passengerData.passengerId}&marketer_user_id=${marketerToDelete.id}`;
                         
                         deletePromises.push(
                             fetch(deleteUrl, {
