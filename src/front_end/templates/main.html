@@ -429,7 +429,7 @@
             padding: 20px;
             border: 1px solid #888;
             width: 80%;
-            max-width: 700px;
+            max-width: 900px;
             box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2), 0 6px 20px 0 rgba(0,0,0,0.19);
             animation-name: animatetop;
             animation-duration: 0.4s;
@@ -826,8 +826,8 @@
                 <h2>Upload Status (under develompent)</h2>
                 <p>Check the status of your uploads here.</p>
                 <div id="statusContent">
-                    <div class="file-history">
-                        <table>
+                    <div class="file-history" style="overflow: auto;max-height: 450px;">
+                        <table style="overflow-y: scroll;">
                             <thead>
                                 <tr>
                                     <th>File</th>
@@ -836,13 +836,12 @@
                                     <th>Passengers</th>
                                     <th>Upload Date</th>
                                     <th>Status</th>
-                                    <th>Status Date</th>
+                                    <!-- <th>Status Date</th> -->
                                 </tr>
                             </thead>
-                            <tbody id="upload-history-body">
+                            <tbody id="upload-history-body" style="overflow-y: auto;">
                                 <!-- API via JavaScript -->
-                            </tbody>
-                            
+                            </tbody>                            
                         </table>
                     </div>
                 </div>
@@ -888,7 +887,7 @@
             font-weight: bold;
         }
 
-        /* Modal (mantenha seu estilo atual) */
+        /* Modal */
         .modal-content {
             border-top: none; 
         }
@@ -921,6 +920,45 @@
             if (selectedTab) selectedTab.classList.add('active');
             if (selectedPage) selectedPage.classList.add('active');
         }
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            async function loadUploadHistory() {
+                const tbody = document.getElementById('upload-history-body');
+                tbody.innerHTML = '<tr><td colspan="7">Loading...</td></tr>';
+                try {
+                    const res = await fetch('https://857f772389f9.ngrok.app/report-status');
+                    const data = await res.json();
+                    if (!data.records || !Array.isArray(data.records) || data.records.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="7">No records found.</td></tr>';
+                        return;
+                    }
+                    tbody.innerHTML = '';
+                    data.records.forEach(rec => {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td>${rec.file_name || ''}</td>
+                            <td>${rec.agency || ''}</td>
+                            <td>${rec.report_number || ''}</td>
+                            <td>${rec.number_passagers || ''}</td>
+                            <td>${rec.created_at ? new Date(rec.created_at).toLocaleString() : ''}</td>
+                            <td>${rec.status || ''}</td>
+                            <!-- <td>${rec.updated_at ? new Date(rec.updated_at).toLocaleString() : ''}</td> -->
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                } catch (e) {
+                    tbody.innerHTML = '<tr><td colspan="7" style="color:red;">Error loading data.</td></tr>';
+                }
+            }
+            // Carrega ao abrir a aba "Status"
+            document.querySelector('.tab[onclick*="page2"]').addEventListener('click', loadUploadHistory);
+            // Se já estiver na aba Status ao abrir, carrega imediatamente
+            if (document.getElementById('page2').classList.contains('active')) {
+                loadUploadHistory();
+            }
+        });
     </script>
 
     <div id="assignModal" class="modal">
@@ -1889,13 +1927,13 @@
 
                         if (response.ok) {
                             const result = await response.json(); // Ou response.text() dependendo do que a API retorna
-                            uploadStatus.textContent = `Successfully uploaded ${files.length} file(s)! Response: ${result.message || JSON.stringify(result)}`;
+                            uploadStatus.textContent = `Successfully uploaded ${files.length} file(s)!`;  // Response: ${result.message || JSON.stringify(result)}
                             uploadStatus.style.color = 'green';
                             // Opcional: Fechar modal ou resetar formulário após upload
                             // setTimeout(() => closeUploadModal(), 2000); 
                         } else {
                             const errorText = await response.text(); // Pega a resposta de erro
-                            uploadStatus.textContent = `Upload failed: ${response.status} - ${errorText}`;
+                            uploadStatus.textContent = `Upload failed: ${response.status}`; // - ${errorText}
                             uploadStatus.style.color = 'red';
                             console.error('Upload error:', response.status, errorText);
                         }
