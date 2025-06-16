@@ -82,22 +82,33 @@ try:
     # ADD COLUMN address TEXT
     # """
 
-    #Agregar address
+    # #Agregar address
+    # alter_table_sql = """ 
+    # ALTER TABLE incident_reports
+    # ADD COLUMN address TEXT
+    # """
+
+    # #Agregar address
+    # alter_table_sql = """ 
+    # ALTER TABLE passengers
+    # ADD COLUMN insurance_company TEXT,
+    # ADD COLUMN hasphone TEXT,
+    # ADD COLUMN hasinsurance_details TEXT,
+    # ADD COLUMN hasname TEXT,
+    # ADD COLUMN over18 TEXT,
+    # ADD COLUMN hotlead TEXT;
+    # """
+
+    #Agregar website a tablas de chat
     alter_table_sql = """ 
-    ALTER TABLE incident_reports
-    ADD COLUMN address TEXT
+    ALTER TABLE chat_session
+    ADD COLUMN website TEXT
     """
 
-    #Agregar address
-    alter_table_sql = """ 
-    ALTER TABLE passengers
-    ADD COLUMN insurance_company TEXT,
-    ADD COLUMN hasphone TEXT,
-    ADD COLUMN hasinsurance_details TEXT,
-    ADD COLUMN hasname TEXT,
-    ADD COLUMN over18 TEXT,
-    ADD COLUMN hotlead TEXT;
-    """
+    # alter_table_sql = """
+    # ALTER TABLE chat_messages
+    # ADD COLUMN website TEXT;
+    # """
 
 
     cursor.execute(alter_table_sql)

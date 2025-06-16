@@ -115,4 +115,5 @@ def main(path: str):
 
 # Punto de entrada si se ejecuta como script
 if __name__ == "__main__":
-    main(path="/Users/imac/Software/SynapseIQ-dev/src/connectors/chicago")
+    #   main(path="/Users/imac/Software/SynapseIQ-dev/src/connectors/chicago")
+    main(path="/home/SynapseIQ/storage/chicago/2025")

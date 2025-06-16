@@ -183,6 +183,7 @@ def search_incidents(
     state: Optional[str] = None,
     city: Optional[str] = None,
     crash_severity: Optional[str] = None,
+    is_external: Optional[str] = None,
     hotlead: Optional[str] = None,
     hasphone: Optional[str] = None,
     hasinsurance_details: Optional[str] = None,
@@ -233,6 +234,9 @@ def search_incidents(
     if crash_severity:
         filters.append("ir.crash_severity ILIKE %s")
         params.append(f"%{crash_severity}%")
+    if is_external:
+        filters.append("ir.is_external ILIKE %s")
+        params.append(f"%{is_external}%")
 
     # --- Filtros sobre passengers ---
     if hotlead:
@@ -587,22 +591,24 @@ def search_crash_reports(
     return crashes
 
 
-def get_text_from_pdf(report_number: str, state: str) -> str:
+# ---------------- Endpoints de chat ----------------|
+
+def get_text_from_pdf(report_number: str, website: str = None) -> str:
     try:
         conn = get_connection()
         cur = conn.cursor()
         cur.execute("""
             SELECT text_from_pdf FROM incident_reports
-            WHERE report_number = %s AND state = %s
+            WHERE report_number = %s
             ORDER BY id DESC LIMIT 1
-        """, (report_number, state))
+        """, (report_number,))
         result = cur.fetchone()
         conn.close()
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
     if not result:
-        return "No incident report found for this report number and state"
+        return "No incident report found for this report number"
 
     text = result[0]
     if not text or str(text).strip().lower() in [""," ", "none", "null"]:
@@ -610,8 +616,6 @@ def get_text_from_pdf(report_number: str, state: str) -> str:
     print(".>>>>>>>>",text)
     return text
 
-
-# ---------------- Endpoints de chat ----------------|
 
 # Endpoint principal de chat
 @app.post("/chat", response_model=ChatResponse, tags=["Chat Model"])
@@ -642,9 +646,9 @@ async def chat_with_model(request: ChatRequest):
 
     # Save Question
     cur.execute("""
-        INSERT INTO chat_messages (report_number, state ,session_id, role, content) 
+        INSERT INTO chat_messages (report_number, state, session_id, role, content) 
         VALUES (%s, %s, %s, 'user', %s)
-    """, (request.report_number, request.state ,session_id, request.question))
+    """, (request.report_number, request.state, session_id, request.question))
     conn.commit()
 
     # Send to model

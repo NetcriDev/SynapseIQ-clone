@@ -154,7 +154,7 @@ class CrashReportWithPassengers(BaseModel):
 # ------------- ChatApi Models --------------
 class ChatRequest(BaseModel):
     report_number: str
-    state: str
+    state: Optional[str] = None
     question: str
 
 class ChatResponse(BaseModel):

@@ -116,7 +116,8 @@ def build_dataframe(crash_number, Date, accident_type, icr, case, contact, locat
     })
     
     # Separar "City, State, Country" -> em City e State com fallback
-    split_location = df_temp['City'].str.split(",", expand=True)
+    
+    split_location = df_temp['City'].astype(str).str.split(",", expand=True)
     
     df_temp['City'] = split_location[0].str.strip()
     df_temp['State'] = split_location[1].str.strip() if split_location.shape[1] > 1 else "N/A"
