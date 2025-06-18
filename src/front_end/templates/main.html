@@ -1222,7 +1222,7 @@
 
             try {
                 const response = await fetch('/marketer-users'); // Seu endpoint de proxy de marketers 
-                console.log(response);
+                console.log("Fetching marketers from:", response.url);
                 if (!response.ok) {
                     throw new Error(`Erro na API ao buscar marketers: ${response.status}`);
                 }
