@@ -1221,7 +1221,8 @@
             selectElement.innerHTML = '<option value="">All Marketers</option><option value="" disabled>Carregando...</option>';
 
             try {
-                const response = await fetch('/marketer-users'); // Seu endpoint de proxy de marketers
+
+                const response = await fetch('/marketer-users'); // Seu endpoint de proxy de marketers 
                 if (!response.ok) {
                     throw new Error(`Erro na API ao buscar marketers: ${response.status}`);
                 }
@@ -1927,13 +1928,13 @@
 
                         if (response.ok) {
                             const result = await response.json(); // Ou response.text() dependendo do que a API retorna
-                            uploadStatus.textContent = `Successfully uploaded ${files.length} file(s)! Response: ${result.message || JSON.stringify(result)}`;
+                            uploadStatus.textContent = `Successfully uploaded ${files.length} file(s)!`;  // Response: ${result.message || JSON.stringify(result)}
                             uploadStatus.style.color = 'green';
                             // Opcional: Fechar modal ou resetar formulário após upload
                             // setTimeout(() => closeUploadModal(), 2000); 
                         } else {
                             const errorText = await response.text(); // Pega a resposta de erro
-                            uploadStatus.textContent = `Upload failed: ${response.status} - ${errorText}`;
+                            uploadStatus.textContent = `Upload failed: ${response.status}`; // - ${errorText}
                             uploadStatus.style.color = 'red';
                             console.error('Upload error:', response.status, errorText);
                         }
