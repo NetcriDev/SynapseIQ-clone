@@ -706,6 +706,7 @@
                         <option value="winstonsalem">Winston Salem</option>
                         <option value="texas">Texas</option>
                         <option value="ohio">Ohio</option>
+                        <option value="georgia">Georgia</option>
                     </select>
                 </label>
 
@@ -811,6 +812,7 @@
                     <select id="stateSelect" style="width: 100%; padding: 8px; margin-bottom: 15px;">
                         <option value="" disabled selected>Select State</option>
                         <option value="Ohio">Ohio</option>
+                        <option value="Ohio">Georgia</option>
                         </select>
                     <p>Select one file to upload:</p>
                     <input type="file" id="fileInput" name="files[]" multiple accept=".pdf,.doc,.docx,.txt,.csv">
@@ -1909,7 +1911,10 @@
                     let uploadEndpoint = '';
                     if (selectedState === 'Ohio') {
                         uploadEndpoint = 'https://fcab11165760.ngrok.app/upload-multiple-pdfs-ohio';
-                    } else {
+                    } if (selectedState === 'Georgia'){
+                        uploadEndpoint = 'https://fcab11165760.ngrok.app/upload-multiple-pdfs-georgia';
+                    }
+                    else {
                         // Caso você adicione outros estados no futuro e precise de endpoints diferentes
                         uploadStatus.textContent = 'Invalid state selected for upload.';
                         uploadStatus.style.color = 'red';
