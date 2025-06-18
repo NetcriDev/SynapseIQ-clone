@@ -1911,10 +1911,9 @@
                     let uploadEndpoint = '';
                     if (selectedState === 'Ohio') {
                         uploadEndpoint = 'https://fcab11165760.ngrok.app/upload-multiple-pdfs-ohio';
-                    } if (selectedState === 'Georgia'){
+                    } else if (selectedState === 'Georgia') {
                         uploadEndpoint = 'https://fcab11165760.ngrok.app/upload-multiple-pdfs-georgia';
-                    }
-                    else {
+                    } else {
                         // Caso você adicione outros estados no futuro e precise de endpoints diferentes
                         uploadStatus.textContent = 'Invalid state selected for upload.';
                         uploadStatus.style.color = 'red';
