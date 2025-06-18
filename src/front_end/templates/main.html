@@ -1221,7 +1221,8 @@
             selectElement.innerHTML = '<option value="">All Marketers</option><option value="" disabled>Carregando...</option>';
 
             try {
-                const response = await fetch('/marketer-users'); // Seu endpoint de proxy de marketers
+                const response = await fetch('/marketer-users'); // Seu endpoint de proxy de marketers 
+                console.log(response);
                 if (!response.ok) {
                     throw new Error(`Erro na API ao buscar marketers: ${response.status}`);
                 }
