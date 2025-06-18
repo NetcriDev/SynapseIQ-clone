@@ -706,6 +706,7 @@
                         <option value="winstonsalem">Winston Salem</option>
                         <option value="texas">Texas</option>
                         <option value="ohio">Ohio</option>
+                        <option value="georgia">Georgia</option>
                     </select>
                 </label>
 
@@ -811,6 +812,7 @@
                     <select id="stateSelect" style="width: 100%; padding: 8px; margin-bottom: 15px;">
                         <option value="" disabled selected>Select State</option>
                         <option value="Ohio">Ohio</option>
+                        <option value="Ohio">Georgia</option>
                         </select>
                     <p>Select one file to upload:</p>
                     <input type="file" id="fileInput" name="files[]" multiple accept=".pdf,.doc,.docx,.txt,.csv">
@@ -1221,7 +1223,8 @@
             selectElement.innerHTML = '<option value="">All Marketers</option><option value="" disabled>Carregando...</option>';
 
             try {
-                const response = await fetch('/marketer-users'); // Seu endpoint de proxy de marketers
+
+                const response = await fetch('/marketer-users'); // Seu endpoint de proxy de marketers 
                 if (!response.ok) {
                     throw new Error(`Erro na API ao buscar marketers: ${response.status}`);
                 }
@@ -1908,7 +1911,10 @@
                     let uploadEndpoint = '';
                     if (selectedState === 'Ohio') {
                         uploadEndpoint = 'https://fcab11165760.ngrok.app/upload-multiple-pdfs-ohio';
-                    } else {
+                    } if (selectedState === 'Georgia'){
+                        uploadEndpoint = 'https://fcab11165760.ngrok.app/upload-multiple-pdfs-georgia';
+                    }
+                    else {
                         // Caso você adicione outros estados no futuro e precise de endpoints diferentes
                         uploadStatus.textContent = 'Invalid state selected for upload.';
                         uploadStatus.style.color = 'red';
@@ -1927,13 +1933,13 @@
 
                         if (response.ok) {
                             const result = await response.json(); // Ou response.text() dependendo do que a API retorna
-                            uploadStatus.textContent = `Successfully uploaded ${files.length} file(s)! Response: ${result.message || JSON.stringify(result)}`;
+                            uploadStatus.textContent = `Successfully uploaded ${files.length} file(s)!`;  // Response: ${result.message || JSON.stringify(result)}
                             uploadStatus.style.color = 'green';
                             // Opcional: Fechar modal ou resetar formulário após upload
                             // setTimeout(() => closeUploadModal(), 2000); 
                         } else {
                             const errorText = await response.text(); // Pega a resposta de erro
-                            uploadStatus.textContent = `Upload failed: ${response.status} - ${errorText}`;
+                            uploadStatus.textContent = `Upload failed: ${response.status}`; // - ${errorText}
                             uploadStatus.style.color = 'red';
                             console.error('Upload error:', response.status, errorText);
                         }
