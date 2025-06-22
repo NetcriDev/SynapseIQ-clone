@@ -2148,65 +2148,57 @@
 
         // Função para preparar o modal de deleção
         async function prepareDeleteAssignmentModal() {
+            passengersWithMarketersForDeletion = []; // Limpa a lista anterior
             const marketerListDiv = document.getElementById('marketerListToDelete');
-            marketerListDiv.innerHTML = '<p>Loading all marketers for deletion options...</p>';
+            marketerListDiv.innerHTML = '<p>Searching for marketers in selected reports...</p>';
+            
+            const uniqueMarketerUsernames = new Set();
+            
+            // Coleta os dados completos dos itens selecionados
+            const selectedReportsData = currentlyDisplayedData.filter(item => selectedItemIds.has(item.id));
 
-            let allAvailableMarketers = [];
-            try {
-                // Nova chamada para buscar TODOS os marketers, usando sua rota de proxy Flask
-                const response = await fetch('/marketer-users'); // Aponta para sua rota Flask /marketer-users
-                if (!response.ok) throw new Error(`Error loading all marketers: ${response.status}`);
-                allAvailableMarketers = await response.json();
+            // Itera sobre os relatórios selecionados
+            for (const report of selectedReportsData) {
+                // A API de vocês já tem o passageiro no "originalMotorista"
+                const passenger = report.originalMotorista;
 
-                // Certifique-se de que os IDs são strings para consistência, se o backend retornar números
-                allAvailableMarketers = allAvailableMarketers.map(m => ({
-                    id: String(m.id), // Converte para string para garantir comparação correta com checkbox.value
-                    username: m.username,
-                    full_name: m.full_name
-                }));
+                if (passenger && passenger.marketer_users && passenger.marketer_users.length > 0) {
+                    // Adiciona o passageiro completo à lista para deleção, incluindo o ID do passageiro
+                    passengersWithMarketersForDeletion.push({
+                        passengerId: passenger.id,
+                        marketers: passenger.marketer_users
+                    });
 
-            } catch (error) {
-                console.error('Failed loading all marketers for deletion:', error);
-                marketerListDiv.innerHTML = '<p>Error loading marketers for deletion. Please try again.</p>';
-                document.getElementById('confirm-delete-assignment-btn').disabled = true;
-                openDeleteAssignmentModal();
-                return;
+                    // Coleta os usernames únicos dos marketers encontrados
+                    passenger.marketer_users.forEach(marketer => {
+                        uniqueMarketerUsernames.add(JSON.stringify({
+                            id: marketer.id,
+                            username: marketer.username,
+                            full_name: marketer.full_name
+                        }));
+                    });
+                }
             }
 
-            // Agora, populamos o modal com TODOS os marketers
-            if (allAvailableMarketers.length > 0) {
+            // Popula o modal com os marketers únicos encontrados
+            if (uniqueMarketerUsernames.size > 0) {
                 marketerListDiv.innerHTML = '<h3 style="font-weight: normal; font-size: 15px">Select Marketer(s) to Delete:</h3>';
-                allAvailableMarketers.forEach(marketer => {
+                uniqueMarketerUsernames.forEach(marketerString => {
+                    const marketer = JSON.parse(marketerString);
                     const label = document.createElement('label');
                     label.innerHTML = `
-                        <input type="checkbox" name="marketerToDelete" value="<span class="math-inline">\{marketer\.id\}" data\-username\="</span>{marketer.username}">
+                        <input type="checkbox" name="marketerToDelete" value="${marketer.id}" data-username="${marketer.username}">
                         ${marketer.full_name || marketer.username}
                     `;
                     marketerListDiv.appendChild(label);
                     label.style.fontSize = '15px';
                     marketerListDiv.appendChild(document.createElement('br'));
                 });
-                document.getElementById('confirm-delete-assignment-btn').disabled = false;
             } else {
-                marketerListDiv.innerHTML = '<p>No marketers available to delete assignments from.</p>';
-                document.getElementById('confirm-delete-assignment-btn').disabled = true;
+                marketerListDiv.innerHTML = '<p>No marketers found in the selected reports to delete.</p>';
+                document.getElementById('confirm-delete-assignment-btn').disabled = true; // Desabilita o botão se não houver marketers
             }
-
-            // Você ainda precisará da lista de passengerIds para enviar na deleção
-            // Esta parte do seu código anterior continua relevante para 'passengersWithMarketersForDeletion'
-            // que será usada pela `confirmDeleteAssignments`.
-            passengersWithMarketersForDeletion = []; 
-            const selectedReportsData = currentlyDisplayedData.filter(item => selectedItemIds.has(item.id));
-            for (const report of selectedReportsData) {
-                const passenger = report.originalMotorista;
-                if (passenger && passenger.id) { // Só precisamos do passengerId e seus marketers associados
-                    passengersWithMarketersForDeletion.push({
-                        passengerId: passenger.id,
-                        marketers: passenger.marketer_users || [] // Garante que marketers é um array
-                    });
-                }
-            }
-
+            document.getElementById('confirm-delete-assignment-btn').disabled = uniqueMarketerUsernames.size === 0; // Garante que o botão está habilitado/desabilitado corretamente
             openDeleteAssignmentModal();
         }
 
