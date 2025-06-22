@@ -114,6 +114,15 @@ def incident_search_proxy():
                 # Remove any marketer_username that came from the frontend to ensure this.
                 api_params['marketer_username'] = username
                 print(f"DEBUG: Usuário marketing. Aplicando filtro forçado de marketer_username: {username}")
+            elif role == "marketing_plus":
+                # Marketing_plus users can see their own leads by default,
+                # but can also filter for other marketers.
+                # If no marketer_username is provided, default to their own.
+                if 'marketer_username' not in api_params or not api_params['marketer_username']:
+                    api_params['marketer_username'] = username
+                    print(f"DEBUG: Usuário marketing_plus. Nenhum filtro de marketer_username fornecido, aplicando o próprio: {username}")
+                else:
+                    print(f"DEBUG: Usuário marketing_plus. Filtro de marketer_username: {api_params['marketer_username']}")
             elif role == "admin":
                 # Admin users can use the dropdown filter.
                 # If 'marketer_username' was sent from the frontend (dropdown), it is already in api_params.
@@ -121,14 +130,6 @@ def incident_search_proxy():
                 if 'marketer_username' in api_params and api_params['marketer_username'] == '':
                     api_params.pop('marketer_username') # Remove se for vazio (All Marketers)
                 print(f"DEBUG: Usuário é admin. Filtro de marketer_username: {api_params.get('marketer_username', 'Nenhum')}")
-            elif role == "marketing_plus":
-                # Se frontend passou marketer_username (filtro), usa o que veio
-                # Se não passou nada, força o próprio
-                if 'marketer_username' not in api_params or not api_params['marketer_username']:
-                    api_params['marketer_username'] = username
-                    print(f"DEBUG: marketing_plus: sem filtro, aplicando próprio username: {username}")
-                else:
-                    print(f"DEBUG: marketing_plus: aplicando filtro de marketer_username: {api_params['marketer_username']}")
             else:
                 print(f"DEBUG: Role '{role}' não reconhecida. Nenhum filtro aplicado, mas deve ser tratado no frontend.")
                 # Consider returning a 403 error here if unrecognized roles should not see data
@@ -147,7 +148,7 @@ def incident_search_proxy():
         return jsonify({"error": str(e)}), 500
 
     # Builds the final URL with the parameters applied
-    # `urlencode` already handles empty parameters and encoding
+    # urlencode already handles empty parameters and encoding
     full_api_url = f"{EXTERNAL_SEARCH_API_BASE_URL}?{urlencode(api_params)}"
     print(f"DEBUG: Calling external API: {full_api_url}") 
     
@@ -193,13 +194,13 @@ def get_marketer_users():
 @requires_auth
 def get_user_info():
     """
-    Returns the logged in user information (username and admin status)
+    Returns the logged in user information (username and role)
     as JSON to the frontend.
     """
     current_user_email = session[JWT_PAYLOAD_KEY].get('email')
     
     current_user_username = None
-    is_admin_user = False
+    user_role = None # Initialize user_role
 
     try:
         headers = {'ngrok-skip-browser-warning': 'true'}
@@ -210,8 +211,7 @@ def get_user_info():
         
         if user_info:
             current_user_username = user_info.get('username')
-            if user_info.get('role') == 'admin':
-                is_admin_user = True
+            user_role = user_info.get('role') # Get the actual role
         else:
             print(f"NOTICE: User {current_user_email} not found in marketers list when searching for user-info.")
 
@@ -219,17 +219,10 @@ def get_user_info():
         print(f"Error fetching marketers user data for /user-info: {e}")
         # For simplicity, we will return None/False in case of an error in the Marketers API.
 
-    is_marketing_plus_user = False
-    if user_info:
-        if user_info.get('role') == 'marketing_plus':
-            is_marketing_plus_user = True
-
     return jsonify({
         'current_user_username': current_user_username,
-        'is_admin_user': is_admin_user,
-        'is_marketing_plus_user': is_marketing_plus_user
+        'user_role': user_role # Return the user's role
     })
-
 
 
 # Auth functions

@@ -1073,8 +1073,8 @@
 
         // Variáveis globais para armazenar o estado da tabela e dos filtros
         let currentUserUsername = null; // Declare como let
+        let currentUserRole = null; // New global variable for the user's role
         let isAdminUser = false; // Declare como let
-        let isMarketingPlusUser = false; // Declare como let
 
         // selectedItems agora armazena os objetos de dados das linhas selecionadas
         let selectedRowDataForExport = [];
@@ -1106,70 +1106,60 @@
                 }
                 const userInfo = await response.json();
                 currentUserUsername = userInfo.current_user_username;
-                isAdminUser = userInfo.is_admin_user;
-                isMarketingPlusUser = userInfo.is_marketing_plus_user;
-                console.log("User Info Loaded:", { currentUserUsername, isAdminUser });
+                currentUserRole = userInfo.user_role; // Set the user role
+                console.log("User Info Loaded:", { currentUserUsername, currentUserRole });
 
                 // Uma vez que as informações do usuário estão carregadas,
                 // você pode agora buscar os dados principais da tabela
                 // e popular o dropdown de marketers.
-                populateMarketerFilterDropdown(); // Depende de fetchUserInfo, pois admins veem todos.
+                populateMarketerFilterDropdown(); // Depende de fetchUserInfo
                 fetchData(); // Chama a função que busca e exibe os dados da tabela
                 
             } catch (error) {
                 console.error('Erro ao carregar informações do usuário:', error);
-                // Exiba uma mensagem de erro na UI se as informações do usuário não puderem ser carregadas
                 const loadingDiv = document.getElementById("loading");
-                loadingDiv.innerHTML = `<div style="color: red; text-align: center;">
-                                            Erro ao carregar informações do usuário. 
-                                            Por favor, tente novamente mais tarde. <br>(${error.message})
-                                        </div>`;
+                loadingDiv.innerHTML = `<div style="color: red; text-align: center;">Erro ao carregar informações do usuário. Por favor, tente novamente mais tarde. <br>(${error.message})</div>`;
             }
         }
 
         document.addEventListener('DOMContentLoaded', function() {
-            // Esconder os botões por padrão no carregamento da página
             const adminActionsDiv = document.getElementById('admin-actions');
+            const assignButtonsDiv = document.getElementById('assign-buttons'); // Assuming you have a div for assign/unassign buttons
+
+            // Hide action buttons by default
             if (adminActionsDiv) {
                 adminActionsDiv.style.display = 'none';
             }
+            if (assignButtonsDiv) {
+                assignButtonsDiv.style.display = 'none';
+            }
 
-            // Primeiro, buscar as informações do usuário
-            fetch('/user-info')
-                .then(response => {
-                    if (!response.ok) {
-                        // Se a resposta não for OK (ex: 403 Forbidden), você pode tratar aqui
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    console.log("Informações do usuário carregadas:", data); // Para depuração
-                    // 1. Mostrar/Esconder botões de administrador
-                    if (data.is_admin_user) {
-                        if (adminActionsDiv) {
-                            adminActionsDiv.style.display = 'flex'; // Mostra os botões para admins
+            fetchUserInfo() // Call fetchUserInfo which will then call populateMarketerFilterDropdown and fetchData
+                .then(() => {
+                    // After user info is loaded, determine button visibility
+                    if (currentUserRole === 'admin' || currentUserRole === 'marketing_plus') {
+                        if (adminActionsDiv) { // Assuming admin-actions contains assign/unassign buttons
+                            adminActionsDiv.style.display = 'flex'; 
+                        }
+                        if (assignButtonsDiv) { // If you have a separate div for just assign/unassign
+                            assignButtonsDiv.style.display = 'flex';
                         }
                     }
-
-                    // 2. Chamar fetchData APENAS DEPOIS que a informação do usuário estiver carregada
-                    // E você pode passar a role do usuário para fetchData se necessário para lógicas futuras
-                    fetchData(data.is_admin_user); // Passa a informação se é admin para fetchData
                 })
                 .catch(error => {
-                    console.error('Erro ao buscar informações do usuário:', error);
-                    // Em caso de erro ao buscar as informações do usuário,
-                    // talvez você queira esconder os botões de admin e
-                    // ainda assim tentar carregar os dados (ou não, dependendo da sua lógica de segurança)
-                    fetchData(false); // Assume que não é admin em caso de erro e tenta carregar os dados
+                    console.error('Erro ao buscar informações do usuário na inicialização:', error);
+                    // Optionally, you can display a message to the user here
                 });
 
-            // Certifique-se de que a função fetchData receba um parâmetro, se for usá-lo
-            // Exemplo de como sua função fetchData pode parecer (adapte conforme necessário)
-            // function fetchData(isAdmin) {
-            //     console.log(`fetchData chamado. Usuário é admin: ${isAdmin}`);
-            //     // Sua lógica de carregamento de dados aqui
-            // }
+            // Event listener for the marketer filter dropdown
+            const marketerFilterDropdown = document.getElementById('filter-marketer');
+            if (marketerFilterDropdown) {
+                marketerFilterDropdown.addEventListener('change', function() {
+                    currentFilters.marketerId = this.value;
+                    currentPage = 1; // Reset to first page on filter change
+                    fetchData();
+                });
+            }
         });
         
         function applyFilters() {
@@ -1220,20 +1210,17 @@
                 console.error("Elemento #filter-marketer não encontrado para popular o dropdown de filtro.");
                 return;
             }
-
-            selectElement.innerHTML = '<option disabled>Carregando...</option>';
+            
+            selectElement.innerHTML = '<option value="">All Marketers</option><option value="" disabled>Carregando...</option>';
 
             try {
                 const response = await fetch('/marketer-users');
-                if (!response.ok) throw new Error(`Erro na API ao buscar marketers: ${response.status}`);
+                if (!response.ok) {
+                    throw new Error(`Erro na API ao buscar marketers: ${response.status}`);
+                }
                 const marketers = await response.json();
 
-                // Limpa o select
-                selectElement.innerHTML = '';
-
-                if (isAdminUser) {
-                    selectElement.innerHTML = '<option value="">All Marketers</option>';
-                }
+                selectElement.innerHTML = '<option value="">All Marketers</option>'; 
 
                 marketers.forEach(marketer => {
                     const option = document.createElement('option');
@@ -1242,36 +1229,48 @@
                     selectElement.appendChild(option);
                 });
 
-                if (!isAdminUser && !isMarketingPlusUser && currentUserUsername) {
-                    selectElement.value = currentUserUsername;
+                // Lógica de seleção e desabilitação baseada na role
+                if (currentUserRole === 'marketing') {
+                    // Marketing users ONLY see their own, dropdown is disabled.
+                    if (currentUserUsername) {
+                        selectElement.value = currentUserUsername;
+                    }
                     selectElement.disabled = true;
-                    console.log(`Dropdown desabilitado para marketing puro: ${currentUserUsername}`);
+                    console.log(`Dropdown de marketer desabilitado e pré-selecionado para: ${currentUserUsername} (Marketing)`);
+                } else if (currentUserRole === 'marketing_plus') {
+                    // Marketing_plus users can filter, default to their own, dropdown is enabled.
+                    if (currentUserUsername) {
+                        selectElement.value = currentUserUsername;
+                        // You might want to update currentFilters.marketerId here too for the initial load
+                        currentFilters.marketerId = currentUserUsername; 
+                    }
+                    selectElement.disabled = false;
+                    console.log(`Dropdown de marketer habilitado e pré-selecionado para: ${currentUserUsername} (Marketing_Plus)`);
+                } else if (currentUserRole === 'admin') {
+                    // Admin users see "All Marketers" by default, dropdown is enabled.
+                    selectElement.disabled = false;
+                    selectElement.value = ''; // Ensure "All Marketers" is selected
+                    console.log(`Dropdown de marketer habilitado (Admin)`);
                 } else {
-                    selectElement.disabled = false; // admin ou marketing_plus podem escolher
+                    // Fallback for unknown roles (e.g., disable dropdown)
+                    selectElement.disabled = true;
+                    console.warn(`Role ${currentUserRole} não reconhecida. Dropdown de marketer desabilitado.`);
                 }
 
             } catch (error) {
                 console.error('Falha ao carregar marketers para o filtro:', error);
-                selectElement.innerHTML = '<option value="" disabled>Erro ao carregar</option>';
-                if (!isAdminUser && !isMarketingPlusUser) {
-                    selectElement.disabled = true;
-                }
+                selectElement.innerHTML = '<option value="">All Marketers</option><option value="" disabled>Erro ao carregar</option>';
+                selectElement.disabled = true; // Disable on error
             }
         }
 
-
-
         async function fetchData() {
-            // Verifique se as informações do usuário já foram carregadas
-            if (currentUserUsername === null && !isAdminUser) {
-                console.warn("fetchData chamado antes das informações do usuário estarem disponíveis. Aguardando...");
-                // Você pode adicionar uma lógica para atrasar ou chamar fetchUserInfo novamente,
-                // mas o ideal é que fetchData só seja chamado depois que fetchUserInfo resolver.
-                // Neste exemplo, `fetchUserInfo` já chama `fetchData` após carregar as infos.
-                return; 
+            if (currentUserUsername === null && currentUserRole === null) {
+                console.warn("fetchData called before user information is available. Waiting...");
+                return;
             }
 
-            const { from, to, website, marketerId} = currentFilters; 
+            const { from, to, website, marketerId} = currentFilters;
 
             const loadingDiv = document.getElementById("loading");
             const tableContainer = document.querySelector(".table-container");
@@ -1284,27 +1283,25 @@
             
             document.getElementById('select-all-current-page').checked = false;
 
-            let url = `/incident_search_proxy?page=${currentPage}&page_size=${pageSize}`; 
+            let url = `/incident_search_proxy?page=${currentPage}&page_size=${pageSize}`;
             
             if (from) url += `&accident_from=${from}`;
             if (to) url += `&accident_to=${to}`;
             if (website) url += `&website=${encodeURIComponent(website)}`;
 
-            // O filtro de marketer_username agora é enviado do frontend apenas se o usuário for admin
-            // e se um marketer específico for selecionado no dropdown.
-            // Para usuários de marketing, o backend já aplica o filtro.
-            if (isAdminUser && marketerId) {
-                // Admin pode filtrar por qualquer marketer
-                url += `&marketer_username=${encodeURIComponent(marketerId)}`;
-            } else if (isMarketingPlusUser && marketerId) {
-                // Marketing Plus pode filtrar por outro marketer individualmente
+            // The marketer_username filter is sent from the frontend if the user is admin or marketing_plus
+            // AND a specific marketer is selected in the dropdown.
+            // For regular marketing users, the backend already applies the filter.
+            if ((currentUserRole === 'admin' || currentUserRole === 'marketing_plus') && marketerId) {
                 url += `&marketer_username=${encodeURIComponent(marketerId)}`;
             }
+            // IMPORTANT: For marketing_plus, if marketerId is empty (i.e., "All Marketers" selected),
+            // we DON'T send a marketer_username to the backend. The backend will then
+            // automatically default to the current user's username for marketing_plus.
 
-            
             for (const filterName in booleanFilterStates) {
-                if (booleanFilterStates[filterName]) { 
-                    url += `&${filterName}=True`; 
+                if (booleanFilterStates[filterName]) {
+                    url += `&${filterName}=True`;
                 }
             }
 
@@ -1325,7 +1322,7 @@
                 currentApiData.items.forEach((incidente, incidentIndex) => {
                     const caminho = incidente.original_document_location?.replace(/\\/g, "/");
                     const partes = caminho?.split("/");
-                    const folder = partes?.[3] || "Texas"; 
+                    const folder = partes?.[3] || "Texas";
 
                     const allPassengersForIncident = incidente.vehicles.flatMap((veiculo, vehicleIndex) => {
                         if (veiculo.passengers?.length) {
@@ -1339,41 +1336,41 @@
                         }
                     });
 
-                    // Lógica de filtragem de passageiros no frontend (mantida como está)
+                    // Lógica de filtragem de passageiros no frontend
                     const filteredPassengers = allPassengersForIncident.filter(passenger => {
-                        if (!passenger.marketer_users || !Array.isArray(passenger.marketer_users)) {
-                            // Se não há marketer_users ou não é um array, este passageiro não tem marketer.
-                            // Admins podem vê-lo se "All Marketers" está selecionado, marketing não.
-                            // Se isAdminUser é true e currentFilters.marketerId é vazio, inclua-o.
-                            // Caso contrário, exclua-o.
-                            return isAdminUser && !currentFilters.marketerId;
-                        }
-
-                        const hasMarketerAssigned = passenger.marketer_users.some(
+                        const hasMarketerAssignedToMe = passenger.marketer_users?.some(
                             marketer => marketer.username === currentUserUsername
                         );
 
-                        if (isAdminUser) {
+                        if (currentUserRole === 'admin') {
                             // Admin:
                             if (currentFilters.marketerId) {
-                                // Admin filtrou por um marketer específico no dropdown
-                                return passenger.marketer_users.some(
+                                // Admin filtered by a specific marketer
+                                return passenger.marketer_users?.some(
                                     marketer => marketer.username === currentFilters.marketerId
                                 );
                             } else {
-                                // Admin selecionou "All Marketers" (currentFilters.marketerId é vazio)
-                                // Inclui o passageiro se a lista marketer_users dele NÃO ESTÁ VAZIA,
-                                // ou se não tem marketer_users (que já foi tratado acima).
-                                //return passenger.marketer_users.length > 0 || !passenger.marketer_users;
-                                
-                                // Se a intenção é que o admin veja *todos* os passageiros (mesmo sem marketer atribuído)
-                                // quando "All Marketers" é selecionado, mude a linha acima para:
-                                return true; 
+                                // Admin selected "All Marketers" - see all, including unassigned
+                                return true;
                             }
-                        } else {
-                            // Usuário Marketing:
-                            return hasMarketerAssigned;
+                        } else if (currentUserRole === 'marketing_plus') {
+                            // Marketing_Plus:
+                            if (currentFilters.marketerId) {
+                                // Marketing_Plus filtered by a specific marketer
+                                return passenger.marketer_users?.some(
+                                    marketer => marketer.username === currentFilters.marketerId
+                                );
+                            } else {
+                                // Marketing_Plus selected "All Marketers" or no filter - see only their own
+                                return hasMarketerAssignedToMe;
+                            }
+                        } else if (currentUserRole === 'marketing') {
+                            // Regular Marketing: ONLY see their own
+                            return hasMarketerAssignedToMe;
                         }
+                        
+                        // Default for unhandled roles or no assigned marketers
+                        return false;
                     });
 
 
@@ -1403,12 +1400,8 @@
 
                         const rowUniqueId = `incident_${incidente.report_number || incidentIndex}_vehicle_${motorista.vehicleIndex}_person_${passengerIndex}_${(driverName || 'unknown').replace(/\s+/g, '_')}`;
 
-                        // --- AQUI É ONDE VOCÊ IRÁ ADICIONAR A LÓGICA DE ABREVIAÇÃO ---
-                        // Primeiro, obtenha o estado do item de dado.
                         const rawState = incidente.state || '--';
-                        // Use o mapeamento para obter a abreviação, ou o nome original se não houver mapeamento.
                         const displayState = stateAbbreviations[rawState] || rawState;
-                        // --- FIM DA LÓGICA DE ABREVIAÇÃO ---
 
                         const rowDataItem = {
                             id: rowUniqueId,
@@ -1421,7 +1414,7 @@
                             age: motorista.age || "--",
                             gender: motorista.gender || "--",
                             address: motorista.street || "--",
-                            state: displayState, // <-- ATUALIZADO AQUI PARA USAR displayState
+                            state: displayState,
                             city: incidente.city || "--",
                             reportPDFUrl: folder?.toLowerCase() === "minnesota" ?
                                 incidente.source_url :
@@ -1458,8 +1451,8 @@
                                     </div>
                                 </div>
                             </td>
-                            <td>${fullInsuranceDetailsHTML}</td> 
-                            <td>${fullCrashSeverityHTML}</td> 
+                            <td>${fullInsuranceDetailsHTML}</td>
+                            <td>${fullCrashSeverityHTML}</td>
                             <td>${rowDataItem.age}</td>
                             <td>${rowDataItem.gender}</td>
                             <td>${rowDataItem.address}</td>
@@ -1487,7 +1480,7 @@
                 addCheckboxListenersToCurrentPage();
                 updateSelectAllCheckboxState();
                 updateDownloadButton();
-                updateAssignButton();
+                updateAssignButton(); // Ensure this function correctly uses currentUserRole
 
                 loadingDiv.style.display = "none";
                 tableContainer.style.display = "block";
@@ -1498,7 +1491,8 @@
                 tableContainer.style.display = "none";
             }
         }
-
+        
+        
         async function savePhoneNumber(button) {
             const row = button.closest("tr");
             const inputA = row.querySelector(".phoneInputA");
@@ -1634,15 +1628,20 @@
         }
 
         function updateAssignButton() {
-            const assignReportBtn = document.getElementById('assign-button');
-            if (assignReportBtn) {
-                const count = selectedItemIds.size; // Alterado aqui
-                assignReportBtn.textContent = `Assign Reports (${count})`;
-                assignReportBtn.disabled = count === 0;
+            const assignButton = document.getElementById('assign-button');
+            const unassignButton = document.getElementById('unassign-button');
+
+            if (!assignButton || !unassignButton) {
+                console.warn("Assign/Unassign buttons not found.");
+                return;
             }
-            const deleteAssignmentBtn = document.getElementById('delete-assignment-btn');
-            if (deleteAssignmentBtn) {
-                deleteAssignmentBtn.disabled = selectedItemIds.size === 0;
+
+            if (currentUserRole === 'admin' || currentUserRole === 'marketing_plus') {
+                assignButton.style.display = 'inline-block';
+                unassignButton.style.display = 'inline-block';
+            } else {
+                assignButton.style.display = 'none';
+                unassignButton.style.display = 'none';
             }
         }
 
