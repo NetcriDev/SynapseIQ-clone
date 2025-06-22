@@ -121,6 +121,12 @@ def incident_search_proxy():
                 if 'marketer_username' in api_params and api_params['marketer_username'] == '':
                     api_params.pop('marketer_username') # Remove se for vazio (All Marketers)
                 print(f"DEBUG: Usuário é admin. Filtro de marketer_username: {api_params.get('marketer_username', 'Nenhum')}")
+            elif role == "marketing_plus":
+                # Se frontend passou marketer_username (para filtrar outros), mantém.
+                # Caso contrário, força ao próprio
+                if 'marketer_username' not in api_params or not api_params['marketer_username']:
+                    api_params['marketer_username'] = username
+                print(f"DEBUG: Usuário marketing_plus. marketer_username aplicado: {api_params['marketer_username']}")
             else:
                 print(f"DEBUG: Role '{role}' não reconhecida. Nenhum filtro aplicado, mas deve ser tratado no frontend.")
                 # Consider returning a 403 error here if unrecognized roles should not see data
@@ -211,10 +217,17 @@ def get_user_info():
         print(f"Error fetching marketers user data for /user-info: {e}")
         # For simplicity, we will return None/False in case of an error in the Marketers API.
 
+    is_marketing_plus_user = False
+    if user_info:
+        if user_info.get('role') == 'marketing_plus':
+            is_marketing_plus_user = True
+
     return jsonify({
         'current_user_username': current_user_username,
-        'is_admin_user': is_admin_user
+        'is_admin_user': is_admin_user,
+        'is_marketing_plus_user': is_marketing_plus_user
     })
+
 
 # Auth functions
 @app.route('/login')

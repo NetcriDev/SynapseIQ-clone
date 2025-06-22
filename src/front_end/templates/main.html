@@ -1106,6 +1106,7 @@
                 const userInfo = await response.json();
                 currentUserUsername = userInfo.current_user_username;
                 isAdminUser = userInfo.is_admin_user;
+                isMarketingPlusUser = userInfo.is_marketing_plus_user;
                 console.log("User Info Loaded:", { currentUserUsername, isAdminUser });
 
                 // Uma vez que as informações do usuário estão carregadas,
@@ -1242,13 +1243,14 @@
 
                 // Se o usuário não for admin, pré-seleciona seu próprio username
                 // E desabilita o dropdown para que ele não possa mudar.
-                if (!isAdminUser && currentUserUsername) {
+                if (!isAdminUser && !isMarketingPlusUser && currentUserUsername) {
                     selectElement.value = currentUserUsername;
                     selectElement.disabled = true;
                     console.log(`Dropdown de marketer desabilitado e pré-selecionado para: ${currentUserUsername}`);
                 } else {
-                    selectElement.disabled = false; // Garante que esteja habilitado para admins
+                    selectElement.disabled = false; // admin ou marketing_plus conseguem filtrar
                 }
+
 
             } catch (error) {
                 console.error('Falha ao carregar marketers para o filtro:', error);
