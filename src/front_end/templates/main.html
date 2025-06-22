@@ -1220,20 +1220,20 @@
                 console.error("Elemento #filter-marketer não encontrado para popular o dropdown de filtro.");
                 return;
             }
-            
-            // Mostra "Carregando..." enquanto busca
-            selectElement.innerHTML = '<option value="">All Marketers</option><option value="" disabled>Carregando...</option>';
+
+            selectElement.innerHTML = '<option disabled>Carregando...</option>';
 
             try {
-
-                const response = await fetch('/marketer-users'); // Seu endpoint de proxy de marketers 
-                if (!response.ok) {
-                    throw new Error(`Erro na API ao buscar marketers: ${response.status}`);
-                }
+                const response = await fetch('/marketer-users');
+                if (!response.ok) throw new Error(`Erro na API ao buscar marketers: ${response.status}`);
                 const marketers = await response.json();
 
-                // Limpa e adiciona a opção "All Marketers"
-                selectElement.innerHTML = '<option value="">All Marketers</option>'; 
+                // Limpa o select
+                selectElement.innerHTML = '';
+
+                if (isAdminUser) {
+                    selectElement.innerHTML = '<option value="">All Marketers</option>';
+                }
 
                 marketers.forEach(marketer => {
                     const option = document.createElement('option');
@@ -1242,25 +1242,23 @@
                     selectElement.appendChild(option);
                 });
 
-                // Se o usuário não for admin, pré-seleciona seu próprio username
-                // E desabilita o dropdown para que ele não possa mudar.
                 if (!isAdminUser && !isMarketingPlusUser && currentUserUsername) {
                     selectElement.value = currentUserUsername;
                     selectElement.disabled = true;
-                    console.log(`Dropdown de marketer desabilitado e pré-selecionado para: ${currentUserUsername}`);
+                    console.log(`Dropdown desabilitado para marketing puro: ${currentUserUsername}`);
                 } else {
-                    selectElement.disabled = false; // admin ou marketing_plus conseguem filtrar
+                    selectElement.disabled = false; // admin ou marketing_plus podem escolher
                 }
-
 
             } catch (error) {
                 console.error('Falha ao carregar marketers para o filtro:', error);
-                selectElement.innerHTML = '<option value="">All Marketers</option><option value="" disabled>Erro ao carregar</option>';
-                if (!isAdminUser) { // Se não for admin e deu erro, desabilitar de qualquer forma.
+                selectElement.innerHTML = '<option value="" disabled>Erro ao carregar</option>';
+                if (!isAdminUser && !isMarketingPlusUser) {
                     selectElement.disabled = true;
                 }
             }
         }
+
 
 
         async function fetchData() {
@@ -1295,9 +1293,14 @@
             // O filtro de marketer_username agora é enviado do frontend apenas se o usuário for admin
             // e se um marketer específico for selecionado no dropdown.
             // Para usuários de marketing, o backend já aplica o filtro.
-            if (isAdminUser && marketerId) { // Só admins podem filtrar por marketerId aqui
+            if (isAdminUser && marketerId) {
+                // Admin pode filtrar por qualquer marketer
+                url += `&marketer_username=${encodeURIComponent(marketerId)}`;
+            } else if (isMarketingPlusUser && marketerId) {
+                // Marketing Plus pode filtrar por outro marketer individualmente
                 url += `&marketer_username=${encodeURIComponent(marketerId)}`;
             }
+
             
             for (const filterName in booleanFilterStates) {
                 if (booleanFilterStates[filterName]) { 
