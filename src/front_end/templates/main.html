@@ -1183,10 +1183,37 @@
             document.getElementById('filter-from').value = '';
             document.getElementById('filter-to').value = '';
             document.getElementById('filter-website').value = '';
-            // Manter o dropdown de marketer como 'Todos os Marketers' no reset
-            document.getElementById('filter-marketer').value = ''; 
 
-            currentFilters = { from: '', to: '', website: '', marketerId: '' }; 
+            // --- INÍCIO DA MUDANÇA PARA O FILTRO DE MARKETER ---
+            const marketerSelectElement = document.getElementById('filter-marketer');
+
+            if (currentUserRole === 'marketing_plus' || currentUserRole === 'marketing') {
+                // Se for marketing_plus ou marketing, volta para o próprio nome de usuário
+                if (currentUserUsername) {
+                    marketerSelectElement.value = currentUserUsername;
+                    currentFilters.marketerId = currentUserUsername; // Garante que o filtro interno também seja atualizado
+                    console.log(`Filtro de marketer resetado para o próprio usuário: ${currentUserUsername}`);
+                } else {
+                    // Fallback caso o username não esteja disponível (improvável se fetchUserInfo funcionar)
+                    marketerSelectElement.value = ''; // Deixa vazio se não encontrar o username
+                    currentFilters.marketerId = '';
+                    console.warn("Não foi possível resetar o filtro de marketer para o próprio usuário: username não disponível.");
+                }
+            } else { // Inclui 'admin' e outras roles desconhecidas
+                // Para admin, volta para 'All Marketers' (valor vazio)
+                marketerSelectElement.value = '';
+                currentFilters.marketerId = ''; // Define como vazio para o backend (todos os marketers)
+                console.log("Filtro de marketer resetado para 'All Marketers' (Admin ou padrão)");
+            }
+            // --- FIM DA MUDANÇA PARA O FILTRO DE MARKETER ---
+
+            // Reseta os outros filtros de data, site, etc.
+            currentFilters = { 
+                from: '', 
+                to: '', 
+                website: '', 
+                marketerId: currentFilters.marketerId // Mantém o valor que acabamos de definir
+            }; 
 
             for (const filterName in booleanFilterStates) {
                 booleanFilterStates[filterName] = false; 
@@ -1197,7 +1224,7 @@
             }
 
             currentPage = 1;
-            fetchData();
+            fetchData(); // Recarrega os dados com os filtros resetados
         }
 
         /**
@@ -1212,7 +1239,7 @@
             }
             
             // Limpa o dropdown e mostra "Carregando..."
-            selectElement.innerHTML = '<option value="" disabled>Carregando...</option>';
+            selectElement.innerHTML = '<option value="" disabled>Loading...</option>';
 
             try {
                 const response = await fetch('/marketer-users');
