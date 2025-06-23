@@ -1220,6 +1220,19 @@
                 }
                 const marketers = await response.json();
 
+                // --- INÍCIO DA MUDANÇA ---
+                // Limpa o dropdown antes de adicionar novas opções
+                selectElement.innerHTML = ''; 
+
+                // Adiciona a opção "All Marketers" SOMENTE para admins
+                if (currentUserRole === 'admin') {
+                    const allOption = document.createElement('option');
+                    allOption.value = ''; // O valor vazio indica "todos" para o backend
+                    allOption.textContent = 'All Marketers';
+                    selectElement.appendChild(allOption);
+                }
+                // --- FIM DA MUDANÇA ---
+
                 selectElement.innerHTML = '<option value="">All Marketers</option>'; 
 
                 marketers.forEach(marketer => {
