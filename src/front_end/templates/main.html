@@ -1211,7 +1211,8 @@
                 return;
             }
             
-            selectElement.innerHTML = '<option value="">All Marketers</option><option value="" disabled>Carregando...</option>';
+            // Limpa o dropdown e mostra "Carregando..."
+            selectElement.innerHTML = '<option value="" disabled>Carregando...</option>';
 
             try {
                 const response = await fetch('/marketer-users');
@@ -1233,8 +1234,6 @@
                 }
                 // --- FIM DA MUDANÇA ---
 
-                selectElement.innerHTML = '<option value="">All Marketers</option>'; 
-
                 marketers.forEach(marketer => {
                     const option = document.createElement('option');
                     option.value = marketer.username;
@@ -1254,7 +1253,7 @@
                     // Marketing_plus users can filter, default to their own, dropdown is enabled.
                     if (currentUserUsername) {
                         selectElement.value = currentUserUsername;
-                        // You might want to update currentFilters.marketerId here too for the initial load
+                        // Você pode querer garantir que o filtro inicial seja aplicado
                         currentFilters.marketerId = currentUserUsername; 
                     }
                     selectElement.disabled = false;
@@ -1262,18 +1261,23 @@
                 } else if (currentUserRole === 'admin') {
                     // Admin users see "All Marketers" by default, dropdown is enabled.
                     selectElement.disabled = false;
-                    selectElement.value = ''; // Ensure "All Marketers" is selected
+                    selectElement.value = ''; // Garante que "All Marketers" é selecionado se existir
                     console.log(`Dropdown de marketer habilitado (Admin)`);
                 } else {
-                    // Fallback for unknown roles (e.g., disable dropdown)
+                    // Fallback para roles desconhecidas (e.g., desabilita o dropdown)
                     selectElement.disabled = true;
                     console.warn(`Role ${currentUserRole} não reconhecida. Dropdown de marketer desabilitado.`);
                 }
 
             } catch (error) {
                 console.error('Falha ao carregar marketers para o filtro:', error);
-                selectElement.innerHTML = '<option value="">All Marketers</option><option value="" disabled>Erro ao carregar</option>';
-                selectElement.disabled = true; // Disable on error
+                // O valor padrão para erro será vazio se não for admin
+                selectElement.innerHTML = '';
+                if (currentUserRole === 'admin') {
+                    selectElement.innerHTML += '<option value="">All Marketers</option>';
+                }
+                selectElement.innerHTML += '<option value="" disabled>Erro ao carregar</option>';
+                selectElement.disabled = true; // Desabilita em caso de erro
             }
         }
 
