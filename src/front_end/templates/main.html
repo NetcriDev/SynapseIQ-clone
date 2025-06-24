@@ -812,6 +812,24 @@
         <div class="logo-container">
             <img src="static/img/rel8ed_logo_v2.png" alt="Rel8ed Logo">
         </div>
+
+        <!-- Chat window for support -->
+        <div class="chat-window" id="chatWindow">
+            <h3>Support</h3>
+            <input type="text" id="name" placeholder="Your Name">
+            <input type="text" id="email" placeholder="Your Email">
+            <input type="date" id="date" readonly>
+            <select id="issueType">
+                <option value="" disabled selected>Select Issue Type</option>
+                <option value="Incorrect Output">Incorrect Output</option>
+                <option value="Incomplete Information">Incomplete Information</option>
+                <option value="No Data Found">No Data Found</option>
+                <option value="Bug">Bug</option>
+            </select>
+            <textarea id="problem" rows="3" placeholder="Describe the problem..."></textarea>
+            <button class="submit-button" onclick="submitForm()">Submit</button>
+        </div>
+
         <div class="logo-container">
             <img src="static/img/Hope-Neuro_Logo.png" alt="Hope Neuro Logo">
         </div>
