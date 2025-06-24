@@ -718,6 +718,91 @@
             align-items: flex-start;
             text-align: left;
         }
+
+        /* :::::::::::::::::::::::::: support button ::::::::::::::::::::::::: */
+
+        .support-button {
+            padding: 6px 12px;
+            background-color: #007bff;
+            color: white;
+            font-size: 14px;
+            border: none;
+            cursor: pointer;
+            border-radius: 6px;
+            margin-right: 8px; /* space between button and logo */
+        }
+
+        .chat-window {
+            display: none;
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            width: 320px;
+            background: white;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            padding: 16px;
+            z-index: 1000;
+            box-sizing: border-box;
+        }
+
+        .chat-window h3 {
+            margin-top: 0;
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+
+        .chat-window input,
+        .chat-window textarea {
+            width: 100%;
+            margin-bottom: 10px;
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+        }
+
+        /* Submit button */
+        .submit-button {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        /* Select issue type dropdown */
+        .chat-window select {
+            width: 100%;
+            margin-bottom: 10px;
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+        }
+
+        /* Input file button */
+        .chat-window input[type="file"] {
+            margin-bottom: 10px;
+            font-size: 14px
+        }
+
+        /* Radio buttons for including question and details */
+        .radio-group {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .radio-group label {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
     </style>
 
 </head>
@@ -2352,6 +2437,49 @@
             if (document.getElementById('page2').classList.contains('active')) {
                 loadUploadHistory();
             }
+        });
+
+        // ====================================================================================================
+        // Funtion to support chat
+        function toggleChat() {
+            const chat = document.getElementById("chatWindow");
+            chat.style.display = (chat.style.display === "block") ? "none" : "block";
+        }
+
+        /* Function to submit the form and display an alert with the details */
+        function submitForm() {
+            const name = document.getElementById("name").value;
+            const email = document.getElementById("email").value;
+            const date = document.getElementById("date").value;
+            const problem = document.getElementById("problem").value;
+            const issueType = document.getElementById("issueType").value;
+
+            const reference = Math.floor(100000 + Math.random() * 900000); 
+
+            // Use \r\n for line breaks (better for Yahoo, Gmail, etc.)
+            const body = [
+                "Error Occurred!",
+                "",
+                `Name: ${name}`,
+                `Email: ${email}`,
+                `Date: ${date}`,
+                `Issue Type: ${issueType}`,
+                "",
+                `Problem: ${problem}`
+            ].join('\r\n');
+
+            const mailtoLink = `mailto:gsindhwani@rel8ed.to?subject=Support Request ${reference}&body=${encodeURIComponent(body)}`;
+
+            window.location.href = mailtoLink;
+
+            document.getElementById("chatWindow").style.display = "none";
+        }
+
+
+        /* Sets the date input to today's date */
+        window.addEventListener('DOMContentLoaded', (event) => {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById("date").value = today;
         });
     </script>
 
