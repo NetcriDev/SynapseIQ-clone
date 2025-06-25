@@ -981,8 +981,9 @@
                     <p>Select a state:</p>
                     <select id="stateSelect" style="width: 100%; padding: 8px; margin-bottom: 15px;">
                         <option value="" disabled selected>Select State</option>
-                        <option value="Ohio">Ohio</option>
-                        <option value="Georgia">Georgia</option>
+                        <option value="Ohio">Ohio (.pdf)</option>
+                        <option value="Georgia">Georgia (.pdf)</option>
+                        <option value="NC">North Carolina (.xlsx)</option>
                         </select>
                     <p>Select one file to upload:</p>
                     <input type="file" id="fileInput" name="files[]" multiple accept=".pdf,.doc,.docx,.txt,.csv">
@@ -2068,6 +2069,8 @@
                         uploadEndpoint = 'https://fcab11165760.ngrok.app/upload-multiple-pdfs-ohio';
                     } else if (selectedState === 'Georgia') {
                         uploadEndpoint = 'https://fcab11165760.ngrok.app/upload-multiple-pdfs-georgia';
+                    } else if (selectedState === 'NC') {
+                        uploadEndpoint = 'https://fcab11165760.ngrok.app/upload-multiple-xml-nc';
                     } else {
                         // In case you add other states in the future and need different endpoints
                         uploadStatus.textContent = 'Invalid state selected for upload.';
