@@ -1953,7 +1953,17 @@
 
             // Keys must exactly match the properties of the rowDataItem object
             const dataKeys = [
-                "reportNumber", "crashDate", "driverName", "phone",
+                "reportNumber", "crashDate", "driverName", 
+                // Concatenate phone1 and phone2 for CSV export
+                {
+                    key: "phone2",
+                    getValue: item => {
+                        const p1 = item.phone1 || "";
+                        const p2 = item.phone2 || "";
+                        if (p1 && p2) return `${p1}, ${p2}`;
+                        return p1 || p2 || "";
+                    }
+                },
                 "insuranceDetails", "crashSeverity", "age", "gender",
                 "address", "state", "city", "reportPDFUrl", "distanceFromClinic"
             ];
