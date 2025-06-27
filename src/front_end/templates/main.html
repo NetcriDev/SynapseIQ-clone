@@ -1549,7 +1549,8 @@
                             reportNumber: incidente.report_number || '--',
                             crashDate: incidente.accident_datetime?.split("T")[0] || '--',
                             driverName: driverName,
-                            phone: motorista.phone2 || "--",
+                            phone1: motorista.phone1 || "--",
+                            phone2: motorista.phone2 || "--",
                             insuranceDetails: insuranceDetails,
                             crashSeverity: crashSeverity,
                             age: motorista.age || "--",
@@ -1581,6 +1582,13 @@
                                     <div style="display: flex; flex-direction: column; gap: 4px;">
                                         <input type="text" value="${motorista.phone2?.split(',')[0]?.trim() || ''}" data-passenger-id="${motorista.id || ''}" class="phoneInput phoneInputA" style="width: 110px; padding: 4px;"/>
                                         <input type="text" value="${motorista.phone2?.split(',')[1]?.trim() || ''}" data-passenger-id="${motorista.id || ''}" class="phoneInput phoneInputB" style="width: 110px; padding: 4px;"/>
+                                        <input
+                                            type="text"
+                                            value="${motorista.phone1 || ''}"
+                                            data-passenger-id="${motorista.id || ''}"
+                                            class="phoneInput phoneInput1"  /* new class */
+                                            style="width: 110px; padding: 4px;"
+                                        />
                                     </div>
                                     <div style="display: flex; flex-direction: column; gap: 4px;">
                                         <button class="sendReportToChat" data-id="${rowDataItem.reportNumber}" title="Send report to chat" style="background: none; border: none; cursor: pointer; font-size: 1.2em; color: #34d0db;">
@@ -1637,20 +1645,22 @@
         // Function to save phone number
         async function savePhoneNumber(button) {
             const row = button.closest("tr");
+            const inputPhone1 = row.querySelector(".phoneInput1"); // new field
             const inputA = row.querySelector(".phoneInputA");
             const inputB = row.querySelector(".phoneInputB");
 
-            if (!inputA && !inputB) {
+            if (!inputPhone1 && !inputA && !inputB) {
                 alert("Inputs not found");
                 return;
             }
 
+            const phone1Value = inputPhone1 ? inputPhone1.value.trim() : ""; 
             const phoneA = inputA ? inputA.value.trim() : "";
             const phoneB = inputB ? inputB.value.trim() : "";
 
             const phone = [phoneA, phoneB].filter(p => p !== "").join(", ");
 
-            const passengerId = (inputA || inputB).getAttribute("data-passenger-id");
+            const passengerId = (inputPhone1 || inputA || inputB).getAttribute("data-passenger-id");
 
             if (!passengerId) {
                 alert("Passenger ID not found");
@@ -1668,8 +1678,8 @@
                         'accept': 'application/json'
                     },
                     body: JSON.stringify({
-                        phone1: "", // Forcing phone1 to be empty like in your old code
-                        phone2: phone // Threading the two phones combined as phone 2
+                        phone1: phone1Value, // new field
+                        phone2: phone2Value  // sends the concatenated phone numbers
                     })
                 });
 
