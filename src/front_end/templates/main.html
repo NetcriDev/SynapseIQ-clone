@@ -1430,9 +1430,14 @@
             // we DON'T send a marketer_username to the backend. The backend will then
             // automatically default to the current user's username for marketing_plus.
 
+            // add boolean filters (toggles) to URL
             for (const filterName in booleanFilterStates) {
-                if (booleanFilterStates[filterName]) {
-                    url += `&${filterName}=True`;
+                if (booleanFilterStates[filterName]) { // if toggle (true)
+                    if (filterName === 'is_external') {
+                        url += `&is_external=yes`; // <<< changed here
+                    } else {
+                        url += `&${filterName}=True`;
+                    }
                 }
             }
 
