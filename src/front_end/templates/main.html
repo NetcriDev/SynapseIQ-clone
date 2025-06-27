@@ -1659,7 +1659,6 @@
             const phoneB = inputB ? inputB.value.trim() : "";
 
             const phone = [phoneA, phoneB].filter(p => p !== "").join(", ");
-
             const passengerId = (inputPhone1 || inputA || inputB).getAttribute("data-passenger-id");
 
             if (!passengerId) {
@@ -1679,7 +1678,7 @@
                     },
                     body: JSON.stringify({
                         phone1: phone1Value, // new field
-                        phone2: phone2Value  // sends the concatenated phone numbers
+                        phone2: phone  // sends the concatenated phone numbers
                     })
                 });
 
