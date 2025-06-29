@@ -6,8 +6,9 @@
     <title>Hope Neuro Crash Reports</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     
+    <!-- :::::::::::::::::::::::::::::::: CSS Styles :::::::::::::::::::::::::::::::: -->
     <style>
-        /* --- :::::::::::::::: Reset básico e fontes :::::::::::::::: --- */
+        /* --- :::::::::::::::: Basics and Fonts :::::::::::::::: --- */
         :root {
             --primary-color: #57e0e02f;
             --secondary-color: #6c757d;
@@ -44,7 +45,7 @@
             padding: 0;
         }
     
-        /* --- :::::::::::::::::::::::::::::::: CABEÇALHO :::::::::::::::::::::::::::::::: --- */
+        /* --- :::::::::::::::::::::::::::::::: Header :::::::::::::::::::::::::::::::: --- */
         .site-header {
             background-color: var(--header-bg);
             padding: 15px 30px;
@@ -62,9 +63,10 @@
             margin: 0 10px;
         }
     
-        /* --- :::::::::::::::::::::::::::::::: CONTEUDO PRINCIPAL :::::::::::::::::::::::::::::::: --- */
+        /* --- :::::::::::::::::::::::::::::::: Main Content :::::::::::::::::::::::::::::::: --- */
         .main-content {
             padding: 20px;
+            padding-top: 0;
             flex: 1;
             display: flex;
             flex-direction: column;
@@ -108,7 +110,7 @@
             100% { transform: rotate(360deg); }
         }
     
-        /* --- :::::::::::::::::::::::::::::::: FILTROS :::::::::::::::::::::::::::::::: --- */
+        /* --- :::::::::::::::::::::::::::::::: Filters :::::::::::::::::::::::::::::::: --- */
         #filters {
             display: flex;
             flex-wrap: wrap;
@@ -161,7 +163,7 @@
         } */
 
 
-        /* --- :::::::::::::::::::::::::::::::: TABELA :::::::::::::::::::::::::::::::: --- */
+        /* --- :::::::::::::::::::::::::::::::: Table :::::::::::::::::::::::::::::::: --- */
         .table-container {
             background: white;
             padding: 20px;
@@ -178,19 +180,19 @@
             padding-top:5px;
         }
 
-        /* Container da tabela com scroll VERTICAL apenas */
+        /* Container with only vertical scroll */
         .table-scroll-container {
-            overflow-x: hidden; /* Remove scroll horizontal */
-            overflow-y: auto;   /* Mantém scroll vertical */
+            overflow-x: hidden; /* remove horizontal scroll  */
+            overflow-y: auto;   /* keep vertical scroll */
             flex: 1;
-            max-height: calc(100vh - 350px); /* Ajuste conforme necessário */
+            max-height: calc(100vh - 350px); /* adjust as needed */
             width: 100%;
             border: #6c757d;
             border-radius: 10px;
             box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
         }
 
-        /* Estilo para a tabela - agora sem largura mínima fixa */
+        /* table style - no min width */
         table {
             width: 100%;
             border-collapse: separate;
@@ -199,21 +201,21 @@
             overflow: hidden;
             text-transform: uppercase;
             margin-bottom: 10px;
-            /* Removido o min-width para permitir que a tabela se ajuste */
+            /* removed min width so table can adjust itself */
         }
 
-        /* Garante que o conteúdo das células quebre linha quando necessário */
+        /* break line when needed */
         th, td {
             padding: 12px 15px;
             border: 1px solid var(--border-color);
             text-align: left;
             vertical-align: middle;
-            white-space: normal; /* Permite quebra de linha */
-            word-wrap: break-word; /* Quebra palavras longas */
-            max-width: 200px; /* Limite máximo para cada célula */
+            white-space: normal; /* alown line breaking */
+            word-wrap: break-word; /* break long words */
+            max-width: 200px; /* max limit to each cell */
         }
 
-        /* Mantém o cabeçalho fixo durante o scroll */
+        /* keep fixed header during scroll */
         thead th {
             background-color: var(--hover-color);
             font-weight: 600;
@@ -222,7 +224,7 @@
             z-index: 10;
         }
     
-        /* Controles de paginação */
+        /* pagination controls */
         .pagination-controls {
             text-align: center;
             margin-top: 20px;
@@ -244,7 +246,7 @@
             background-color: var(--hover-color);
         }
 
-        /* Estilo para a linha de detalhes */
+        /* detail lines */
         .incident-details {
             text-align: left;
             font-size: 14px;
@@ -289,7 +291,7 @@
             padding-left: 5px;
         }
 
-        /* Garante que os detalhes tenham espaço e fiquem bem visíveis */
+        /* details with space and visible */
         .details-content {
             padding: 15px;
             display: flex;
@@ -310,7 +312,8 @@
         }
 
     
-        /* --- :::::::::::::::::::::::::::::::: RESPONSIVIDADE :::::::::::::::::::::::::::::::: --- */
+        /* --- :::::::::::::::::::::::::::::::: Responsive :::::::::::::::::::::::::::::::: --- */
+
         @media (max-width: 992px) {
             .table-scroll-container {
                 max-height: calc(100vh - 200px);
@@ -366,21 +369,21 @@
                 font-size: 0.8em;
             }
         }
-    </style>
+    
+        /* --- :::::::::::::::::::::::::::::::: Custom - Clickable report number :::::::::::::::::::::::::::::::: --- */
 
-    <style>
         .clickable-report-number {
             background: none;
             border: none;
-            color: blue; /* Ou a cor que preferir para links */
+            color: blue; /* color to use for links */
             text-decoration: underline;
             cursor: pointer;
             padding: 0;
-            font-size: inherit; /* Herda o tamanho da fonte da célula */
+            font-size: inherit; /* inherit size from cell */
         }
 
         .clickable-report-number:hover {
-            color: darkblue; /* Cor ao passar o mouse */
+            color: darkblue; /* Clor when houver */
         }
 
         select, input {
@@ -391,10 +394,10 @@
             cursor: pointer;
             text-transform: uppercase;
         }
-    </style>
+    
+        /* --- :::::::::::::::::::::::::::::::: Upload Modal :::::::::::::::::::::::::::::::: --- */
 
-    <style>
-        /* Estilo para o ícone de upload (mantido) */
+        /* modal icon */
         #openUploadModalBtn {
             margin-left: 10px;
             color: #34d0db;
@@ -408,7 +411,7 @@
             color: #218838;
         }
 
-        /* Estilos básicos para o Modal (aplicam-se a ambos os modais) */
+        /* basicl style for modal - both modals */
         .modal {
             display: none;
             position: fixed;
@@ -467,10 +470,10 @@
             cursor: pointer;
         }
 
-        /* Estilos para a tabela dentro do modal de atribuição */
+        /* table styles - table inside modal */
         .assignment-table-container {
-            max-height: 400px; /* Altura máxima para a tabela */
-            overflow-y: auto; /* Adiciona scroll se a tabela for muito grande */
+            max-height: 400px; /* max heigh */
+            overflow-y: auto; /* scroll if too big */
             margin-top: 20px;
             margin-bottom: 20px;
             border: 1px solid #ddd;
@@ -493,7 +496,7 @@
             background-color: #f2f2f2;
             position: sticky;
             top: 0;
-            z-index: 1; /* Garante que o cabeçalho fique visível ao rolar */
+            z-index: 1; /* visible header when scrolling */
         }
 
         #assignmentTable select {
@@ -531,7 +534,7 @@
             background-color: #218838;
         }
 
-        /* Estilos específicos para o formulário de upload (mantido) */
+        /* Upload form - custom */
         #uploadFormContent {
             margin-top: 20px;
             /* text-align: center; */
@@ -558,9 +561,10 @@
         #uploadBtn:hover {
             background-color: #0056b3;
         }
-    </style>
-
-    <style>
+    
+        
+       /* --- :::::::::::::::::::::::::::::::: Checkbox :::::::::::::::::::::::::::::::: --- */
+ 
        .filter-group {
             display: flex;
             flex-direction: row;
@@ -630,9 +634,9 @@
             transform: rotate(45deg);
         }
 
-    </style>
+    
+        /* --- :::::::::::::::::::::::::::::::: Buttons :::::::::::::::::::::::::::::::: --- */
 
-    <style>
         .btn-confirm, .action-button {
             background-color: #34d0db; 
             color: white;
@@ -650,209 +654,21 @@
             
         } */
 
-        /* Oculta o container da tabela e os filtros (se estiverem dentro do table-container) por padrão */
+        /* hide table container and filters as default */
         .table-container {
             display: none;
         }
 
-        /* Oculta o div de loading por padrão. Ele será exibido pelo JavaScript quando necessário. */
+        /* hide loading div as default. Will be shown if needed. */
         #loading {
-            display: none; /* Ou 'none' se você não quiser que ele apareça até que o JS o ative */
+            display: none; /* or "none" while JS doesn't show */
         }
 
-        /* No seu arquivo CSS ou em um bloco <style> */
         #admin-actions {
-            display: none; /* Esconde por padrão */
+            display: none; /* hide as default */
         }
-    </style>
-</head>
-<body>
-
-    <header class="site-header sticky">
-        <div class="logo-container">
-            <img src="static/img/rel8ed_logo_v2.png" alt="Rel8ed Logo">
-        </div>
-        <div class="logo-container">
-            <img src="static/img/Hope-Neuro_Logo.png" alt="Hope Neuro Logo">
-        </div>
-    </header>
-
-    <h2 style="padding-left: 10px; margin: 2px; margin-top: 10px;">Welcome, <span id="user-email">{{ user_email }}</span>!</h1>
-
-    <main class="main-content">
-        <div id="loading">
-            <h3>Hope Neuro Crash Reports</h3>
-            <br>
-            <div class="spinner"></div>
-            Loading Data...
-        </div>
-
-        <div class="table-container">
-            <div id="filters" style="margin: 20px;">
-                <label>
-                    From:
-                    <input type="date" id="filter-from">
-                </label>
-                <label>
-                    To:
-                    <input type="date" id="filter-to">
-                </label>
-                <label>
-                    Agency:
-                    <select id="filter-website">
-                        <option value="">All Agencies</option>
-                        <option value="kansas">Kansas</option>
-                        <option value="minnesota">Minnesota</option>
-                        <option value="winstonsalem">Winston Salem</option>
-                        <option value="texas">Texas</option>
-                        <option value="ohio">Ohio</option>
-                        <option value="georgia">Georgia</option>
-                    </select>
-                </label>
-
-                <label>
-                    Marketer:
-                    <select id="filter-marketer">
-                        <option value="">All Marketers</option>
-                        </select>
-                </label>
-                <div style="display: flex; flex-direction: column; gap:5px; margin-top: 10px;">
-                    <span style="font-size: 13px; ;">Other filters:</span>
-                    <div style="display: flex; flex-wrap: wrap; ">
-                        <div class="filter-group" style="display: flex; flex-direction: column;">
-                            <label class="checkbox-container">
-                                <input type="checkbox" id="toggle-hotlead" data-filter-name="hotlead">
-                                <span class="checkmark"></span>
-                                Hotlead
-                            </label>
-                            <label class="checkbox-container">
-                                <input type="checkbox" id="toggle-hasphone" data-filter-name="hasphone">
-                                <span class="checkmark"></span>
-                                Phone
-                            </label>
-                        </div>
-                        <div class="filter-group" style="display: flex; flex-direction: column;">
-                            <label class="checkbox-container">
-                                <input type="checkbox" id="toggle-hasinsurance_details" data-filter-name="hasinsurance_details">
-                                <span class="checkmark"></span>
-                                Insurance
-                            </label>
-                            <label class="checkbox-container">
-                                <input type="checkbox" id="toggle-over18" data-filter-name="over18">
-                                <span class="checkmark"></span>
-                                +18
-                            </label>
-                        </div>
-                    </div>
-                </div>
-
-                <div style="display: flex; flex-direction: column; gap:10px; margin-top: 30px; margin-left: 15px;">
-                    <button style="margin:0px" onclick="applyFilters()">Apply Filters</button>
-                    <button style="margin:0px; background-color: #6c757d;" onclick="resetFilters()">Reset</button>
-                </div>
-                <div style="display: flex; flex-direction: column; gap:10px; margin-top: 30px; margin-left: 15px;" id="admin-actions">
-                    <button style="margin:0px" onclick="openAssignModal()" id="assign-button">Assign Reports (0)</button>
-                    <button style="margin:0px; background-color: #6c757d;" id="delete-assignment-btn" class="action-button" disabled>Delete Assignment</button>
-                </div>
-                <button style="margin:0px; margin-top: 30px; margin-left: 15px;" onclick="downloadSelectedCSV()" id="download-csv-button" style="margin-left: 10px;">Download Reports (0)</button>
-                    <i class="fas fa-upload" id="openUploadModalBtn" title="Upload Files" style="margin-left: auto; cursor: pointer; font-size: 2em;" onclick="openUploadModal()"></i>
-
-            </div>
-            <div class="table-scroll-container">
-                <table id="data-table">
-                    <thead>
-                        <tr>
-                            <th><input type="checkbox" id="select-all-current-page" title="Selecionar todos nesta página"></th> <th>Details</th>
-                            <th>Report N°</th>
-                            <th>Crash Date</th>
-                            <th>Driver Name</th>
-                            <th>Phone N°</th>
-                            <th>Insurance Details</th>
-                            <th>Crash Severity</th>
-                            <th>Age</th>
-                            <th>Gender</th>
-                            <th>Address</th>
-                            <th>State</th>
-                            <th>City</th>
-                            <th>Report PDF</th>
-                            <th>Distance from Clinic</th>
-                        </tr>
-                    </thead>
-                    <tbody id="table-body">
-                        </tbody>
-                </table>
-            </div>
-
-            <div class="pagination-controls">
-                <button onclick="previousPage()">«</button>
-                <span id="page-number">Page 1</span>
-                <button onclick="nextPage()">»</button>
-            </div>
-        </div>
-    </main>
-
-        <!-- Modal-load-data -->
-    <div id="uploadModal" class="modal">
-        <div class="modal-content">
-            <!-- Chrome Style -->
-
-            <div class="chrome-tabs">
-                <div class="tab active" onclick="openTab('page1')">Upload</div>
-                <div class="tab" onclick="openTab('page2')">Status</div>
-            </div>
-
-           <span class="close-button" onclick="closeUploadModal()">&times;</span>
-
-            <div id="page1" class="tab-page active">
-                <br>
-                <h2>Upload Files</h2>
-                <div id="uploadFormContent">
-                <form id="fileUploadForm" enctype="multipart/form-data">
-                    <p>Select a state:</p>
-                    <select id="stateSelect" style="width: 100%; padding: 8px; margin-bottom: 15px;">
-                        <option value="" disabled selected>Select State</option>
-                        <option value="Ohio">Ohio</option>
-                        <option value="Ohio">Georgia</option>
-                        </select>
-                    <p>Select one file to upload:</p>
-                    <input type="file" id="fileInput" name="files[]" multiple accept=".pdf,.doc,.docx,.txt,.csv">
-                    <br><br>
-                    <button type="submit" id="uploadBtn">Upload</button>
-                </form>
-                <div id="uploadStatus" style="margin-top: 15px; font-weight: bold;"></div>
-                </div>
-            </div>
-            
-            <div id="page2" class="tab-page">
-                <br>
-                <h2>Upload Status (under develompent)</h2>
-                <p>Check the status of your uploads here.</p>
-                <div id="statusContent">
-                    <div class="file-history" style="overflow: auto;max-height: 450px;">
-                        <table style="overflow-y: scroll;">
-                            <thead>
-                                <tr>
-                                    <th>File</th>
-                                    <th>Agency</th>
-                                    <th>Report N°</th>
-                                    <th>Passengers</th>
-                                    <th>Upload Date</th>
-                                    <th>Status</th>
-                                    <!-- <th>Status Date</th> -->
-                                </tr>
-                            </thead>
-                            <tbody id="upload-history-body" style="overflow-y: auto;">
-                                <!-- API via JavaScript -->
-                            </tbody>                            
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <style>
-        /* ------------------ tabs --------------------------- */
+    
+        /* --- :::::::::::::::::::::::::::::::: tabs for upload modal :::::::::::::::::::::::::::::::: --- */
 
         /* Chrome style */
         .chrome-tabs {
@@ -903,66 +719,317 @@
             align-items: flex-start;
             text-align: left;
         }
+
+        /* :::::::::::::::::::::::::: support button ::::::::::::::::::::::::: */
+
+        /* .up-div{
+            align-items: space-between;
+        } */
+
+        .support-button {
+            padding: 6px 12px;
+            background-color: #007bff;
+            color: white;
+            font-size: 14px;
+            border: none;
+            cursor: pointer;
+            border-radius: 6px;
+            margin: 8px; 
+            width: 100px;
+            align-self: flex-end;
+        }
+
+        .chat-window {
+            display: none;
+            position: fixed;
+            top: 125px;
+            right: 20px;
+            width: 320px;
+            background: white;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            padding: 16px;
+            z-index: 1000;
+            box-sizing: border-box;
+        }
+
+        .chat-window h3 {
+            margin-top: 0;
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+
+        .chat-window input,
+        .chat-window textarea {
+            width: 100%;
+            margin-bottom: 10px;
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+        }
+
+        /* Submit button */
+        .submit-button {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        /* Select issue type dropdown */
+        .chat-window select {
+            width: 100%;
+            margin-bottom: 10px;
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+        }
+
+        /* Input file button */
+        .chat-window input[type="file"] {
+            margin-bottom: 10px;
+            font-size: 14px
+        }
+
+        /* Radio buttons for including question and details */
+        .radio-group {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .radio-group label {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
     </style>
 
-    <script>
-        function openTab(tabId) {
-            // remove 'active' 
-            document.querySelectorAll('.chrome-tabs .tab').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            document.querySelectorAll('.tab-page').forEach(page => {
-                page.classList.remove('active');
-            });
+</head>
+<body>
+    <!-- header with logos -->
+    <header class="site-header sticky">
+        <div class="logo-container">
+            <img src="static/img/rel8ed_logo_v2.png" alt="Rel8ed Logo">
+        </div>
 
-            // apply 'active' to active page
-            const selectedTab = document.querySelector(`.tab[onclick*="${tabId}"]`);
-            const selectedPage = document.getElementById(tabId);
+        <div class="logo-container">
+            <img src="static/img/Hope-Neuro_Logo.png" alt="Hope Neuro Logo">
+        </div>
+    </header>
+    
+    <div class="up-div" style="display: flex; justify-content: space-between; align-items: center; padding: 10px;">
+        <h2 style="padding-left: 10px; margin: 2px; margin-top: 10px;">Welcome, <span id="user-fullname"></span>!</h2>
+        <button class="support-button" onclick="toggleChat()">Support</button> 
+    </div>
+    
+    <!-- Chat window for support -->
+    <div class="chat-window" id="chatWindow">
+        <h3>Support</h3>
+        <input type="text" id="name" placeholder="Your Name">
+        <input type="text" id="email" placeholder="Your Email">
+        <input type="date" id="date" readonly>
+        <select id="issueType">
+            <option value="" disabled selected>Select Issue Type</option>
+            <option value="Incorrect Output">Incorrect Output</option>
+            <option value="Incomplete Information">Incomplete Information</option>
+            <option value="No Data Found">No Data Found</option>
+            <option value="Bug">Bug</option>
+        </select>
+        <textarea id="problem" rows="3" placeholder="Describe the problem..."></textarea>
+        <button class="submit-button" onclick="submitForm()">Submit</button>
+    </div>
+
+    <main class="main-content">
+        <div id="loading">
+            <h3>Hope Neuro Crash Reports</h3>
+            <br>
+            <div class="spinner"></div>
+            Loading Data...
+        </div>
+
+        <!-- all filters set up -->
+        <div class="table-container">
+            <div id="filters" style="margin: 20px;">
+                <label>
+                    From:
+                    <input type="date" id="filter-from">
+                </label>
+                <label>
+                    To:
+                    <input type="date" id="filter-to">
+                </label>
+                <label>
+                    Agency:
+                    <select id="filter-website">
+                        <option value="">All Agencies</option>
+                        <option value="georgia">Georgia</option>
+                        <option value="kansas">Kansas</option>
+                        <option value="minnesota">Minnesota</option>
+                        <option value="northcaroline">North Carolina</option>
+                        <option value="ohio">Ohio</option>
+                        <option value="texas">Texas</option>
+                        <option value="winstonsalem">Winston Salem</option>
+                    </select>
+                </label>
+
+                <label>
+                    Marketer:
+                    <select id="filter-marketer">
+                        <option value="">All Marketers</option>
+                        </select>
+                </label>
+                <div style="display: flex; flex-direction: column; gap:5px; margin-top: 10px;">
+                    <span style="font-size: 13px; ;">Other filters:</span>
+                    <div style="display: flex; flex-wrap: wrap; ">
+                        <div class="filter-group" style="display: flex; flex-direction: column;">
+                            <label class="checkbox-container">
+                                <input type="checkbox" id="toggle-hotlead" data-filter-name="hotlead">
+                                <span class="checkmark"></span>
+                                Hotlead
+                            </label>
+                            <label class="checkbox-container">
+                                <input type="checkbox" id="toggle-hasphone" data-filter-name="hasphone">
+                                <span class="checkmark"></span>
+                                Phone
+                            </label>
+                            <label class="checkbox-container">
+                                <input type="checkbox" id="toggle-is_external" data-filter-name="is_external">
+                                <span class="checkmark"></span>
+                                External Reports
+                            </label>
+                        </div>
+                        <div class="filter-group" style="display: flex; flex-direction: column;">
+                            <label class="checkbox-container">
+                                <input type="checkbox" id="toggle-hasinsurance_details" data-filter-name="hasinsurance_details">
+                                <span class="checkmark"></span>
+                                Insurance
+                            </label>
+                            <label class="checkbox-container">
+                                <input type="checkbox" id="toggle-over18" data-filter-name="over18">
+                                <span class="checkmark"></span>
+                                +18
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap:10px; margin-top: 30px; margin-left: 15px;">
+                    <button style="margin:0px" onclick="applyFilters()">Apply Filters</button>
+                    <button style="margin:0px; background-color: #6c757d;" onclick="resetFilters()">Reset</button>
+                </div>
+                <div style="display: flex; flex-direction: column; gap:10px; margin-top: 30px; margin-left: 15px;" id="admin-actions">
+                    <button style="margin:0px" onclick="openAssignModal()" id="assign-button">Assign Reports (0)</button>
+                    <button style="margin:0px; background-color: #6c757d;" id="delete-assignment-btn" class="action-button">Delete Assignment</button>
+                </div>
+                <button style="margin:0px; margin-top: 30px; margin-left: 15px;" onclick="downloadSelectedCSV()" id="download-csv-button" style="margin-left: 10px;">Download Reports (0)</button>
+                    <i class="fas fa-upload" id="openUploadModalBtn" title="Upload Files" style="margin-left: auto; cursor: pointer; font-size: 2em;" onclick="openUploadModal()"></i>
+
+            </div>
+            <div class="table-scroll-container">
+                <table id="data-table">
+                    <thead>
+                        <tr>
+                            <th><input type="checkbox" id="select-all-current-page" title="Selecionar todos nesta página"></th> <th>Details</th>
+                            <th>Report N°</th>
+                            <th>Crash Date</th>
+                            <th>Driver Name</th>
+                            <th>Phone N°</th>
+                            <th>Insurance Details</th>
+                            <th>Crash Severity</th>
+                            <th>Age</th>
+                            <th>Gender</th>
+                            <th>Address</th>
+                            <th>State</th>
+                            <th>City</th>
+                            <th>Report PDF</th>
+                            <th>Distance from Clinic</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-body">
+                        </tbody>
+                </table>
+            </div>
+
+            <div class="pagination-controls">
+                <button onclick="previousPage()">«</button>
+                <span id="page-number">Page 1</span>
+                <button onclick="nextPage()">»</button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal-load-data -->
+    <div id="uploadModal" class="modal">
+        <div class="modal-content">
             
-            if (selectedTab) selectedTab.classList.add('active');
-            if (selectedPage) selectedPage.classList.add('active');
-        }
-    </script>
+            <!-- Chrome Style with tabs -->
+            <div class="chrome-tabs">
+                <div class="tab active" onclick="openTab('page1')">Upload</div>
+                <div class="tab" onclick="openTab('page2')">Status</div>
+            </div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            async function loadUploadHistory() {
-                const tbody = document.getElementById('upload-history-body');
-                tbody.innerHTML = '<tr><td colspan="7">Loading...</td></tr>';
-                try {
-                    const res = await fetch('https://fcab11165760.ngrok.app/report-status');
-                    const data = await res.json();
-                    if (!data.records || !Array.isArray(data.records) || data.records.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="7">No records found.</td></tr>';
-                        return;
-                    }
-                    tbody.innerHTML = '';
-                    data.records.forEach(rec => {
-                        const tr = document.createElement('tr');
-                        tr.innerHTML = `
-                            <td>${rec.file_name || ''}</td>
-                            <td>${rec.agency || ''}</td>
-                            <td>${rec.report_number || ''}</td>
-                            <td>${rec.number_passagers || ''}</td>
-                            <td>${rec.created_at ? new Date(rec.created_at).toLocaleString() : ''}</td>
-                            <td>${rec.status || ''}</td>
-                            <!-- <td>${rec.updated_at ? new Date(rec.updated_at).toLocaleString() : ''}</td> -->
-                        `;
-                        tbody.appendChild(tr);
-                    });
-                } catch (e) {
-                    tbody.innerHTML = '<tr><td colspan="7" style="color:red;">Error loading data.</td></tr>';
-                }
-            }
-            // Carrega ao abrir a aba "Status"
-            document.querySelector('.tab[onclick*="page2"]').addEventListener('click', loadUploadHistory);
-            // Se já estiver na aba Status ao abrir, carrega imediatamente
-            if (document.getElementById('page2').classList.contains('active')) {
-                loadUploadHistory();
-            }
-        });
-    </script>
+           <span class="close-button" onclick="closeUploadModal()">&times;</span>
 
+            <!-- modal page for upload files -->
+            <div id="page1" class="tab-page active">
+                <br>
+                <h2>Upload Files</h2>
+                <div id="uploadFormContent">
+                <form id="fileUploadForm" enctype="multipart/form-data">
+                    <p>Select a state:</p>
+                    <select id="stateSelect" style="width: 100%; padding: 8px; margin-bottom: 15px;">
+                        <option value="" disabled selected>Select State</option>
+                        <option value="Ohio">Ohio (.pdf)</option>
+                        <option value="Georgia">Georgia (.pdf)</option>
+                        <option value="NC">North Carolina (.xlsx)</option>
+                        </select>
+                    <p>Select one file to upload:</p>
+                    <input type="file" id="fileInput" name="files[]" multiple accept=".pdf,.csv, .xlsx">
+                    <br><br>
+                    <button type="submit" id="uploadBtn">Upload</button>
+                </form>
+                <div id="uploadStatus" style="margin-top: 15px; font-weight: bold;"></div>
+                </div>
+            </div>
+            
+            <!-- modal page for upload status -->
+            <div id="page2" class="tab-page">
+                <br>
+                <h2>Upload Status</h2>
+                <p>Check the status of your uploads here.</p>
+                <div id="statusContent">
+                    <div class="file-history" style="overflow: auto;max-height: 450px;">
+                        <table style="overflow-y: scroll;">
+                            <thead>
+                                <tr>
+                                    <th>File</th>
+                                    <th>Agency</th>
+                                    <th>Report N°</th>
+                                    <th>Passengers</th>
+                                    <th>Upload Date</th>
+                                    <th>Status</th>
+                                    <!-- <th>Status Date</th> -->
+                                </tr>
+                            </thead>
+                            <tbody id="upload-history-body" style="overflow-y: auto;">
+                                <!-- API via JavaScript -->
+                            </tbody>                            
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal-assign-reports -->
     <div id="assignModal" class="modal">
         <div class="modal-content">
             <span class="close-button" id="closeAssignModalBtn">&times;</span>
@@ -983,6 +1050,7 @@
         </div>
     </div>
 
+    <!-- Modal-delete-assignment -->
     <div id="deleteAssignmentModal" class="modal">
         <div class="modal-content">
             <span class="close-button" onclick="closeModal('deleteAssignmentModal')">&times;</span>
@@ -995,14 +1063,14 @@
     </div>
 
     <script>
-
+        /* --- :::::::::::::::::::::::::::::::: watson AI setup :::::::::::::::::::::::::::::::: --- */
         window.watsonAssistantChatOptions = {
             integrationID: "aa6251d5-7615-46fd-9a89-dcce1a75b536", // The ID of this integration.
             region: "us-south", // The region your integration is hosted in.
             serviceInstanceID: "1fe70761-3293-40e8-94d4-3dab7c3a289a", // The ID of your service instance.
             //   onLoad: async (instance) => { await instance.render(); 
             onLoad: async (instance) => {
-                window.g_wa_instance = instance; // armazena globalmente
+                window.g_wa_instance = instance; // globally store the instance
                 await instance.render();
             },
             headerConfig:{
@@ -1015,7 +1083,9 @@
             document.head.appendChild(t);
         });
 
-        // Mapeamento de estados para abreviações
+        /* --- :::::::::::::::::::::::::::::::: Global Variables :::::::::::::::::::::::::::::::: --- */
+       
+        // mapping of state names to their abbreviations
         const stateAbbreviations = {
             "Alabama": "AL",
             "Alaska": "AK",
@@ -1068,25 +1138,27 @@
             "Wisconsin": "WI",
             "Wyoming": "WY"
 
-            // Adicione outros estados conforme necessário
+            // add here all states you need
         };
 
-        // Variáveis globais para armazenar o estado da tabela e dos filtros
-        let currentUserUsername = null; // Declare como let
-        let isAdminUser = false; // Declare como let
+        // global variables to store table and filter's state
+        let currentUserUsername = null; // declaration as let
+        let currentUserRole = null; // New global variable for the user's role
+        let isAdminUser = false; // declaration as let
 
-        // selectedItems agora armazena os objetos de dados das linhas selecionadas
+        // selectedItems now stores the IDs of selected items for the current page
         let selectedRowDataForExport = [];
-        // selectedItemIds armazena os IDs únicos para gerenciar o estado dos checkboxes
+        // selectedItemIds stores unique IDs of selected items across all pages
         const selectedItemIds = new Set();
-
-        let currentApiData = []; // Armazena os dados brutos da API para a página atual
-        let currentlyDisplayedData = []; // Armazena os objetos de dados processados para a página atual
+        // stores the raw data fetched from the API
+        let currentApiData = []; 
+        // strores the data currently displayed in the table
+        let currentlyDisplayedData = []; 
 
         let currentPage = 1;
         const pageSize = 10;
         let currentFilters = { from: '', to: '', website: '', marketerId: ''  };
-        // Novo objeto para armazenar o estado de cada filtro booleano
+        // boolean filter states
         let booleanFilterStates = {
             hotlead: false,
             hasphone: false,
@@ -1095,6 +1167,10 @@
             over18: false
         };
 
+        /* --- :::::::::::::::::::::::::::::::: Functions :::::::::::::::::::::::::::::::: --- */
+
+        // =====================================================================================================
+        // Function to fecth user info from app.py
         async function fetchUserInfo() {
             try {
                 const response = await fetch('/user-info');
@@ -1105,76 +1181,82 @@
                 }
                 const userInfo = await response.json();
                 currentUserUsername = userInfo.current_user_username;
-                isAdminUser = userInfo.is_admin_user;
-                console.log("User Info Loaded:", { currentUserUsername, isAdminUser });
+                currentUserRole = userInfo.user_role; // Set the user role
+                console.log("User Info Loaded:", { currentUserUsername, currentUserRole });
 
-                // Uma vez que as informações do usuário estão carregadas,
-                // você pode agora buscar os dados principais da tabela
-                // e popular o dropdown de marketers.
-                populateMarketerFilterDropdown(); // Depende de fetchUserInfo, pois admins veem todos.
-                fetchData(); // Chama a função que busca e exibe os dados da tabela
-                
+                // Set full name in welcome message
+                const fullnameElem = document.getElementById('user-fullname');
+                if (fullnameElem) {
+                    fullnameElem.textContent = userInfo.user_full_name || '';
+                }
+
+                // once user info is fetched,,
+                // you can now fetch the main data from the table
+                // and populate the marketers dropdown.
+                populateMarketerFilterDropdown(); // depends on fetchUserInfo
+                fetchData(); // calls main function that fetches data from the API
+            
             } catch (error) {
                 console.error('Erro ao carregar informações do usuário:', error);
-                // Exiba uma mensagem de erro na UI se as informações do usuário não puderem ser carregadas
                 const loadingDiv = document.getElementById("loading");
-                loadingDiv.innerHTML = `<div style="color: red; text-align: center;">
-                                            Erro ao carregar informações do usuário. 
-                                            Por favor, tente novamente mais tarde. <br>(${error.message})
-                                        </div>`;
+                loadingDiv.innerHTML = `<div style="color: red; text-align: center;">Erro ao carregar informações do usuário. Por favor, tente novamente mais tarde. <br>(${error.message})</div>`;
+                // Clear full name on error
+                const fullnameElem = document.getElementById('user-fullname');
+                if (fullnameElem) {
+                    fullnameElem.textContent = '';
+                }
             }
         }
 
+        // =====================================================================================================
+        // listener to run fetchUserInfo on buttons and filters
         document.addEventListener('DOMContentLoaded', function() {
-            // Esconder os botões por padrão no carregamento da página
             const adminActionsDiv = document.getElementById('admin-actions');
+            const assignButtonsDiv = document.getElementById('assign-buttons'); // Assuming you have a div for assign/unassign buttons
+
+            // Hide action buttons by default
             if (adminActionsDiv) {
                 adminActionsDiv.style.display = 'none';
             }
+            if (assignButtonsDiv) {
+                assignButtonsDiv.style.display = 'none';
+            }
 
-            // Primeiro, buscar as informações do usuário
-            fetch('/user-info')
-                .then(response => {
-                    if (!response.ok) {
-                        // Se a resposta não for OK (ex: 403 Forbidden), você pode tratar aqui
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    console.log("Informações do usuário carregadas:", data); // Para depuração
-                    // 1. Mostrar/Esconder botões de administrador
-                    if (data.is_admin_user) {
-                        if (adminActionsDiv) {
-                            adminActionsDiv.style.display = 'flex'; // Mostra os botões para admins
+            fetchUserInfo() // Call fetchUserInfo which will then call populateMarketerFilterDropdown and fetchData
+                .then(() => {
+                    // After user info is loaded, determine button visibility
+                    if (currentUserRole === 'admin' || currentUserRole === 'marketing_plus') {
+                        if (adminActionsDiv) { // Assuming admin-actions contains assign/unassign buttons
+                            adminActionsDiv.style.display = 'flex'; 
+                        }
+                        if (assignButtonsDiv) { // If you have a separate div for just assign/unassign
+                            assignButtonsDiv.style.display = 'flex';
                         }
                     }
-
-                    // 2. Chamar fetchData APENAS DEPOIS que a informação do usuário estiver carregada
-                    // E você pode passar a role do usuário para fetchData se necessário para lógicas futuras
-                    fetchData(data.is_admin_user); // Passa a informação se é admin para fetchData
                 })
                 .catch(error => {
-                    console.error('Erro ao buscar informações do usuário:', error);
-                    // Em caso de erro ao buscar as informações do usuário,
-                    // talvez você queira esconder os botões de admin e
-                    // ainda assim tentar carregar os dados (ou não, dependendo da sua lógica de segurança)
-                    fetchData(false); // Assume que não é admin em caso de erro e tenta carregar os dados
+                    console.error('Erro ao buscar informações do usuário na inicialização:', error);
+                    // Optionally, you can display a message to the user here
                 });
 
-            // Certifique-se de que a função fetchData receba um parâmetro, se for usá-lo
-            // Exemplo de como sua função fetchData pode parecer (adapte conforme necessário)
-            // function fetchData(isAdmin) {
-            //     console.log(`fetchData chamado. Usuário é admin: ${isAdmin}`);
-            //     // Sua lógica de carregamento de dados aqui
-            // }
+            // Event listener for the marketer filter dropdown
+            const marketerFilterDropdown = document.getElementById('filter-marketer');
+            if (marketerFilterDropdown) {
+                marketerFilterDropdown.addEventListener('change', function() {
+                    currentFilters.marketerId = this.value;
+                    currentPage = 1; // Reset to first page on filter change
+                    // fetchData();   //makes the table upload instantly after changing the dropdown
+                });
+            }
         });
         
+        // =====================================================================================================
+        // Function to apply selected filters
         function applyFilters() {
             currentFilters.from = document.getElementById('filter-from').value;
             currentFilters.to = document.getElementById('filter-to').value;
             currentFilters.website = document.getElementById('filter-website').value;
-            // O marketerId do dropdown agora é um filtro SECUNDÁRIO, o principal vem do backend
+            // O marketerId from the dropdown now its secundary, main filter comes from the backend
             currentFilters.marketerId = document.getElementById('filter-marketer').value; 
 
             for (const filterName in booleanFilterStates) {
@@ -1187,14 +1269,43 @@
             fetchData();
         }
 
+        // =====================================================================================================
+        // Function to reset filters
         function resetFilters() {
             document.getElementById('filter-from').value = '';
             document.getElementById('filter-to').value = '';
             document.getElementById('filter-website').value = '';
-            // Manter o dropdown de marketer como 'Todos os Marketers' no reset
-            document.getElementById('filter-marketer').value = ''; 
 
-            currentFilters = { from: '', to: '', website: '', marketerId: '' }; 
+            // --- change for marketer filter - marketing_plus sees no "all marketers" option ---
+            const marketerSelectElement = document.getElementById('filter-marketer');
+
+            if (currentUserRole === 'marketing_plus' || currentUserRole === 'marketing') {
+                // if marketing_plus or marketing, shows own username
+                if (currentUserUsername) {
+                    marketerSelectElement.value = currentUserUsername;
+                    currentFilters.marketerId = currentUserUsername; // internal filter also updated
+                    console.log(`Filtro de marketer resetado para o próprio usuário: ${currentUserUsername}`);
+                } else {
+                    // Fallback if name not available
+                    marketerSelectElement.value = ''; // empty if no username
+                    currentFilters.marketerId = '';
+                    console.warn("Não foi possível resetar o filtro de marketer para o próprio usuário: username não disponível.");
+                }
+            } else { // includes 'admin' and other unkwnown roles
+                // id admin, goes back to 'All Marketers' (empty value)
+                marketerSelectElement.value = '';
+                currentFilters.marketerId = ''; // empty for the backend (all the marketers)
+                console.log("Filtro de marketer resetado para 'All Marketers' (Admin ou padrão)");
+            }
+            // --- end of change for marketer filter ---
+
+            // Reset other filters
+            currentFilters = { 
+                from: '', 
+                to: '', 
+                website: '', 
+                marketerId: currentFilters.marketerId // keep defined value
+            }; 
 
             for (const filterName in booleanFilterStates) {
                 booleanFilterStates[filterName] = false; 
@@ -1205,33 +1316,40 @@
             }
 
             currentPage = 1;
-            fetchData();
+            fetchData(); // load data with all filters reset
         }
 
-        /**
-         * Busca a lista de marketers da API e popula o dropdown de FILTRO.
-         * Este endpoint agora aponta para o seu Flask proxy.
-         */
+        // =====================================================================================================
+        // Search API marketers list and populates the dropdown filter
         async function populateMarketerFilterDropdown() {
             const selectElement = document.getElementById('filter-marketer');
             if (!selectElement) {
-                console.error("Elemento #filter-marketer não encontrado para popular o dropdown de filtro.");
+                console.error("#filter-marketer element not found to populate dropdown filter.");
                 return;
             }
             
-            // Mostra "Carregando..." enquanto busca
-            selectElement.innerHTML = '<option value="">All Marketers</option><option value="" disabled>Carregando...</option>';
+            // clears dropdown and shows "Loading..."
+            selectElement.innerHTML = '<option value="" disabled>Loading...</option>';
 
             try {
-
-                const response = await fetch('/marketer-users'); // Seu endpoint de proxy de marketers 
+                const response = await fetch('/marketer-users');
                 if (!response.ok) {
-                    throw new Error(`Erro na API ao buscar marketers: ${response.status}`);
+                    throw new Error(`Error on API to search marketers: ${response.status}`);
                 }
                 const marketers = await response.json();
 
-                // Limpa e adiciona a opção "All Marketers"
-                selectElement.innerHTML = '<option value="">All Marketers</option>'; 
+                // --- change to admin/marketing_plus ---
+                // clears dropdown before adding options
+                selectElement.innerHTML = ''; 
+
+                // adds "All Marketers" option OLNY FOR ADMIN
+                if (currentUserRole === 'admin') {
+                    const allOption = document.createElement('option');
+                    allOption.value = ''; // blank means "all" to backend
+                    allOption.textContent = 'All Marketers';
+                    selectElement.appendChild(allOption);
+                }
+                // --- end of change ---
 
                 marketers.forEach(marketer => {
                     const option = document.createElement('option');
@@ -1240,37 +1358,55 @@
                     selectElement.appendChild(option);
                 });
 
-                // Se o usuário não for admin, pré-seleciona seu próprio username
-                // E desabilita o dropdown para que ele não possa mudar.
-                if (!isAdminUser && currentUserUsername) {
-                    selectElement.value = currentUserUsername;
+                // Role-based selection and disabling logic
+                if (currentUserRole === 'marketing') {
+                    // Marketing users ONLY see their own, dropdown is disabled.
+                    if (currentUserUsername) {
+                        selectElement.value = currentUserUsername;
+                    }
                     selectElement.disabled = true;
-                    console.log(`Dropdown de marketer desabilitado e pré-selecionado para: ${currentUserUsername}`);
+                    console.log(`Marketer dropdown disabled and pre-selected for: ${currentUserUsername} (Marketing)`);
+                } else if (currentUserRole === 'marketing_plus') {
+                    // Marketing_plus users can filter, default to their own, dropdown is enabled.
+                    if (currentUserUsername) {
+                        selectElement.value = currentUserUsername;
+                        // Você pode querer garantir que o filtro inicial seja aplicado
+                        currentFilters.marketerId = currentUserUsername; 
+                    }
+                    selectElement.disabled = false;
+                    console.log(`Marketer dropdown enabled and pre-selected for: ${currentUserUsername} (Marketing_Plus)`);
+                } else if (currentUserRole === 'admin') {
+                    // Admin users see "All Marketers" by default, dropdown is enabled.
+                    selectElement.disabled = false;
+                    selectElement.value = ''; // Ensures "All Marketers" is selected if it exists
+                    console.log(`Marketer dropdown enabled (Admin)`);
                 } else {
-                    selectElement.disabled = false; // Garante que esteja habilitado para admins
+                    // Fallback to unknown roles (e.g., dropdown "off")
+                    selectElement.disabled = true;
+                    console.warn(`Role ${currentUserRole} unrecognized. Marketer dropdown disabled.`);
                 }
 
             } catch (error) {
-                console.error('Falha ao carregar marketers para o filtro:', error);
-                selectElement.innerHTML = '<option value="">All Marketers</option><option value="" disabled>Erro ao carregar</option>';
-                if (!isAdminUser) { // Se não for admin e deu erro, desabilitar de qualquer forma.
-                    selectElement.disabled = true;
+                console.error('Failed to load marketers for filter:', error);
+                // The default value for error will be empty if it is not admin
+                selectElement.innerHTML = '';
+                if (currentUserRole === 'admin') {
+                    selectElement.innerHTML += '<option value="">All Marketers</option>';
                 }
+                selectElement.innerHTML += '<option value="" disabled>Error loading</option>';
+                selectElement.disabled = true; // Disable on error
             }
         }
 
-
+        // =====================================================================================================
+        // one of the most important functions, fetches data from the API
         async function fetchData() {
-            // Verifique se as informações do usuário já foram carregadas
-            if (currentUserUsername === null && !isAdminUser) {
-                console.warn("fetchData chamado antes das informações do usuário estarem disponíveis. Aguardando...");
-                // Você pode adicionar uma lógica para atrasar ou chamar fetchUserInfo novamente,
-                // mas o ideal é que fetchData só seja chamado depois que fetchUserInfo resolver.
-                // Neste exemplo, `fetchUserInfo` já chama `fetchData` após carregar as infos.
-                return; 
+            if (currentUserUsername === null && currentUserRole === null) {
+                console.warn("fetchData called before user information is available. Waiting...");
+                return;
             }
 
-            const { from, to, website, marketerId} = currentFilters; 
+            const { from, to, website, marketerId} = currentFilters;
 
             const loadingDiv = document.getElementById("loading");
             const tableContainer = document.querySelector(".table-container");
@@ -1283,22 +1419,30 @@
             
             document.getElementById('select-all-current-page').checked = false;
 
-            let url = `/incident_search_proxy?page=${currentPage}&page_size=${pageSize}`; 
+            let url = `/incident_search_proxy?page=${currentPage}&page_size=${pageSize}`;
             
             if (from) url += `&accident_from=${from}`;
             if (to) url += `&accident_to=${to}`;
             if (website) url += `&website=${encodeURIComponent(website)}`;
 
-            // O filtro de marketer_username agora é enviado do frontend apenas se o usuário for admin
-            // e se um marketer específico for selecionado no dropdown.
-            // Para usuários de marketing, o backend já aplica o filtro.
-            if (isAdminUser && marketerId) { // Só admins podem filtrar por marketerId aqui
+            // The marketer_username filter is sent from the frontend if the user is admin or marketing_plus
+            // AND a specific marketer is selected in the dropdown.
+            // For regular marketing users, the backend already applies the filter.
+            if ((currentUserRole === 'admin' || currentUserRole === 'marketing_plus') && marketerId) {
                 url += `&marketer_username=${encodeURIComponent(marketerId)}`;
             }
-            
+            // IMPORTANT: For marketing_plus, if marketerId is empty (i.e., "All Marketers" selected),
+            // we DON'T send a marketer_username to the backend. The backend will then
+            // automatically default to the current user's username for marketing_plus.
+
+            // add boolean filters (toggles) to URL
             for (const filterName in booleanFilterStates) {
-                if (booleanFilterStates[filterName]) { 
-                    url += `&${filterName}=True`; 
+                if (booleanFilterStates[filterName]) { // if toggle (true)
+                    if (filterName === 'is_external') {
+                        url += `&is_external=yes`; // <<< changed here
+                    } else {
+                        url += `&${filterName}=True`;
+                    }
                 }
             }
 
@@ -1319,7 +1463,7 @@
                 currentApiData.items.forEach((incidente, incidentIndex) => {
                     const caminho = incidente.original_document_location?.replace(/\\/g, "/");
                     const partes = caminho?.split("/");
-                    const folder = partes?.[3] || "Texas"; 
+                    const folder = partes?.[3] || "Texas";
 
                     const allPassengersForIncident = incidente.vehicles.flatMap((veiculo, vehicleIndex) => {
                         if (veiculo.passengers?.length) {
@@ -1333,41 +1477,41 @@
                         }
                     });
 
-                    // Lógica de filtragem de passageiros no frontend (mantida como está)
+                    // Passenger filtering logic in the frontend
                     const filteredPassengers = allPassengersForIncident.filter(passenger => {
-                        if (!passenger.marketer_users || !Array.isArray(passenger.marketer_users)) {
-                            // Se não há marketer_users ou não é um array, este passageiro não tem marketer.
-                            // Admins podem vê-lo se "All Marketers" está selecionado, marketing não.
-                            // Se isAdminUser é true e currentFilters.marketerId é vazio, inclua-o.
-                            // Caso contrário, exclua-o.
-                            return isAdminUser && !currentFilters.marketerId;
-                        }
-
-                        const hasMarketerAssigned = passenger.marketer_users.some(
+                        const hasMarketerAssignedToMe = passenger.marketer_users?.some(
                             marketer => marketer.username === currentUserUsername
                         );
 
-                        if (isAdminUser) {
+                        if (currentUserRole === 'admin') {
                             // Admin:
                             if (currentFilters.marketerId) {
-                                // Admin filtrou por um marketer específico no dropdown
-                                return passenger.marketer_users.some(
+                                // Admin filtered by a specific marketer
+                                return passenger.marketer_users?.some(
                                     marketer => marketer.username === currentFilters.marketerId
                                 );
                             } else {
-                                // Admin selecionou "All Marketers" (currentFilters.marketerId é vazio)
-                                // Inclui o passageiro se a lista marketer_users dele NÃO ESTÁ VAZIA,
-                                // ou se não tem marketer_users (que já foi tratado acima).
-                                //return passenger.marketer_users.length > 0 || !passenger.marketer_users;
-                                
-                                // Se a intenção é que o admin veja *todos* os passageiros (mesmo sem marketer atribuído)
-                                // quando "All Marketers" é selecionado, mude a linha acima para:
-                                return true; 
+                                // Admin selected "All Marketers" - see all, including unassigned
+                                return true;
                             }
-                        } else {
-                            // Usuário Marketing:
-                            return hasMarketerAssigned;
+                        } else if (currentUserRole === 'marketing_plus') {
+                            // Marketing_Plus:
+                            if (currentFilters.marketerId) {
+                                // Marketing_Plus filtered by a specific marketer
+                                return passenger.marketer_users?.some(
+                                    marketer => marketer.username === currentFilters.marketerId
+                                );
+                            } else {
+                                // Marketing_Plus selected "All Marketers" or no filter - see only their own
+                                return hasMarketerAssignedToMe;
+                            }
+                        } else if (currentUserRole === 'marketing') {
+                            // Regular Marketing: ONLY see their own
+                            return hasMarketerAssignedToMe;
                         }
+                        
+                        // Default for unhandled roles or no assigned marketers
+                        return false;
                     });
 
 
@@ -1397,25 +1541,22 @@
 
                         const rowUniqueId = `incident_${incidente.report_number || incidentIndex}_vehicle_${motorista.vehicleIndex}_person_${passengerIndex}_${(driverName || 'unknown').replace(/\s+/g, '_')}`;
 
-                        // --- AQUI É ONDE VOCÊ IRÁ ADICIONAR A LÓGICA DE ABREVIAÇÃO ---
-                        // Primeiro, obtenha o estado do item de dado.
                         const rawState = incidente.state || '--';
-                        // Use o mapeamento para obter a abreviação, ou o nome original se não houver mapeamento.
                         const displayState = stateAbbreviations[rawState] || rawState;
-                        // --- FIM DA LÓGICA DE ABREVIAÇÃO ---
 
                         const rowDataItem = {
                             id: rowUniqueId,
                             reportNumber: incidente.report_number || '--',
                             crashDate: incidente.accident_datetime?.split("T")[0] || '--',
                             driverName: driverName,
-                            phone: motorista.phone2 || "--",
+                            phone1: motorista.phone1 || "--",
+                            phone2: motorista.phone2 || "--",
                             insuranceDetails: insuranceDetails,
                             crashSeverity: crashSeverity,
                             age: motorista.age || "--",
                             gender: motorista.gender || "--",
                             address: motorista.street || "--",
-                            state: displayState, // <-- ATUALIZADO AQUI PARA USAR displayState
+                            state: displayState,
                             city: incidente.city || "--",
                             reportPDFUrl: folder?.toLowerCase() === "minnesota" ?
                                 incidente.source_url :
@@ -1441,6 +1582,13 @@
                                     <div style="display: flex; flex-direction: column; gap: 4px;">
                                         <input type="text" value="${motorista.phone2?.split(',')[0]?.trim() || ''}" data-passenger-id="${motorista.id || ''}" class="phoneInput phoneInputA" style="width: 110px; padding: 4px;"/>
                                         <input type="text" value="${motorista.phone2?.split(',')[1]?.trim() || ''}" data-passenger-id="${motorista.id || ''}" class="phoneInput phoneInputB" style="width: 110px; padding: 4px;"/>
+                                        <input
+                                            type="text"
+                                            value="${motorista.phone1 || ''}"
+                                            data-passenger-id="${motorista.id || ''}"
+                                            class="phoneInput phoneInput1"  /* new class */
+                                            style="width: 110px; padding: 4px;"
+                                        />
                                     </div>
                                     <div style="display: flex; flex-direction: column; gap: 4px;">
                                         <button class="sendReportToChat" data-id="${rowDataItem.reportNumber}" title="Send report to chat" style="background: none; border: none; cursor: pointer; font-size: 1.2em; color: #34d0db;">
@@ -1452,8 +1600,8 @@
                                     </div>
                                 </div>
                             </td>
-                            <td>${fullInsuranceDetailsHTML}</td> 
-                            <td>${fullCrashSeverityHTML}</td> 
+                            <td>${fullInsuranceDetailsHTML}</td>
+                            <td>${fullCrashSeverityHTML}</td>
                             <td>${rowDataItem.age}</td>
                             <td>${rowDataItem.gender}</td>
                             <td>${rowDataItem.address}</td>
@@ -1481,7 +1629,7 @@
                 addCheckboxListenersToCurrentPage();
                 updateSelectAllCheckboxState();
                 updateDownloadButton();
-                updateAssignButton();
+                updateAssignButton(); // Ensure this function correctly uses currentUserRole
 
                 loadingDiv.style.display = "none";
                 tableContainer.style.display = "block";
@@ -1492,30 +1640,33 @@
                 tableContainer.style.display = "none";
             }
         }
-
+        
+        // =====================================================================================================
+        // Function to save phone number
         async function savePhoneNumber(button) {
             const row = button.closest("tr");
+            const inputPhone1 = row.querySelector(".phoneInput1"); // new field
             const inputA = row.querySelector(".phoneInputA");
             const inputB = row.querySelector(".phoneInputB");
 
-            if (!inputA && !inputB) {
+            if (!inputPhone1 && !inputA && !inputB) {
                 alert("Inputs not found");
                 return;
             }
 
+            const phone1Value = inputPhone1 ? inputPhone1.value.trim() : ""; 
             const phoneA = inputA ? inputA.value.trim() : "";
             const phoneB = inputB ? inputB.value.trim() : "";
 
             const phone = [phoneA, phoneB].filter(p => p !== "").join(", ");
-
-            const passengerId = (inputA || inputB).getAttribute("data-passenger-id");
+            const passengerId = (inputPhone1 || inputA || inputB).getAttribute("data-passenger-id");
 
             if (!passengerId) {
                 alert("Passenger ID not found");
                 return;
             }
 
-            // Certifique-se de que esta URL está correta e funcional no seu backend
+            // Make sure this URL is correct and working in your backend.
             const url = `https://fcab11165760.ngrok.app/passenger/${passengerId}/phones`;
 
             try {
@@ -1526,8 +1677,8 @@
                         'accept': 'application/json'
                     },
                     body: JSON.stringify({
-                        phone1: "", // Forçando phone1 a ser vazio, como no seu código antigo
-                        phone2: phone // Enviando os dois telefones combinados como phone2
+                        phone1: phone1Value, // new field
+                        phone2: phone  // sends the concatenated phone numbers
                     })
                 });
 
@@ -1542,7 +1693,7 @@
         
         function getMilesCellStyle(milesText) {
             if (typeof milesText !== "string" || milesText.trim() === "" || milesText.trim() === "--") {
-                return ""; // sem cor para vazias ou "--"
+                return ""; // no color for empty or "--"
             }
 
             const parts = milesText.split(":");
@@ -1552,24 +1703,25 @@
             if (isNaN(miles)) return "";
 
             if (miles <= 20) {
-                return 'background-color: #d4edda;'; // Verde claro
+                return 'background-color: #d4edda;'; 
             } else if (miles <= 30) {
-                return 'background-color: #fff3cd;'; // Amarelo claro
+                return 'background-color: #fff3cd;'; 
             } else {
-                return 'background-color: #f8d7da;'; // Vermelho claro
+                return 'background-color: #f8d7da;'; 
             }
         }
 
-
+        // =====================================================================================================
+        // Function to add checkbox listeners to the current page
         function addCheckboxListenersToCurrentPage() {
             document.querySelectorAll('.row-checkbox').forEach(checkbox => {
                 checkbox.addEventListener('change', function() {
                     const rowId = this.dataset.rowId;
-                    // Encontra o item de dados correspondente em currentlyDisplayedData
+                    // Finds the matching data item in currentlyDisplayedData
                     const dataItem = currentlyDisplayedData.find(item => item.id === rowId);
 
                     if (!dataItem) {
-                        console.warn("Data item não encontrado para o rowId:", rowId);
+                        console.warn("Data item not found for rowId:", rowId);
                         return;
                     }
 
@@ -1586,23 +1738,27 @@
                     }
                     updateDownloadButton();
                     updateAssignButton()
-                    updateSelectAllCheckboxState(); // Atualiza o checkbox do cabeçalho
+                    updateSelectAllCheckboxState(); // Updates the header checkbox
                 });
             });
         }
 
+        // =====================================================================================================
+        // Handle the "Select All" checkbox for the current page
         document.getElementById('select-all-current-page').addEventListener('change', function() {
             const isChecked = this.checked;
             document.querySelectorAll('.row-checkbox').forEach(checkbox => {
-                // Apenas altera se o estado for diferente para evitar reprocessamento desnecessário
+                // Only change if the state is different to avoid unnecessary reprocessing
                 if (checkbox.checked !== isChecked) {
                     checkbox.checked = isChecked;
-                    // Dispara o evento 'change' para que a lógica de adicionar/remover seja executada
+                    // Fires the 'change' event so that the add/remove logic is executed
                     checkbox.dispatchEvent(new Event('change'));
                 }
             });
         });
 
+        // =====================================================================================================
+        // Function to update the state of the "Select All" checkbox based on current page checkboxes
         function updateSelectAllCheckboxState() {
             const selectAllCheckbox = document.getElementById('select-all-current-page');
             const rowCheckboxes = document.querySelectorAll('.row-checkbox');
@@ -1619,7 +1775,8 @@
             selectAllCheckbox.indeterminate = !allCheckedOnPage && someCheckedOnPage;
         }
 
-
+        // =====================================================================================================
+        // Function to update the download button text and state
         function updateDownloadButton() {
             const button = document.getElementById('download-csv-button');
             const count = selectedRowDataForExport.length;
@@ -1627,19 +1784,28 @@
             button.disabled = count === 0;
         }
 
+        // =====================================================================================================
+        // Function to update the visibility of assign/unassign buttons based on user role
         function updateAssignButton() {
-            const assignReportBtn = document.getElementById('assign-button');
-            if (assignReportBtn) {
-                const count = selectedItemIds.size; // Alterado aqui
-                assignReportBtn.textContent = `Assign Reports (${count})`;
-                assignReportBtn.disabled = count === 0;
+            const assignButton = document.getElementById('assign-button');
+            const unassignButton = document.getElementById('unassign-button');
+
+            if (!assignButton || !unassignButton) {
+                console.warn("Assign/Unassign buttons not found.");
+                return;
             }
-            const deleteAssignmentBtn = document.getElementById('delete-assignment-btn');
-            if (deleteAssignmentBtn) {
-                deleteAssignmentBtn.disabled = selectedItemIds.size === 0;
+
+            if (currentUserRole === 'admin' || currentUserRole === 'marketing_plus') {
+                assignButton.style.display = 'inline-block';
+                unassignButton.style.display = 'inline-block';
+            } else {
+                assignButton.style.display = 'none';
+                unassignButton.style.display = 'none';
             }
         }
 
+        // =====================================================================================================
+        // Functions to handle pagination
         function nextPage() {
             currentPage++;
             fetchData();
@@ -1662,6 +1828,9 @@
             });
         }
 
+        // =====================================================================================================
+        // Function to send a message to the Watson Assistant chat instance
+        // This function assumes that window.g_wa_instance is the Watson Assistant instance
         function sendToChat(message, instance) {
             if (instance && instance.send) {
                 instance.send({ input: { text: message } });
@@ -1693,6 +1862,8 @@
             }
         });
 
+        // =====================================================================================================
+        // Function to toggle the visibility of incident details
         function toggleDetails(id, button) {
             const detailsRow = document.getElementById(id);
             const isVisible = detailsRow.style.display === "table-row";
@@ -1700,6 +1871,8 @@
             button.textContent = isVisible ? "▶" : "▼";
         }
 
+        // =====================================================================================================
+        // Function to render generic details for an incident
         function renderGenericDetails(incident) {
             const city = incident.city || '';
             const state = incident.state || '';
@@ -1763,6 +1936,8 @@
             return html;
         }
 
+        // =====================================================================================================
+        // Function to download selected reports as CSV
         function downloadSelectedCSV() {
             if (selectedRowDataForExport.length === 0) {
                 alert("No item selected for downlaod.");
@@ -1770,67 +1945,69 @@
             }
 
             const headers = [
-                "Report N°", "Crash Date", "Driver Name", "Phone N°",
+                "Report N°", "Crash Date", "Driver Name", "Phone (1) N°","Phone (2) N°",
                 "Insurance Details", "Crash Severity", "Age", "Gender",
                 "Address", "State", "City", "Report PDF Link", "Distance from Clinic"
             ];
 
-            // As chaves devem corresponder exatamente às propriedades do objeto rowDataItem
+            // Keys must exactly match the properties of the rowDataItem object
             const dataKeys = [
-                "reportNumber", "crashDate", "driverName", "phone",
+                "reportNumber", "crashDate", "driverName", "phone1", "phone2",
                 "insuranceDetails", "crashSeverity", "age", "gender",
                 "address", "state", "city", "reportPDFUrl", "distanceFromClinic"
             ];
 
-            const DELIMITER = ';'; // Alterado para ponto e vírgula
+            const DELIMITER = ';'; // Changed to semicolon
 
-            // Adiciona o BOM UTF-8 para melhor compatibilidade com Excel
+            // Adds UTF-8 BOM for better Excel compatibility
             let csvContent = "\ufeff"; 
 
             csvContent += headers.map(header => {
                 let cleanHeader = String(header).replace(/"/g, '""'); // Escapa aspas duplas
-                return `"${cleanHeader}"`; // Envolve com aspas duplas
+                return `"${cleanHeader}"`; // Enclose with double quotes
             }).join(DELIMITER) + "\r\n";
 
             selectedRowDataForExport.forEach(item => {
                 const row = dataKeys.map(key => {
                     let val = item[key] !== undefined && item[key] !== null ? String(item[key]) : "";
                     
-                    // Remove/substitui tabulações e quebras de linha de dentro dos campos
-                    // para evitar problemas de formatação, mesmo quando o campo está entre aspas.
-                    val = val.replace(/\t/g, ' '); // Substitui tabulação por espaço
-                    val = val.replace(/\n/g, ' '); // Substitui nova linha por espaço
-                    val = val.replace(/\r/g, ' '); // Substitui carriage return por espaço
+                    // Removes/replaces tabs and line breaks within fields
+                    // to avoid formatting issues, even when the field is enclosed in quotes.
+                    val = val.replace(/\t/g, ' '); // Replaces tab with space
+                    val = val.replace(/\n/g, ' '); // Replaces newline with space
+                    val = val.replace(/\r/g, ' '); // Replaces carriage return with space
 
-                    val = `"${val.replace(/"/g, '""')}"`; // Escapa aspas duplas internas e envolve o valor com aspas duplas
+                    val = `"${val.replace(/"/g, '""')}"`; // Escapes internal double quotes and wraps the value in double quotes
                     return val;
                 });
                 csvContent += row.join(DELIMITER) + "\r\n";
             });
 
-            // Usar Blob para criar o arquivo é mais robusto
+            // Using Blob to create the file is more robust
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
 
             const link = document.createElement("a");
             link.setAttribute("href", url);
             link.setAttribute("download", "Crash_Report_Data.csv");
-            document.body.appendChild(link); // Necessário para Firefox
+            document.body.appendChild(link); // Required for Firefox
 
             link.click();
 
-            document.body.removeChild(link); // Limpa o link
-            URL.revokeObjectURL(url); // Libera o objeto URL
+            document.body.removeChild(link); // clears link
+            URL.revokeObjectURL(url); // Release the object URL
         }
 
+        // ====================================================================================================
+        // Event listeners for pagination buttons
         document.addEventListener('DOMContentLoaded', () => {
             fetchUserInfo();
             fetchData();
-            updateDownloadButton(); // Inicializa o estado do botão
+            updateDownloadButton(); // Initializes the button state
             updateAssignButton();
             populateMarketerFilterDropdown();
             
-           // Adicionar listeners para o modal de atribuição
+           // Add listeners for the assignment modal
             if (closeAssignBtn) {
                 closeAssignBtn.addEventListener('click', closeAssignModal);
             }
@@ -1838,20 +2015,19 @@
                 confirmAssignBtn.addEventListener('click', performAssignment);
             }
             
-            // Listener global para fechar o modal ao clicar fora (modificado para incluir o novo modal)
+            // Global listener to close modal on click outside (modified to include new modal)
             window.addEventListener('click', function(event) {
                 if (event.target == uploadModal) {
                     closeUploadModal();
                 }
-                if (event.target == assignModal) { // Adicionado
+                if (event.target == assignModal) { // added
                     closeAssignModal();
                 }
             });
                 });
-    </script>
-
-    <script>
-        // --- Funcionalidade: Popup de Upload (mantido) ---
+  
+        // ====================================================================================================        
+        // Feature: Upload Popup (kept)
         const uploadModal = document.getElementById("uploadModal");
         const fileInput = document.getElementById("fileInput");
         const uploadBtn = document.getElementById("uploadBtn");
@@ -1874,16 +2050,16 @@
             }
         }
 
-
-        // Listener principal para DOMContentLoaded e clicks globais
+        // ====================================================================================================
+        // Main listener for DOMContentLoaded and global clicks
         document.addEventListener('DOMContentLoaded', (event) => {
-            // Lógica para o formulário de upload
+            // Logic for the upload form
             const fileUploadForm = document.getElementById("fileUploadForm");
             if (fileUploadForm) {
-                fileUploadForm.addEventListener('submit', async function(e) { // Adicione 'async' aqui
+                fileUploadForm.addEventListener('submit', async function(e) { // add 'async' here
                     e.preventDefault();
                     const files = fileInput.files;
-                    const selectedState = stateSelect.value; // Obter o estado selecionado
+                    const selectedState = stateSelect.value; // Get selected state
 
                     if (files.length === 0) {
                         uploadStatus.textContent = 'Please select files to upload.';
@@ -1891,54 +2067,55 @@
                         return;
                     }
 
-                    // NOVO: Verificar se o estado foi selecionado
+                    // NEW: Check if state is selected
                     if (!selectedState) {
                         uploadStatus.textContent = 'Please select a state for upload.';
                         uploadStatus.style.color = 'red';
                         return;
                     }
-                    // FIM DO NOVO
+                    // END NEW
 
                     uploadStatus.textContent = 'Uploading...';
                     uploadStatus.style.color = 'orange';
 
-                    // NOVO: Lógica de upload real
+                    // NEW: Real upload logic
                     const formData = new FormData();
                     for (let i = 0; i < files.length; i++) {
-                        formData.append('files', files[i]); // A API espera 'file' (1 file) ou 'files' (2+ files) como nome do campo
+                        formData.append('files', files[i]); // API expects 'file' (1 file) or 'files' (2+ files) as field name
                     }
 
                     let uploadEndpoint = '';
                     if (selectedState === 'Ohio') {
                         uploadEndpoint = 'https://fcab11165760.ngrok.app/upload-multiple-pdfs-ohio';
-                    } if (selectedState === 'Georgia'){
+                    } else if (selectedState === 'Georgia') {
                         uploadEndpoint = 'https://fcab11165760.ngrok.app/upload-multiple-pdfs-georgia';
-                    }
-                    else {
-                        // Caso você adicione outros estados no futuro e precise de endpoints diferentes
+                    } else if (selectedState === 'NC') {
+                        uploadEndpoint = 'https://fcab11165760.ngrok.app/upload-multiple-xml-nc';
+                    } else {
+                        // In case you add other states in the future and need different endpoints
                         uploadStatus.textContent = 'Invalid state selected for upload.';
                         uploadStatus.style.color = 'red';
                         return;
                     }
 
                     try {
-                        // headers: {'ngrok-skip-browser-warning': 'true'} - Se você ainda usa ngrok e precisa disso.
-                        // CORS: Se o seu frontend estiver em um domínio diferente do ngrok, você precisará configurar CORS no Flask.
+                        // headers: {'ngrok-skip-browser-warning': 'true'} - If you still use ngrok and need this.
+                        // CORS: If your frontend is on a different domain than ngrok, you will need to configure CORS in Flask.
                         const response = await fetch(uploadEndpoint, {
                             method: 'POST',
                             body: formData,
-                            // Não defina 'Content-Type': 'multipart/form-data' explicitamente.
-                            // O navegador faz isso automaticamente e adiciona a boundary quando você usa FormData.
+                            // Do not set 'Content-Type': 'multipart/form-data' explicitly.
+                            // The browser does this automatically and adds the boundary when you use FormData.
                         });
 
                         if (response.ok) {
-                            const result = await response.json(); // Ou response.text() dependendo do que a API retorna
+                            const result = await response.json(); // Or response.text() depending on what the API returns
                             uploadStatus.textContent = `Successfully uploaded ${files.length} file(s)!`;  // Response: ${result.message || JSON.stringify(result)}
                             uploadStatus.style.color = 'green';
-                            // Opcional: Fechar modal ou resetar formulário após upload
-                            // setTimeout(() => closeUploadModal(), 2000); 
+                            // Optional: Close modal or reset form after upload
+                            // setTimeout(() => closeUploadModal(), 2000);
                         } else {
-                            const errorText = await response.text(); // Pega a resposta de erro
+                            const errorText = await response.text(); // Get the error response
                             uploadStatus.textContent = `Upload failed: ${response.status}`; // - ${errorText}
                             uploadStatus.style.color = 'red';
                             console.error('Upload error:', response.status, errorText);
@@ -1948,13 +2125,13 @@
                         uploadStatus.style.color = 'red';
                         console.error('Network or unexpected error during upload:', error);
                     }
-                    // FIM DO NOVO
+                    // END NEW
                 });
             } else {
                 console.error("File upload form not found.");
             }
 
-            // Global click listener para fechar modais ao clicar fora
+            // Global click listener to close modals when click out of modal
             window.onclick = function(event) {
                 if (uploadModal && event.target == uploadModal) {
                     closeUploadModal();
@@ -1964,9 +2141,10 @@
             fetchData();
         });
 
-        // --- INÍCIO: LÓGICA DO MODAL DE ATRIBUIÇÃO ---
+        // ====================================================================================================
+        // --- START: ATTRIBUTION MODAL LOGIC ---
 
-        // Pega as referências dos elementos do novo modal
+        // Get the references of the elements of the new modal
         const assignModal = document.getElementById("assignModal");
         const closeAssignBtn = document.getElementById("closeAssignModalBtn");
         const confirmAssignBtn = document.getElementById("confirm-assign-button");
@@ -1975,40 +2153,34 @@
         const assignStatus = document.getElementById("assign-status");
 
 
-        /**
-         * Abre o modal de atribuição, mas somente se houver reports selecionados.
-         */
+        // Opens the assignment modal, but only if reports are selected.
         async function openAssignModal() {
             if (selectedItemIds.size === 0) {
                 alert("Please select at least one report to assign.");
                 return;
             }
             
-            // Atualiza a contagem de reports no texto do modal
+            // Opens the assignment modal, but only if reports are selected.
             assignCountSpan.textContent = selectedItemIds.size;
             
-            // Limpa o status e reativa o botão de confirmação
+            // Clears status and re-enables confirmation button
             assignStatus.textContent = '';
             confirmAssignBtn.disabled = false;
             confirmAssignBtn.textContent = 'Confirm Assignment';
 
-            // Mostra o modal
+            // shows modal
             assignModal.style.display = "flex";
             
-            // Busca e popula a lista de marketers
+            // Search and populate the list of marketers
             await populateMarketersDropdown();
         }
 
-        /**
-         * Fecha o modal de atribuição.
-         */
+        // Closes the assignment modal.
         function closeAssignModal() {
             assignModal.style.display = "none";
         }
 
-        /**
-         * Busca a lista de marketers da API e popula o dropdown DENTRO DO MODAL.
-         */
+        //Fetches the list of marketers from the API and populates the dropdown INSIDE THE MODAL.
         async function populateMarketersDropdown() {
             const apiUrl = '/marketer-users'; // Aponta para o seu backend Flask
             const marketerSelect = document.getElementById('modal-marketer-select');
@@ -2029,9 +2201,9 @@
 
                 marketers.forEach(marketer => {
                     const option = document.createElement('option');
-                    // *** MUDANÇA CRÍTICA AQUI: Use marketer.id novamente para o valor ***
+                    // *** CRITICAL CHANGE HERE: Use marketer.id again for the value ***
                     option.value = marketer.id; 
-                    // O texto exibido para o usuário ainda pode ser o nome completo ou username
+                    // The text displayed to the user can still be the full name or username
                     option.textContent = marketer.full_name || marketer.username || marketer.email; 
                     marketerSelect.appendChild(option);
                 });
@@ -2042,20 +2214,17 @@
             }
         }
 
-
-        /**
-         * Executa a lógica de atribuição quando o botão de confirmação no modal é clicado.
-         */
+        // Executes assignment logic when the confirm button in the modal is clicked.
         async function performAssignment() {
             const marketerId = marketerSelect.value;
 
-            // 1. Validação
+            // 1. Validation
             if (!marketerId) {
                 alert('Please select a marketer.');
                 return;
             }
 
-            // 2. Coleta os IDs dos passageiros (usando os dados já carregados)
+            // 2. Collects passenger IDs (using already loaded data)
             const passengerIdsToAssign = [];
             selectedItemIds.forEach(rowId => {
                 const rowData = currentlyDisplayedData.find(item => item.id === rowId);
@@ -2069,7 +2238,7 @@
                 return;
             }
             
-            // 3. Feedback visual e desativação do botão
+            // 3. Visual feedback and button deactivation
             confirmAssignBtn.disabled = true;
             assignStatus.textContent = 'Processing...';
             assignStatus.style.color = 'orange';
@@ -2078,7 +2247,7 @@
             let successCount = 0;
             let errorCount = 0;
 
-            // 4. Loop para fazer as chamadas à API
+            // 4. Loop to make API calls
             for (const passengerId of passengerIdsToAssign) {
                 try {
                     const response = await fetch(apiUrl, {
@@ -2101,25 +2270,21 @@
                 }
             }
 
-            // 5. Feedback final e limpeza
+            // 5. Final feedback and cleanup
             alert(`${successCount} reports successfully assigned.${errorCount > 0 ? `\n${errorCount} failed.` : ''}`);
 
-            closeAssignModal(); // Fecha o modal
+            closeAssignModal(); // Closes modal
             
-            selectedItemIds.clear(); // Limpa a seleção de checkboxes
-            fetchData(); // Recarrega os dados da tabela para refletir as mudanças
+            selectedItemIds.clear(); // Clears checkbox selection
+            fetchData(); // Reloads table data to reflect changes
         }
-
-
-        // --- FIM: LÓGICA DO MODAL DE ATRIBUIÇÃO ---
+        // --- END: ATTRIBUTION MODAL LOGIC ---
     
-    </script>
-        
-        
-    <script>
+        // ====================================================================================================
+        // Delete Assignment Modal
         let passengersWithMarketersForDeletion = [];
 
-        // Funções para abrir e fechar o modal de deleção
+        // Functions to open and close the delete modal
         function openDeleteAssignmentModal() {
             document.getElementById('deleteAssignmentModal').style.display = 'flex';
         }
@@ -2128,7 +2293,7 @@
             document.getElementById(modalId).style.display = 'none';
         }
 
-        // Event Listener para o novo botão
+        // Event Listener for the new button
         document.addEventListener('DOMContentLoaded', () => {
 
             const deleteAssignmentBtn = document.getElementById('delete-assignment-btn');
@@ -2142,30 +2307,30 @@
             }
         });
 
-        // Função para preparar o modal de deleção
+        // Function to prepare the delete modal
         async function prepareDeleteAssignmentModal() {
-            passengersWithMarketersForDeletion = []; // Limpa a lista anterior
+            passengersWithMarketersForDeletion = []; // Clear the previous list
             const marketerListDiv = document.getElementById('marketerListToDelete');
             marketerListDiv.innerHTML = '<p>Searching for marketers in selected reports...</p>';
             
             const uniqueMarketerUsernames = new Set();
             
-            // Coleta os dados completos dos itens selecionados
+            // Collects complete data of selected items
             const selectedReportsData = currentlyDisplayedData.filter(item => selectedItemIds.has(item.id));
 
-            // Itera sobre os relatórios selecionados
+            // Iterate over selected reports
             for (const report of selectedReportsData) {
-                // A API de vocês já tem o passageiro no "originalMotorista"
+                // Your API already has the passenger in "originalDriver"
                 const passenger = report.originalMotorista;
 
                 if (passenger && passenger.marketer_users && passenger.marketer_users.length > 0) {
-                    // Adiciona o passageiro completo à lista para deleção, incluindo o ID do passageiro
+                    // Adds the full passenger to the deletion list, including the passenger ID
                     passengersWithMarketersForDeletion.push({
                         passengerId: passenger.id,
                         marketers: passenger.marketer_users
                     });
 
-                    // Coleta os usernames únicos dos marketers encontrados
+                    // Collects unique usernames of found marketers
                     passenger.marketer_users.forEach(marketer => {
                         uniqueMarketerUsernames.add(JSON.stringify({
                             id: marketer.id,
@@ -2176,7 +2341,7 @@
                 }
             }
 
-            // Popula o modal com os marketers únicos encontrados
+            // Populate the modal with unique marketers found
             if (uniqueMarketerUsernames.size > 0) {
                 marketerListDiv.innerHTML = '<h3 style="font-weight: normal; font-size: 15px">Select Marketer(s) to Delete:</h3>';
                 uniqueMarketerUsernames.forEach(marketerString => {
@@ -2198,7 +2363,7 @@
             openDeleteAssignmentModal();
         }
 
-        // Função para confirmar a deleção
+        // Function to confirm deletion
         async function confirmDeleteAssignments() {
             const selectedMarketerCheckboxes = document.querySelectorAll('#marketerListToDelete input[name="marketerToDelete"]:checked');
 
@@ -2212,18 +2377,18 @@
                 username: checkbox.dataset.username
             }));
 
-            // Confirmação adicional antes de prosseguir
+            // check if is what user wants
             if (!confirm(`Are you sure you want to delete assignments for the selected marketer(s)? This action cannot be undone.`)) {
                 return;
             }
 
-            // Array para armazenar as requisições DELETE
+            // Array to store DELETE requests
             const deletePromises = [];
             const deleteErrors = [];
 
             for (const passengerData of passengersWithMarketersForDeletion) {
                 for (const marketerToDelete of marketersToDelete) {
-                    // Verifica se este passageiro realmente tem o marketer que queremos deletar
+                    // Check if this passenger really has the marketer we want to delete
                     const hasMarketer = passengerData.marketers.some(m => m.id.toString() === marketerToDelete.id);
                     if (hasMarketer) {
                         const deleteUrl = `https://fcab11165760.ngrok.app/assign-marketer-users/?passenger_id=${passengerData.passengerId}&marketer_user_id=${marketerToDelete.id}`;
@@ -2233,7 +2398,7 @@
                                 method: 'DELETE',
                                 headers: {
                                     'accept': 'application/json'
-                                    // Adicione headers de autenticação se sua API precisar (e.g., 'Authorization': `Bearer ${token}`)
+                                    // Add authentication headers if your API needs them (e.g., 'Authorization': `Bearer ${token}`)
                                 }
                             })
                             .then(response => {
@@ -2242,7 +2407,7 @@
                                         throw new Error(`HTTP error! Status: ${response.status}, Details: ${JSON.stringify(errorData)}`);
                                     });
                                 }
-                                return response.json(); // Ou response.text() se a API não retornar JSON em DELETE
+                                return response.json(); // Or response.text() if the API does not return JSON on DELETE
                             })
                             .catch(error => {
                                 console.error(`Error deleting assignment for passenger ${passengerData.passengerId} and marketer ${marketerToDelete.username}:`, error);
@@ -2253,7 +2418,7 @@
                 }
             }
 
-            // Espera todas as requisições DELETE serem concluídas
+            // Wait for all DELETE requests to complete
             await Promise.all(deletePromises);
 
             closeModal('deleteAssignmentModal');
@@ -2264,10 +2429,110 @@
                 alert("Marketer assignments deleted successfully!");
             }
 
-            // Recarrega os dados da tabela para refletir as mudanças
+            // Reloads the table data to reflect the changes
             fetchData(); 
         }
+       
+        // ====================================================================================================
+       // Upload Modal - Tabs
+        function openTab(tabId) {
+            // remove 'active' 
+            document.querySelectorAll('.chrome-tabs .tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-page').forEach(page => {
+                page.classList.remove('active');
+            });
 
+            // apply 'active' to active page
+            const selectedTab = document.querySelector(`.tab[onclick*="${tabId}"]`);
+            const selectedPage = document.getElementById(tabId);
+            
+            if (selectedTab) selectedTab.classList.add('active');
+            if (selectedPage) selectedPage.classList.add('active');
+        }
+    
+        // ====================================================================================================
+        // script for upload status table 
+        document.addEventListener('DOMContentLoaded', function() {
+            async function loadUploadHistory() {
+                const tbody = document.getElementById('upload-history-body');
+                tbody.innerHTML = '<tr><td colspan="7">Loading...</td></tr>';
+                try {
+                    const res = await fetch('https://fcab11165760.ngrok.app/report-status');
+                    const data = await res.json();
+                    if (!data.records || !Array.isArray(data.records) || data.records.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="7">No records found.</td></tr>';
+                        return;
+                    }
+                    tbody.innerHTML = '';
+                    data.records.forEach(rec => {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td>${rec.file_name || ''}</td>
+                            <td>${rec.agency || ''}</td>
+                            <td>${rec.report_number || ''}</td>
+                            <td>${rec.number_passagers || ''}</td>
+                            <td>${rec.created_at ? new Date(rec.created_at).toLocaleString() : ''}</td>
+                            <td>${rec.status || ''}</td>
+                            <!-- <td>${rec.updated_at ? new Date(rec.updated_at).toLocaleString() : ''}</td> -->
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                } catch (e) {
+                    tbody.innerHTML = '<tr><td colspan="7" style="color:red;">Error loading data.</td></tr>';
+                }
+            }
+            // load when upen "Status" tab
+            document.querySelector('.tab[onclick*="page2"]').addEventListener('click', loadUploadHistory);
+            // load imidiatly if "Status" tab is active
+            if (document.getElementById('page2').classList.contains('active')) {
+                loadUploadHistory();
+            }
+        });
+
+        // ====================================================================================================
+        // Funtion to support chat
+        function toggleChat() {
+            const chat = document.getElementById("chatWindow");
+            chat.style.display = (chat.style.display === "block") ? "none" : "block";
+        }
+
+        /* Function to submit the form and display an alert with the details */
+        function submitForm() {
+            const name = document.getElementById("name").value;
+            const email = document.getElementById("email").value;
+            const date = document.getElementById("date").value;
+            const problem = document.getElementById("problem").value;
+            const issueType = document.getElementById("issueType").value;
+
+            const reference = Math.floor(100000 + Math.random() * 900000); 
+
+            // Use \r\n for line breaks (better for Yahoo, Gmail, etc.)
+            const body = [
+                "Error Occurred!",
+                "",
+                `Name: ${name}`,
+                `Email: ${email}`,
+                `Date: ${date}`,
+                `Issue Type: ${issueType}`,
+                "",
+                `Problem: ${problem}`
+            ].join('\r\n');
+
+            const mailtoLink = `mailto:gsindhwani@rel8ed.to?subject=Support Request ${reference}&body=${encodeURIComponent(body)}`;
+
+            window.location.href = mailtoLink;
+
+            document.getElementById("chatWindow").style.display = "none";
+        }
+
+
+        /* Sets the date input to today's date */
+        window.addEventListener('DOMContentLoaded', (event) => {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById("date").value = today;
+        });
     </script>
 
 </body>
