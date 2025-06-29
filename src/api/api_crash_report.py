@@ -1,7 +1,12 @@
 import psycopg2
 import os
+import re
 import psycopg2.extras
 import shutil
+from dotenv import load_dotenv
+from pathlib import Path
+from math import ceil
+import pandas as pd
 from typing import List, Optional, Dict
 from datetime import datetime, time
 from config.config import get_connection
@@ -15,10 +20,12 @@ from src.services.ibm_fundational_models import WatsonXModelHandler
 from src.utils.ohio_extraction import extract_traffic_data_from_pdf
 from src.database.csv_ohio_into_db import insert_data_from_dataframe
 from src.utils.status_pdf_utils import save_estatus_pdf
+from src.utils.general_utils import convert_df_to_csv
+from src.connectors.scrapperGeorgia import extract_df_from_georgia
+from src.database.loaderGeorgia import loader_df_to_db
 from src.utils.triggers_airflow import trigger_airflow_dag
-from dotenv import load_dotenv
-from pathlib import Path
-from math import ceil
+from src.connectors.downloaderNC import download_pdfs_from_excel
+from src.database.loaderNC import loader_df_to_db
 from passlib.context import CryptContext
 from fastapi import (FastAPI, 
                      Query,
@@ -1256,6 +1263,283 @@ def get_report_status(report_number: Optional[str] = Query(None, description="N�
         if conn:
             conn.close()
 
+
+
+GEORGIA_UPLOAD_DIR = os.getenv("GEORGIA_FILE_UPLOAD_PATH")
+if not GEORGIA_UPLOAD_DIR:
+    raise RuntimeError("Falta definir GEORGIA_FILE_UPLOAD_PATH en el .env")
+os.makedirs(GEORGIA_UPLOAD_DIR, exist_ok=True)
+os.makedirs(os.path.join(GEORGIA_UPLOAD_DIR, "processed"), exist_ok=True)
+
+@app.post("/upload-multiple-pdfs-georgia", tags=["upload_pdf"])
+async def upload_multiple_pdfs(files: List[UploadFile] = File(...)):
+    results = []
+    print("/upload-multiple-pdfs-georgia")
+    for file in files:
+        try:
+            if not file.filename.lower().endswith(".pdf"):
+
+                save_result = save_estatus_pdf(
+                    file_name=file.filename.lower(),
+                    report_number="",
+                    number_passagers=0,
+                    status="uploaded file does not have a pdf extension",
+                    agency="georgia",
+                    website="georgia",
+                    state="GA",
+                    city=None,
+                    created_by="frontend"
+                )
+
+                results.append({
+                    "upload_id": save_result.get("upload_id"),
+                    "report_number": " ",
+                    "status": "uploaded file does not have a pdf extension",
+                    "message": "The file must be a PDF"
+                })
+                continue
+
+            clean_name = re.sub(r"[^a-zA-Z0-9_.-]", "_", file.filename).lower()
+            temp_pdf_path = os.path.join(GEORGIA_UPLOAD_DIR, f"temp_{clean_name}")
+
+            if os.path.exists(temp_pdf_path):
+                os.remove(temp_pdf_path)
+                
+            with open(temp_pdf_path, "wb") as buffer:
+                shutil.copyfileobj(file.file, buffer)
+
+            # Extraer datos
+            df = extract_df_from_georgia(temp_pdf_path)
+
+            if df.empty:
+
+                save_result = save_estatus_pdf(
+                    file_name=file.filename.lower(),
+                    report_number="",
+                    number_passagers=0,
+                    status="Information could not be extracted from the PDF.",
+                    agency="georgia",
+                    website="georgia",
+                    state="GA",
+                    city=None,
+                    created_by="frontend"
+                )
+
+                os.remove(temp_pdf_path)
+                results.append({
+                    "upload_id": save_result.get("upload_id"),
+                    "report_number": save_result.get("report_number"),
+                    "status": "No data extracted"
+                })
+                continue
+
+            number_report = str(df["agency_case_number"].iloc[0])
+
+            if not number_report:
+
+                save_result = save_estatus_pdf(
+                    file_name=file.filename.lower(),
+                    report_number="",
+                    number_passagers=0,
+                    status="The extracted report number is not valid.",
+                    agency="georgia",
+                    website="georgia",
+                    state="GA",
+                    city=None,
+                    created_by="frontend"
+                )
+
+                results.append({
+                    "upload_id": save_result.get("upload_id"),
+                    "report_number": save_result.get("report_number"),
+                    "status": "No data extracted",
+                    "message": "number report not found in PDF"
+                })
+                os.remove(temp_pdf_path)
+                continue
+
+            # Guardar PDF con nombre final
+            final_pdf_name = f"{number_report}.pdf"
+            final_pdf_path = os.path.join(GEORGIA_UPLOAD_DIR, final_pdf_name)
+            os.rename(temp_pdf_path, final_pdf_path)
+
+            # Guardar CSV con mismo nombre base
+            csv_filename = f"{number_report}.csv"
+            csv_path = os.path.join(GEORGIA_UPLOAD_DIR, csv_filename)
+            df.to_csv(csv_path, index=False)
+
+            # Insertar en base de datos
+            summary = loader_df_to_db(df, GEORGIA_UPLOAD_DIR)
+            incident_status = "saved" if summary else "Error inserting into the database "
+
+            save_result = save_estatus_pdf(
+                file_name=file.filename.lower(),
+                report_number=number_report,
+                number_passagers=len(df),
+                status=incident_status,
+                agency="georgia",
+                website="georgia",
+                state="GA",
+                city=None,
+                created_by="frontend"
+            )
+
+            results.append({
+                "upload_id": save_result.get("upload_id"),
+                "report_number": save_result.get("report_number"),
+                "status": "successful",
+                "message": len(df)
+            })
+
+        except Exception as e:
+
+            save_result = save_estatus_pdf(
+                file_name=file.filename.lower(),
+                report_number="",
+                number_passagers=0,
+                status="error",
+                agency="georgia",
+                website="georgia",
+                state="GA",
+                city=None,
+                created_by="frontend"
+            )
+                        
+            results.append({
+                "upload_id": save_result.get("upload_id"),
+                "report_number": save_result.get("report_number"),
+                "status": "error",
+                "message": f"Error processing file: {str(e)}"
+            })
+
+    try:
+        trigger_response = trigger_airflow_dag("incident_services_common", conf={"source": "FastAPI", "date": str(datetime.now())})
+    except Exception as e:
+        pass
+
+    return JSONResponse(status_code=207, content={"results": results})
+
+
+
+
+# Ruta de destino donde se guardarán los archivos subidos
+UPLOAD_DIR_NC = os.getenv("NC_FILE_UPLOAD_PATH")
+PROCESSED_DIR_NC = os.getenv("NC_PROCESSED_PATH")
+
+# Asegúrate de que el directorio exista
+os.makedirs(UPLOAD_DIR_NC, exist_ok=True)
+os.makedirs(PROCESSED_DIR_NC, exist_ok=True)
+
+@app.post("/upload-multiple-xml-nc", tags=["upload_pdf"])
+async def upload_xml(files: List[UploadFile] = File(...)):
+    results = []
+    for file in files:
+        try:
+            # Verificar que sea un archivo Excel
+            if not file.filename.lower().endswith((".xlsx", ".xls")):
+                save_result = save_estatus_pdf(
+                    file_name=file.filename.lower(),
+                    report_number="",
+                    number_passagers=0,
+                    status="uploaded file does not have a .xlsx or .xls extension",
+                    agency="NorthCarolina",
+                    website="northcarolina",
+                    state="NC",
+                    city=None,
+                    created_by="frontend"
+                )
+                
+                results.append({
+                    "upload_id": save_result.get("upload_id"),
+                    "report_number": " ",
+                    "status": "uploaded file does not have a pdf extension",
+                    "message": "The file must be a PDF"
+                })
+                continue
+
+            # Limpiar el nombre del archivo y asegurarse de que sea único
+            clean_name = re.sub(r"[^a-zA-Z0-9_.-]", "_", file.filename).lower()
+            excel_path = os.path.join(UPLOAD_DIR_NC, clean_name)
+
+            # Guardar el archivo Excel en la ruta especificada
+            with open(excel_path, "wb") as buffer:
+                shutil.copyfileobj(file.file, buffer)
+
+            # Verificar que el archivo fue guardado correctamente
+            if not os.path.isfile(excel_path):
+                raise HTTPException(status_code=500, detail="Error al guardar el archivo Excel.")
+
+            # Procesar el archivo
+            download_pdfs_from_excel(excel_path, PROCESSED_DIR_NC)
+
+            # Leer el archivo Excel en un DataFrame
+            df = pd.read_excel(excel_path)
+
+            if df.empty:
+                raise HTTPException(status_code=422, detail="El archivo Excel está vacío o no contiene datos válidos.")
+
+            # Obtener el nombre del archivo (sin la extensión)
+            csv_name = Path(excel_path).stem
+
+            # Convertir a CSV y guardar el archivo CSV procesado
+            csv_path = convert_df_to_csv(df, PROCESSED_DIR_NC, csv_name)
+
+            # Cargar los datos en la base de datos
+            summary=loader_df_to_db(df, path_pdf_folder=PROCESSED_DIR_NC)
+            incident_status = "saved" if summary else "Error inserting into the database "
+
+            # Obtener el número de reporte del archivo Excel
+            number_report = str(df.iloc[0]["ReportNumber"])
+            if not number_report:
+                raise HTTPException(status_code=422, detail="A valid report number could not be found in the Excel file.")
+
+            # Guardar el estado del archivo procesado
+            save_result = save_estatus_pdf(
+                file_name=clean_name,
+                report_number=number_report,
+                number_passagers=len(df),
+                status=incident_status,
+                agency="northcarolina",
+                website="northcarolina",
+                state="NC",
+                city=None,
+                created_by="frontend"
+            )
+
+            results.append({
+                "upload_id": save_result.get("upload_id"),
+                "report_number": save_result.get("report_number"),
+                "status": "success",
+                "message": f"Se procesaron {len(df)} registros y se guardó el archivo CSV en: {csv_path}"
+            })
+
+        except Exception as e:
+            # En caso de error, registrar el estado del error
+            save_result = save_estatus_pdf(
+                file_name=clean_name,
+                report_number="",
+                number_passagers=0,
+                status="error",
+                agency="northcarolina",
+                website="northcarolina",
+                state="NC",
+                city=None,
+                created_by="frontend"
+            )
+
+            results.append({
+                "upload_id": save_result.get("upload_id"),
+                "report_number": save_result.get("report_number"),
+                "status": "error",
+                "message": f"Error procesando el archivo {clean_name}: {str(e)}"
+            })
+            
+    try:
+        trigger_response = trigger_airflow_dag("incident_services_common", conf={"source": "FastAPI", "date": str(datetime.now())})
+    except Exception as e:
+        pass
+
+    return {"results": results}
 
 # @app.websocket("/ws/notifications")
 # async def websocket_notifications(websocket: WebSocket):

@@ -3,23 +3,14 @@ import os
 import psycopg2
 from psycopg2 import sql, extras
 from dotenv import load_dotenv
+
+from config.config import get_connection
 load_dotenv()
 
 # --- Configuración dinámica desde entorno 
 # Esta es la configuración de la base de datos de Chicago Crashes Traffic.
-DB_CONFIG = {
-    'dbname': os.getenv('DB_NAME'),
-    'user': os.getenv('DB_USER'),
-    'password': os.getenv('DB_PASSWORD'),
-    'host': os.getenv('DB_HOST'),
-    'port': os.getenv('DB_PORT'),
-}
-
-# Esta es la configuración de los tipos de datos de las columnas de la tabla de Chicago Crashes People. """
-API_URL_CRASHES_TRAFFIC = os.getenv('API_URL_CRASHES_TRAFFIC')
-TABLE_NAME_CRASHES_TRAFFIC = os.getenv('TABLE_NAME_CRASHES_TRAFFIC')
-CSV_BASE_PATH = os.getenv('CSV_BASE_PATH')
-
+conn = get_connection()
+cur = conn.cursor()
 
 # Tipos específicos por columna en la tabla de traffic crashes
 SQL_TYPES = {
@@ -98,29 +89,28 @@ def insert_all_to_database(df, table_name):
 
     inserted_count = 0
     try:
-        with psycopg2.connect(**DB_CONFIG) as conn:
-            with conn.cursor() as cur:
-                cur.execute(create_table_query)
-                conn.commit()
+        with conn.cursor() as cur:
+            cur.execute(create_table_query)
+            conn.commit()
 
-                insert_query = sql.SQL(
-                    """
-                    INSERT INTO {table} ({fields}) VALUES ({placeholders})
-                    """
-                ).format(
-                    table=sql.Identifier(table_name),
-                    fields=sql.SQL(', ').join(map(sql.Identifier, columns)),
-                    placeholders=sql.SQL(', ').join(sql.Placeholder() * len(columns))
-                )
+            insert_query = sql.SQL(
+                """
+                INSERT INTO {table} ({fields}) VALUES ({placeholders})
+                """
+            ).format(
+                table=sql.Identifier(table_name),
+                fields=sql.SQL(', ').join(map(sql.Identifier, columns)),
+                placeholders=sql.SQL(', ').join(sql.Placeholder() * len(columns))
+            )
 
-                values = [
-                    tuple(None if pd.isna(val) else val for val in row)
-                    for row in df.itertuples(index=False, name=None)
-                ]
+            values = [
+                tuple(None if pd.isna(val) else val for val in row)
+                for row in df.itertuples(index=False, name=None)
+            ]
 
-                extras.execute_batch(cur, insert_query, values)
-                inserted_count = len(values)
-                conn.commit()
+            extras.execute_batch(cur, insert_query, values)
+            inserted_count = len(values)
+            conn.commit()
 
         print(f"Se insertaron {inserted_count} registros en la base de datos.")
         return inserted_count
@@ -129,13 +119,13 @@ def insert_all_to_database(df, table_name):
         print(f"Error al insertar en la base de datos: {e}")
         return 0
 
-def main(path):
+def insert_db_full_crashes(path):
     ruta_txt = os.path.join(path, "csv_path_traffic.txt")
     with open(ruta_txt, "r", encoding="utf-8") as f:
         primera_linea = f.readline().strip()
         # Cargar el CSV en un DataFrame
         df = pd.read_csv(primera_linea, sep=';')
-        insert_all_to_database(df, "crashes_traffic")
+        insert_all_to_database(df, "chicago_crashes_traffic")
 
 if __name__ == "__main__":
-    main("/Users/imac/Software/SynapseIQ-dev/src/connectors/chicago")
+    insert_db_full_crashes("/home/data/chicago/traffic")

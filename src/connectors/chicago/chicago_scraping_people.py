@@ -91,7 +91,7 @@ def guardar_csv(df, path, fecha):
         return None
 """"""
 
-def main(path: str):
+def pipeline_chicago_people(path: str):
     """Ejecuta el flujo principal: descarga de datos, inserción en la base, y guardado como CSV si hay nuevos registros.
     Llama a obtener_datos
     Si hay datos, inserta en la base
@@ -116,4 +116,4 @@ def main(path: str):
 # Punto de entrada si se ejecuta como script
 if __name__ == "__main__":
     #   main(path="/Users/imac/Software/SynapseIQ-dev/src/connectors/chicago")
-    main(path="/home/SynapseIQ/storage/chicago/2025")
+    pipeline_chicago_people(path="/home/data/chicago/people")

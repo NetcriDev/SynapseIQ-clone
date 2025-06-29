@@ -111,7 +111,7 @@ def guardar_csv(df, path, fecha):
 
 
 
-def main(path: str):
+def pipeline_chicago_traffic(path: str):
     """Ejecuta el flujo principal: descarga de datos, inserción en la base, y guardado como CSV si hay nuevos registros.
     Consulta a la API de accidentes de tráfico
     Si hay datos, inserta en la base
@@ -133,4 +133,4 @@ def main(path: str):
         print("No se encontraron datos en la API o ocurrió un error.")
 
 if __name__ == "__main__":
-    main(path="/Users/imac/Software/SynapseIQ-dev/src/connectors/chicago")
+    pipeline_chicago_traffic(path="/home/data/chicago/traffic")

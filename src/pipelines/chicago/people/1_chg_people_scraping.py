@@ -9,13 +9,13 @@ os.chdir(PROJECT_ROOT)
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
-from src.connectors.chicago.chicago_scraping_people import pipeline_chicago
+from src.connectors.chicago.chicago_scraping_people import pipeline_chicago_people
 from src.utils.logger_config import setup_logger
 
 
 #outputdata_dir = "/Users/cristianb/Documents/Python/rel8ed/Data"
 #home_dir = "/Users/cristianb/Documents/Python/rel8ed/SynapseIQ_staging"
-outputdata_dir = "/home/data"
+outputdata_dir = "/home/data/chicago/people"
 home_dir="home/SynapseIQ"
 
 logger= setup_logger("Scheduled_execution", home_dir)
@@ -24,7 +24,7 @@ logger= setup_logger("Scheduled_execution", home_dir)
 def chicago_people():
     logger.info(">>> Start script: chicago-people")
     #Reemplazar por mi scraping 
-    pipeline_chicago(outdata_folder=os.path.join(outputdata_dir, "chicago-people"))
+    pipeline_chicago_people(path=os.path.join(outputdata_dir))
     #run_msp_crash_scraper(outputdata_dir, home_path=home_dir)
     logger.info("Finish script: chicago-people -----|")
 
