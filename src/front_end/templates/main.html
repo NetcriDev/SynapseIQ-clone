@@ -317,57 +317,43 @@
         @media (max-width: 992px) {
             .table-scroll-container {
                 max-height: calc(100vh - 200px);
+                overflow-x: auto;
             }
             
             th, td {
                 padding: 10px 8px;
                 font-size: 0.9em;
             }
-        }
-    
-        @media (max-width: 768px) {
-            .site-header {
-                flex-direction: column;
-                padding: 15px;
-            }
-    
-            .site-header .logo-container {
-                display: flex;
-                justify-content: space-around;
-                width: 100%;
-                margin-bottom: 10px;
-            }
-            
-            .site-header .logo-container img {
-                max-height: 40px;
-            }
-    
-            .main-content h2 {
-                font-size: 1.5em;
-            }
-    
-            .table-scroll-container {
-                max-height: calc(100vh - 180px);
+            .table-container {
+                max-height: calc(100vh - 140px);
+                overflow-y: auto;
             }
         }
-    
-        @media (max-width: 480px) {
-            .site-header .logo-container img {
-                max-height: 35px;
+        
+        @media (max-width: 556px) {
+            /* take off all columns, except report n / name / phone */
+            #data-table th:not(:nth-child(3)):not(:nth-child(5)):not(:nth-child(6)),
+            #data-table td:not(:nth-child(3)):not(:nth-child(5)):not(:nth-child(6)) {
+                display: none;
             }
-            
-            .main-content h2 {
-                font-size: 1.3em;
+
+            .download-csv-button, .fas.fa-upload {
+                display: none;
             }
-            
-            .table-scroll-container {
-                max-height: calc(100vh - 160px);
+
+            /* table with 10px */
+            #data-table,
+            #data-table *,
+            #data-table th,
+            #data-table td {
+                font-size: 10px !important;
             }
-            
-            th, td {
-                padding: 8px 6px;
-                font-size: 0.8em;
+
+            /* all "filters" div with 11px */
+            #filters * {
+                font-size: 11px !important;
             }
+
         }
     
         /* --- :::::::::::::::::::::::::::::::: Custom - Clickable report number :::::::::::::::::::::::::::::::: --- */
