@@ -973,9 +973,10 @@
                     <p>Select a state:</p>
                     <select id="stateSelect" style="width: 100%; padding: 8px; margin-bottom: 15px;">
                         <option value="" disabled selected>Select State</option>
-                        <option value="Ohio">Ohio (.pdf)</option>
                         <option value="Georgia">Georgia (.pdf)</option>
                         <option value="NC">North Carolina (.xlsx)</option>
+                        <option value="OhioP">Ohio (.pdf)</option>
+                        <option value="OhioX">Ohio (.xlsx)</option>
                         </select>
                     <p>Select one file to upload:</p>
                     <input type="file" id="fileInput" name="files[]" multiple accept=".pdf,.csv, .xlsx">
@@ -1546,7 +1547,7 @@
                             city: incidente.city || "--",
                             reportPDFUrl: folder?.toLowerCase() === "minnesota" ?
                                 incidente.source_url :
-                                `https://fcab11165760.ngrok.app/incident/pdf/view/${incidente.pdf_id || incidente.report_number}`,
+                                `https://localhost/incident/pdf/view/${incidente.pdf_id || incidente.report_number}`,
                             distanceFromClinic: distanceFromClinic,
                             originalIncident: incidente,
                             originalVehicle: incidente.vehicles[motorista.vehicleIndex],
@@ -1653,7 +1654,7 @@
             }
 
             // Make sure this URL is correct and working in your backend.
-            const url = `https://fcab11165760.ngrok.app/passenger/${passengerId}/phones`;
+            const url = `https://localhost/passenger/${passengerId}/phones`;
 
             try {
                 const res = await fetch(url, {
@@ -2071,13 +2072,16 @@
                     }
 
                     let uploadEndpoint = '';
-                    if (selectedState === 'Ohio') {
-                        uploadEndpoint = 'https://fcab11165760.ngrok.app/upload-multiple-pdfs-ohio';
+                    if (selectedState === 'OhioP') {
+                        uploadEndpoint = 'https://localhost/upload-multiple-pdfs-ohio';
                     } else if (selectedState === 'Georgia') {
-                        uploadEndpoint = 'https://fcab11165760.ngrok.app/upload-multiple-pdfs-georgia';
+                        uploadEndpoint = 'https://localhost/upload-multiple-pdfs-georgia';
                     } else if (selectedState === 'NC') {
-                        uploadEndpoint = 'https://fcab11165760.ngrok.app/upload-multiple-xml-nc';
-                    } else {
+                        uploadEndpoint = 'https://localhost/upload-multiple-xml-nc';
+                    } else if (selectedState === 'OhioX') {
+                        uploadEndpoint = 'https://localhost/upload-multiple-xlsx-ohio';
+                    }     
+                    else {
                         // In case you add other states in the future and need different endpoints
                         uploadStatus.textContent = 'Invalid state selected for upload.';
                         uploadStatus.style.color = 'red';
@@ -2229,7 +2233,7 @@
             assignStatus.textContent = 'Processing...';
             assignStatus.style.color = 'orange';
 
-            const apiUrl = 'https://fcab11165760.ngrok.app/assign-marketer-users/';
+            const apiUrl = 'https://localhost/assign-marketer-users/';
             let successCount = 0;
             let errorCount = 0;
 
@@ -2377,7 +2381,7 @@
                     // Check if this passenger really has the marketer we want to delete
                     const hasMarketer = passengerData.marketers.some(m => m.id.toString() === marketerToDelete.id);
                     if (hasMarketer) {
-                        const deleteUrl = `https://fcab11165760.ngrok.app/assign-marketer-users/?passenger_id=${passengerData.passengerId}&marketer_user_id=${marketerToDelete.id}`;
+                        const deleteUrl = `https://localhost/assign-marketer-users/?passenger_id=${passengerData.passengerId}&marketer_user_id=${marketerToDelete.id}`;
                         
                         deletePromises.push(
                             fetch(deleteUrl, {
@@ -2445,7 +2449,7 @@
                 const tbody = document.getElementById('upload-history-body');
                 tbody.innerHTML = '<tr><td colspan="7">Loading...</td></tr>';
                 try {
-                    const res = await fetch('https://fcab11165760.ngrok.app/report-status');
+                    const res = await fetch('https://localhost/report-status');
                     const data = await res.json();
                     if (!data.records || !Array.isArray(data.records) || data.records.length === 0) {
                         tbody.innerHTML = '<tr><td colspan="7">No records found.</td></tr>';
