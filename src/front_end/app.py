@@ -9,10 +9,10 @@ app = Flask(__name__)
 # Auth0 init
 PROFILE_KEY = 'profile'
 JWT_PAYLOAD_KEY = 'jwt_payload'
-AUTH0_CLIENT_ID = "RYJg443VOd2t6cX9CrtD6F0PZgqEILQX"
-AUTH0_DOMAIN = "rel8edto.us.auth0.com"
-AUTH0_CLIENT_SECRET = "HEo_aOEuEKiHHL9yKFG4F8uqL1ZvgGzW935t8Jp1J-jQ-IZLFYPeGVqI4KxAKFy6"
-AUTH0_CALLBACK_URL = "http://localhost:5000/callback"
+AUTH0_CLIENT_ID="RYJg443VOd2t6cX9CrtD6F0PZgqEILQX"
+AUTH0_DOMAIN="rel8edto.us.auth0.com"
+AUTH0_CLIENT_SECRET="HEo_aOEuEKiHHL9yKFG4F8uqL1ZvgGzW935t8Jp1J-jQ-IZLFYPeGVqI4KxAKFy6"
+AUTH0_CALLBACK_URL="https://synapse.rel8ed.to/callback"
 
 app.secret_key = 'ThisIsTheSecretKey'
 oauth = OAuth(app)
@@ -24,24 +24,19 @@ auth0 = oauth.register(
     access_token_url=f'https://{AUTH0_DOMAIN}/oauth/token',
     authorize_url=f'https://{AUTH0_DOMAIN}/authorize',
     server_metadata_url=f'https://{AUTH0_DOMAIN}/.well-known/openid-configuration',
-    client_kwargs={'scope': 'openid profile email'},
+    client_kwargs={
+        'scope': 'openid profile email',
+    },
 )
 
-EXTERNAL_SEARCH_API_BASE_URL = "http://localhost:5000/mock-incident-search"
-EXTERNAL_MARKETER_API_URL = "http://localhost:5000/mock-marketer-users"
-
+# Function to get roles from Auth0
 def getroles(userid):
     headers = {'content-type': 'application/json'}
-    data = {
-        "client_id": AUTH0_CLIENT_ID,
-        "client_secret": AUTH0_CLIENT_SECRET,
-        "audience": f"https://{AUTH0_DOMAIN}/api/v2/",
-        "grant_type": "client_credentials"
-    }
-    response = requests.post(f"https://{AUTH0_DOMAIN}/oauth/token", headers=headers, json=data)
+    data = {"client_id":AUTH0_CLIENT_ID,"client_secret":AUTH0_CLIENT_SECRET,"audience":"https://rel8edto.us.auth0.com/api/v2/","grant_type":"client_credentials"}
+    response = requests.post('https://rel8edto.us.auth0.com/oauth/token', headers=headers, json=data)
     access_token = response.json().get('access_token')
     headers = {'Authorization': f'Bearer {access_token}'}
-    response = requests.get(f"https://{AUTH0_DOMAIN}/api/v2/users/{userid}/roles", headers=headers)
+    response = requests.get(f'https://rel8edto.us.auth0.com/api/v2/users/{userid}/roles', headers=headers)
     roles = response.json()
     return [r.get('name') for r in roles if r.get('name')]
 
@@ -53,66 +48,186 @@ def requires_auth(f):
         return f(*args, **kwargs)
     return decorated
 
-def fetch_marketers():
-    mock_data = [
-        {"email": "marketing@example.com", "username": "marketer1", "role": "marketing"},
-        {"email": "plus@example.com", "username": "plususer", "role": "marketing_plus"},
-        {"email": "admin@example.com", "username": "adminuser", "role": "admin"}
-    ]
-    return mock_data
-
-def fetch_incidents(filtered_params):
-    return [{"case_number": "ABC123", "description": "Test incident"}]
-
 @app.route('/')
 @requires_auth
 def main_page():
-    user_id = session[JWT_PAYLOAD_KEY]['sub']
+    user_id = session[JWT_PAYLOAD_KEY]['sub'] 
     user_email = session[JWT_PAYLOAD_KEY].get('email')
-    return render_template('main.html', user_id=user_id, user_email=user_email)
+    
+    # The information about the user is already in the session
+    # No need to fetch it again from the API
+    
+    print("User ID:", user_id) 
+    print("User Email:", user_email)
 
-@app.route('/marketer-users')
-@requires_auth
-def get_marketer_users():
-    marketers = fetch_marketers()
-    non_admin_marketers = [m for m in marketers if m.get('role') != 'admin']
-    return jsonify(non_admin_marketers)
+    return render_template('main.html', 
+                           user_id=user_id, 
+                           user_email=user_email)
 
+EXTERNAL_SEARCH_API_BASE_URL = "https://35e2fec1646d.ngrok.app/incident/search"
+EXTERNAL_MARKETER_API_URL = "https://35e2fec1646d.ngrok.app/marketer-users/"
+
+_marketer_email_to_username_map = {}
+
+def update_marketer_email_map():
+    global _marketer_email_to_username_map
+    headers = {'ngrok-skip-browser-warning': 'true'}
+    try:
+        response = requests.get(EXTERNAL_MARKETER_API_URL, headers=headers)
+        response.raise_for_status()
+        marketers_data = response.json()
+        
+        new_map = {m.get('email'): m.get('username') for m in marketers_data if m.get('email') and m.get('username')}
+        _marketer_email_to_username_map = new_map
+        print(f"DEBUG: Mapeamento de email do Marketer atualizado: {_marketer_email_to_username_map}")
+    except requests.exceptions.RequestException as e:
+        print(f"Erro ao buscar usuários marketers para o mapeamento: {e}")
+
+with app.app_context():
+    update_marketer_email_map()
+
+# Path to the incident search proxy
 @app.route('/incident_search_proxy')
 @requires_auth
 def incident_search_proxy():
     current_user_email = session[JWT_PAYLOAD_KEY].get('email')
-    api_params = dict(request.args)
+    api_params = dict(request.args) # Get all query parameters as a dictionary
 
-    marketers = fetch_marketers()
-    user_info = next((m for m in marketers if m.get('email') == current_user_email), None)
+    headers = {'ngrok-skip-browser-warning': 'true'}
+    print(f"DEBUG: Usuário autenticado: {current_user_email}")
 
-    if not user_info:
-        return jsonify({
-            "error": "Unauthorized user",
-            "message": "Please request access to bpessoa@rel8ed.to"
-        }), 403
+    try:
+        marketers_response = requests.get(EXTERNAL_MARKETER_API_URL, headers=headers)
+        marketers_response.raise_for_status()
+        marketers = marketers_response.json()
 
-    role = user_info.get('role')
-    username = user_info.get('username')
+        user_info = next((m for m in marketers if m.get('email') == current_user_email), None)
+        
+        if user_info:
+            role = user_info.get('role')
+            username = user_info.get('username')
+            print(f"DEBUG: Usuário '{current_user_email}' tem role '{role}'")
 
-    if role == "marketing":
-        api_params['marketer_username'] = username
-    elif role == "marketing_plus":
-        if 'marketer_username' not in api_params or not api_params['marketer_username']:
-            api_params['marketer_username'] = username
-    elif role == "admin":
-        if 'marketer_username' in api_params and api_params['marketer_username'] == '':
-            api_params.pop('marketer_username')
-    else:
-        return jsonify({
-            "error": "Unauthorized role",
-            "message": "Your role is not recognized. Please contact support."
-        }), 403
+            # Filtered parameters for the external API
+            if role == "marketing":
+                # Marketing users can ONLY see their own leads.
+                # Remove any marketer_username that came from the frontend to ensure this.
+                api_params['marketer_username'] = username
+                print(f"DEBUG: Usuário marketing. Aplicando filtro forçado de marketer_username: {username}")
+            elif role == "marketing_plus":
+                # Marketing_plus users can see their own leads by default,
+                # but can also filter for other marketers.
+                # If no marketer_username is provided, default to their own.
+                if 'marketer_username' not in api_params or not api_params['marketer_username']:
+                    api_params['marketer_username'] = username
+                    print(f"DEBUG: Usuário marketing_plus. Nenhum filtro de marketer_username fornecido, aplicando o próprio: {username}")
+                else:
+                    print(f"DEBUG: Usuário marketing_plus. Filtro de marketer_username: {api_params['marketer_username']}")
+            elif role == "admin":
+                # Admin users can use the dropdown filter.
+                # If 'marketer_username' was sent from the frontend (dropdown), it is already in api_params.
+                # We do nothing if the value is empty, because "All Marketers" means do not filter by marketer.
+                if 'marketer_username' in api_params and api_params['marketer_username'] == '':
+                    api_params.pop('marketer_username') # Remove se for vazio (All Marketers)
+                print(f"DEBUG: Usuário é admin. Filtro de marketer_username: {api_params.get('marketer_username', 'Nenhum')}")
+            else:
+                print(f"DEBUG: Role '{role}' não reconhecida. Nenhum filtro aplicado, mas deve ser tratado no frontend.")
+                # Consider returning a 403 error here if unrecognized roles should not see data
+                return jsonify({
+                    "error": "Unauthorized role",
+                    "message": "Your role is not recognized. Please contact support."
+                }), 403
+        else:
+            print(f"WARNING: User {current_user_email} not found on marketers list.")
+            return jsonify({
+                "error": "Unauthorized user",
+                "message": "Please request access to bpessoa@rel8ed.to"
+            }), 403
+    except requests.exceptions.RequestException as e:
+        print(f"Error getting data for: {e}")
+        return jsonify({"error": str(e)}), 500
 
-    incidents = fetch_incidents(api_params)
-    return jsonify({'items': incidents})
+    # Builds the final URL with the parameters applied
+    # urlencode already handles empty parameters and encoding
+    full_api_url = f"{EXTERNAL_SEARCH_API_BASE_URL}?{urlencode(api_params)}"
+    print(f"DEBUG: Calling external API: {full_api_url}") 
+    
+    try:
+        response = requests.get(full_api_url, headers=headers)
+        response.raise_for_status()
+        all_incidents = response.json()
+        if not isinstance(all_incidents, list):
+            print(f"WARNING: External API did not return a list. Contents: {all_incidents}")
+            all_incidents = []
+        return jsonify({'items': all_incidents}), response.status_code
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching data from API: {e}")
+        return jsonify({"error": str(e)}), 500
 
+@app.route('/marketer-users')
+@requires_auth
+def get_marketer_users():
+    """
+    This route returns the list of marketers (excluding admins)
+    to populate the dropdown on the frontend.
+    """
+    headers = {'ngrok-skip-browser-warning': 'true'}
+    try:
+        response = requests.get(EXTERNAL_MARKETER_API_URL, headers=headers)
+        response.raise_for_status()
+        all_marketers = response.json()
+
+        # Filter out users with the role 'admin'
+        # Assuming your EXTERNAL_MARKETER_API_URL returns a 'role' key for each user
+        non_admin_marketers = [
+            marketer for marketer in all_marketers
+            if marketer.get('role') != 'admin'
+        ]
+
+        return jsonify(non_admin_marketers), response.status_code
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching marketer users: {e}")
+        return jsonify({"error": str(e)}), response.status_code if response else 500
+
+# Endpoint to get user information    
+@app.route('/user-info')
+@requires_auth
+def get_user_info():
+    """
+    Returns the logged in user information (username, role, and full name)
+    as JSON to the frontend.
+    """
+    current_user_email = session[JWT_PAYLOAD_KEY].get('email')
+    
+    current_user_username = None
+    user_role = None
+    user_full_name = None
+
+    try:
+        headers = {'ngrok-skip-browser-warning': 'true'}
+        marketers_response = requests.get(EXTERNAL_MARKETER_API_URL, headers=headers)
+        marketers_response.raise_for_status()
+        marketers = marketers_response.json()
+        user_info = next((m for m in marketers if m.get('email') == current_user_email), None)
+        
+        if user_info:
+            current_user_username = user_info.get('username')
+            user_role = user_info.get('role')
+            user_full_name = user_info.get('full_name')
+        else:
+            print(f"NOTICE: User {current_user_email} not found in marketers list when searching for user-info.")
+
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching marketers user data for /user-info: {e}")
+
+    return jsonify({
+        'current_user_username': current_user_username,
+        'user_role': user_role,
+        'user_full_name': user_full_name
+    })
+
+
+# Auth functions
 @app.route('/login')
 def login():
     return auth0.authorize_redirect(redirect_uri=AUTH0_CALLBACK_URL, audience='')
@@ -138,13 +253,6 @@ def callback_handling():
     }
     return redirect('/')
 
-@app.route('/mock-incident-search')
-def mock_incident_search():
-    return jsonify([{"case_number": "MOCK001", "description": "Mock incident 1"}])
-
-@app.route('/mock-marketer-users')
-def mock_marketer_users():
-    return jsonify(fetch_marketers())
-
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True, threaded=True)
+    update_marketer_email_map() 
+    app.run(host='0.0.0.0', port=5000, debug=True)
