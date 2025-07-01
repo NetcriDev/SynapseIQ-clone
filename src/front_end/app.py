@@ -64,8 +64,8 @@ def main_page():
                            user_id=user_id, 
                            user_email=user_email)
 
-EXTERNAL_SEARCH_API_BASE_URL = "https://35e2fec1646d.ngrok.app/incident/search"
-EXTERNAL_MARKETER_API_URL = "https://35e2fec1646d.ngrok.app/marketer-users/"
+EXTERNAL_SEARCH_API_BASE_URL = "http://127.0.0.1:8000/incident/search"
+EXTERNAL_MARKETER_API_URL = "http://127.0.0.1:8000/marketer-users/"
 
 _marketer_email_to_username_map = {}
 
