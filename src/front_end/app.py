@@ -1,4 +1,4 @@
-from flask import Flask, render_template, jsonify, session, redirect, url_for, request
+from flask import Flask, render_template, jsonify, session, redirect, url_for, request, Response
 from authlib.integrations.flask_client import OAuth
 from functools import wraps
 from six.moves.urllib.parse import urlencode
@@ -225,6 +225,86 @@ def get_user_info():
         'user_role': user_role,
         'user_full_name': user_full_name
     })
+
+
+@app.route('/proxy/incident/pdf/view/<report_id>')
+def proxy_incident_pdf_view(report_id):
+    real_url = f'http://127.0.0.1:8000/incident/pdf/view/{report_id}'
+    res = requests.get(real_url, stream=True)
+    return Response(
+        res.raw.read(),
+        status=res.status_code,
+        content_type=res.headers.get('Content-Type', 'application/pdf')
+    )
+
+
+@app.route('/proxy/passenger/<int:passenger_id>/phones', methods=['PUT'])
+def proxy_update_passenger_phones(passenger_id):
+    real_url = f"http://127.0.0.1:8000/passenger/{passenger_id}/phones"
+    headers = {'Content-Type': 'application/json', 'accept': 'application/json'}
+    res = requests.put(real_url, headers=headers, json=request.get_json())
+
+    return Response(res.content, status=res.status_code, content_type=res.headers.get('Content-Type', 'application/json'))
+
+@app.route('/proxy/upload-multiple-pdfs-ohio', methods=['POST'])
+def proxy_upload_pdfs_ohio():
+    res = requests.post(
+        "http://127.0.0.1:8000/upload-multiple-pdfs-ohio",
+        files=request.files.to_dict(flat=False)
+    )
+    return Response(res.content, status=res.status_code, content_type=res.headers.get('Content-Type'))
+
+@app.route('/proxy/upload-multiple-pdfs-georgia', methods=['POST'])
+def proxy_upload_pdfs_georgia():
+    res = requests.post(
+        "http://127.0.0.1:8000/upload-multiple-pdfs-georgia",
+        files=request.files.to_dict(flat=False)
+    )
+    return Response(res.content, status=res.status_code, content_type=res.headers.get('Content-Type'))
+
+@app.route('/proxy/upload-multiple-xml-nc', methods=['POST'])
+def proxy_upload_xml_nc():
+    res = requests.post(
+        "http://127.0.0.1:8000/upload-multiple-xml-nc",
+        files=request.files.to_dict(flat=False)
+    )
+    return Response(res.content, status=res.status_code, content_type=res.headers.get('Content-Type'))
+
+@app.route('/proxy/upload-multiple-xlsx-ohio', methods=['POST'])
+def proxy_upload_xlsx_ohio():
+    res = requests.post(
+        "http://127.0.0.1:8000/upload-multiple-xlsx-ohio",
+        files=request.files.to_dict(flat=False)
+    )
+    return Response(res.content, status=res.status_code, content_type=res.headers.get('Content-Type'))
+
+@app.route('/proxy/assign-marketer-users/', methods=['POST'])
+def proxy_assign_marketer_users():
+    real_url = 'http://127.0.0.1:8000/assign-marketer-users/'
+    headers = {'Content-Type': 'application/json'}
+    res = requests.post(real_url, json=request.get_json(), headers=headers)
+    return Response(res.content, status=res.status_code, content_type=res.headers.get('Content-Type', 'application/json'))
+
+@app.route('/proxy/assign-marketer-users/', methods=['DELETE'])
+def proxy_delete_marketer_assignment():
+    # Pega os parâmetros da query string
+    passenger_id = request.args.get('passenger_id')
+    marketer_user_id = request.args.get('marketer_user_id')
+
+    if not passenger_id or not marketer_user_id:
+        return {"error": "Missing parameters"}, 400
+
+    real_url = f"http://127.0.0.1:8000/assign-marketer-users/?passenger_id={passenger_id}&marketer_user_id={marketer_user_id}"
+
+    res = requests.delete(real_url, headers={'accept': 'application/json'})
+    return Response(res.content, status=res.status_code, content_type=res.headers.get('Content-Type', 'application/json'))
+
+
+@app.route('/proxy/report-status', methods=['GET'])
+def proxy_report_status():
+    real_url = 'http://127.0.0.1:8000/report-status'
+    res = requests.get(real_url)
+    return Response(res.content, status=res.status_code, content_type=res.headers.get('Content-Type', 'application/json'))
 
 
 # Auth functions

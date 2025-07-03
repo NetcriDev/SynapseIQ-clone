@@ -1547,7 +1547,7 @@
                             city: incidente.city || "--",
                             reportPDFUrl: folder?.toLowerCase() === "minnesota" ?
                                 incidente.source_url :
-                                `https://35e2fec1646d.ngrok.app/incident/pdf/view/${incidente.pdf_id || incidente.report_number}`,
+                                `/proxy/incident/pdf/view/${incidente.pdf_id || incidente.report_number}`,
                             distanceFromClinic: distanceFromClinic,
                             originalIncident: incidente,
                             originalVehicle: incidente.vehicles[motorista.vehicleIndex],
@@ -1654,7 +1654,7 @@
             }
 
             // Make sure this URL is correct and working in your backend.
-            const url = `https://35e2fec1646d.ngrok.app/passenger/${passengerId}/phones`;
+            const url = `/proxy/passenger/${passengerId}/phones`;
 
             try {
                 const res = await fetch(url, {
@@ -2073,13 +2073,13 @@
 
                     let uploadEndpoint = '';
                     if (selectedState === 'OhioP') {
-                        uploadEndpoint = 'https://35e2fec1646d.ngrok.app/upload-multiple-pdfs-ohio';
+                        uploadEndpoint = '/proxy/upload-multiple-pdfs-ohio';
                     } else if (selectedState === 'Georgia') {
-                        uploadEndpoint = 'https://35e2fec1646d.ngrok.app/upload-multiple-pdfs-georgia';
+                        uploadEndpoint = '/proxy/upload-multiple-pdfs-georgia';
                     } else if (selectedState === 'NC') {
-                        uploadEndpoint = 'https://35e2fec1646d.ngrok.app/upload-multiple-xml-nc';
+                        uploadEndpoint = '/proxy/upload-multiple-xml-nc';
                     } else if (selectedState === 'OhioX') {
-                        uploadEndpoint = 'https://35e2fec1646d.ngrok.app/upload-multiple-xlsx-ohio';
+                        uploadEndpoint = '/proxy/upload-multiple-xlsx-ohio';
                     }     
                     else {
                         // In case you add other states in the future and need different endpoints
@@ -2233,7 +2233,7 @@
             assignStatus.textContent = 'Processing...';
             assignStatus.style.color = 'orange';
 
-            const apiUrl = 'https://35e2fec1646d.ngrok.app/assign-marketer-users/';
+            const apiUrl = '/proxy/assign-marketer-users/';
             let successCount = 0;
             let errorCount = 0;
 
@@ -2381,7 +2381,7 @@
                     // Check if this passenger really has the marketer we want to delete
                     const hasMarketer = passengerData.marketers.some(m => m.id.toString() === marketerToDelete.id);
                     if (hasMarketer) {
-                        const deleteUrl = `https://35e2fec1646d.ngrok.app/assign-marketer-users/?passenger_id=${passengerData.passengerId}&marketer_user_id=${marketerToDelete.id}`;
+                        const deleteUrl = `/proxy/assign-marketer-users/?passenger_id=${passengerData.passengerId}&marketer_user_id=${marketerToDelete.id}`;
                         
                         deletePromises.push(
                             fetch(deleteUrl, {
@@ -2449,7 +2449,7 @@
                 const tbody = document.getElementById('upload-history-body');
                 tbody.innerHTML = '<tr><td colspan="7">Loading...</td></tr>';
                 try {
-                    const res = await fetch('https://35e2fec1646d.ngrok.app/report-status');
+                    const res = await fetch('/proxy/report-status');
                     const data = await res.json();
                     if (!data.records || !Array.isArray(data.records) || data.records.length === 0) {
                         tbody.innerHTML = '<tr><td colspan="7">No records found.</td></tr>';
