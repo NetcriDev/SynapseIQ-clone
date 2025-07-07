@@ -246,37 +246,86 @@ def proxy_update_passenger_phones(passenger_id):
 
     return Response(res.content, status=res.status_code, content_type=res.headers.get('Content-Type', 'application/json'))
 
+# @app.route('/proxy/upload-multiple-pdfs-ohio', methods=['POST'])
+# def proxy_upload_pdfs_ohio():
+#     res = requests.post(
+#         "http://127.0.0.1:8000/upload-multiple-pdfs-ohio",
+#         files=request.files.to_dict(flat=False)
+#     )
+#     return Response(res.content, status=res.status_code, content_type=res.headers.get('Content-Type'))
+
+# @app.route('/proxy/upload-multiple-pdfs-georgia', methods=['POST'])
+# def proxy_upload_pdfs_georgia():
+#     res = requests.post(
+#         "http://127.0.0.1:8000/upload-multiple-pdfs-georgia",
+#         files=request.files.to_dict(flat=False)
+#     )
+#     return Response(res.content, status=res.status_code, content_type=res.headers.get('Content-Type'))
+
+# @app.route('/proxy/upload-multiple-xml-nc', methods=['POST'])
+# def proxy_upload_xml_nc():
+#     res = requests.post(
+#         "http://127.0.0.1:8000/upload-multiple-xml-nc",
+#         files=request.files.to_dict(flat=False)
+#     )
+#     return Response(res.content, status=res.status_code, content_type=res.headers.get('Content-Type'))
+
+# @app.route('/proxy/upload-multiple-xlsx-ohio', methods=['POST'])
+# def proxy_upload_xlsx_ohio():
+#     res = requests.post(
+#         "http://127.0.0.1:8000/upload-multiple-xlsx-ohio",
+#         files=request.files.to_dict(flat=False)
+#     )
+#     return Response(res.content, status=res.status_code, content_type=res.headers.get('Content-Type'))
+
+def build_files_payload():
+    files = []
+    # request.files é um MultiDict. Precisamos gerar uma lista de tuplas como o requests espera.
+    for field_name, file_list in request.files.to_dict(flat=False).items():
+        for file in file_list:
+            files.append((
+                field_name,
+                (file.filename, file.stream, file.content_type)
+            ))
+    return files
+
 @app.route('/proxy/upload-multiple-pdfs-ohio', methods=['POST'])
 def proxy_upload_pdfs_ohio():
+    files = build_files_payload()
     res = requests.post(
         "http://127.0.0.1:8000/upload-multiple-pdfs-ohio",
-        files=request.files.to_dict(flat=False)
+        files=files
     )
     return Response(res.content, status=res.status_code, content_type=res.headers.get('Content-Type'))
 
 @app.route('/proxy/upload-multiple-pdfs-georgia', methods=['POST'])
 def proxy_upload_pdfs_georgia():
+    files = build_files_payload()
     res = requests.post(
         "http://127.0.0.1:8000/upload-multiple-pdfs-georgia",
-        files=request.files.to_dict(flat=False)
+        files=files
     )
     return Response(res.content, status=res.status_code, content_type=res.headers.get('Content-Type'))
 
 @app.route('/proxy/upload-multiple-xml-nc', methods=['POST'])
 def proxy_upload_xml_nc():
+    files = build_files_payload()
     res = requests.post(
         "http://127.0.0.1:8000/upload-multiple-xml-nc",
-        files=request.files.to_dict(flat=False)
+        files=files
     )
     return Response(res.content, status=res.status_code, content_type=res.headers.get('Content-Type'))
 
 @app.route('/proxy/upload-multiple-xlsx-ohio', methods=['POST'])
 def proxy_upload_xlsx_ohio():
+    files = build_files_payload()
     res = requests.post(
         "http://127.0.0.1:8000/upload-multiple-xlsx-ohio",
-        files=request.files.to_dict(flat=False)
+        files=files
     )
     return Response(res.content, status=res.status_code, content_type=res.headers.get('Content-Type'))
+
+# -----------------------------------------------------------------------------------------------------------------------------
 
 @app.route('/proxy/assign-marketer-users/', methods=['POST'])
 def proxy_assign_marketer_users():
