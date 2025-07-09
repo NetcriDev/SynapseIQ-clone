@@ -357,12 +357,17 @@ def proxy_report_status():
     return Response(res.content, status=res.status_code, content_type=res.headers.get('Content-Type', 'application/json'))
 
 
+# @app.route('/download/<path:filename>')
+# @requires_auth
+# def download_sample(filename):
+#     # Caminho relativo à pasta 'static/samples'
+#     return send_from_directory('static/samples', filename, as_attachment=True)
+
 @app.route('/download/<path:filename>')
 @requires_auth
 def download_sample(filename):
     # Caminho relativo à pasta 'static/samples'
-    return send_from_directory('static/samples', filename, as_attachment=True)
-
+    return send_from_directory('static/img', filename, as_attachment=True)
 
 # Auth functions
 @app.route('/login')
