@@ -53,6 +53,9 @@ venv/
 !data/example.csv
 !data/sample.json
 
+!static/samples/*.pdf
+!static/samples/*.xlsx
+
 # --- Data folders: used for datasets, input/output files ---
 data/
 datasets/
