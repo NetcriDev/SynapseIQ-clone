@@ -1,4 +1,5 @@
 from flask import Flask, render_template, jsonify, session, redirect, url_for, request, Response
+from flask import send_from_directory
 from authlib.integrations.flask_client import OAuth
 from functools import wraps
 from six.moves.urllib.parse import urlencode
@@ -354,6 +355,13 @@ def proxy_report_status():
     real_url = 'http://127.0.0.1:8000/report-status'
     res = requests.get(real_url)
     return Response(res.content, status=res.status_code, content_type=res.headers.get('Content-Type', 'application/json'))
+
+
+@app.route('/download/<path:filename>')
+@requires_auth
+def download_sample(filename):
+    # Caminho relativo à pasta 'static/samples'
+    return send_from_directory('static/samples', filename, as_attachment=True)
 
 
 # Auth functions

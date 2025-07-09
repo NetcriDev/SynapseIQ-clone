@@ -1048,8 +1048,8 @@
                                     <br>
                                     <!-- mostrar imagem Georgia_sample -->
                                     <img src="static/img/Georgia_Sample.png" alt="Georgia Sample" style="max-width: 100%;">
-                                    <a href="static/img/Georgia.pdf" download class="sample_button" style="display:inline-block; padding: 10px 20px; border-radius: 5px; text-decoration: none;">
-                                    📥 Georgia Sample
+                                    <a href="{{ url_for('download_sample', filename='Georgia.pdf') }}">
+                                        <button class="sample_button" style="height: 35px;">📥 Georgia Sample</button>
                                     </a>
                                 </div>
 
@@ -1112,7 +1112,7 @@
                                     </table>
 
                                     <br>
-                                    <a href="static/img/NC.xlsx" download>
+                                    <a href="{{ url_for('download_sample', filename='NC.xlsx') }}">
                                         <button class="sample_button" style="height: 35px;">📥 NC Sample</button>
                                     </a>
                                 </div>
@@ -1121,7 +1121,7 @@
                                     <p>This is an example of how Ohio.pdf should look like:</p>
                                     <br>
                                     <img src="static/img/Ohio_Sample.png" alt="Ohio Sample" style="max-width: 100%;">
-                                    <a href="static/img/Ohio.pdf" download>
+                                    <a href="{{ url_for('download_sample', filename='Ohio.pdf') }}" download>
                                         <button class="sample_button" style="height: 35px;">📥 Ohio Sample</button>
                                     </a>
                                 </div>
@@ -1169,7 +1169,7 @@
                                         </tbody>
                                     </table>
                                     <br>
-                                    <a href="static/img/Ohio.xlsx" download>
+                                    <a href="{{ url_for('download_sample', filename='Ohio.xlsx') }}" download>
                                         <button class="sample_button" style="height: 35px;">📥 Ohio Sample</button>
                                     </a>
                                 </div>
