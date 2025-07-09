@@ -417,13 +417,14 @@
             margin: auto;
             padding: 20px;
             border: 1px solid #888;
-            width: 80%;
-            max-width: 900px;
+            width: 85%;
+            /* max-width: 1200px; */
             box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2), 0 6px 20px 0 rgba(0,0,0,0.19);
             animation-name: animatetop;
             animation-duration: 0.4s;
             border-radius: 8px;
             position: relative;
+            height: 78%;
         }
 
         .modal-content h2 {
@@ -796,6 +797,50 @@
             gap: 4px;
         }
 
+        /* ::::::::::::::::::::: File Upload - page1 modal ::::::::::::::::::::: */
+        
+        .hidden {
+            display: none;
+        }
+
+        .table-file-example table {
+            width: 98%;
+            table-layout: fixed; /* força o conteúdo a se ajustar */
+            word-wrap: break-word;
+            border-collapse: collapse;
+        }
+
+        .table-file-example th, 
+        .table-file-example td {
+            border: 1px solid #ccc;
+            padding: 4px;
+            font-size: 12px;
+            text-align: left;
+            word-break: break-word;
+            vertical-align: top;
+        }
+
+        .table-file-example th {
+            background-color: #eee;
+        }
+
+        .table-file-example {
+            overflow-x: auto;
+            max-width: 100%;
+        }
+
+        .container {
+            overflow-x: auto;
+        }
+
+        .sample_button {
+            position: absolute;
+            bottom: 20px;
+            left: 60%;
+            transform: translateX(-50%);
+            
+        }
+
     </style>
 
 </head>
@@ -964,36 +1009,174 @@
 
            <span class="close-button" onclick="closeUploadModal()">&times;</span>
 
-            <!-- modal page for upload files -->
-            <div id="page1" class="tab-page active">
-                <br>
-                <h2>Upload Files</h2>
-                <div id="uploadFormContent">
-                <form id="fileUploadForm" enctype="multipart/form-data">
-                    <p>Select a state:</p>
-                    <select id="stateSelect" style="width: 100%; padding: 8px; margin-bottom: 15px;">
-                        <option value="" disabled selected>Select State</option>
-                        <option value="Georgia">Georgia (.pdf)</option>
-                        <option value="NC">North Carolina (.xlsx)</option>
-                        <option value="OhioP">Ohio (.pdf)</option>
-                        <option value="OhioX">Ohio (.xlsx)</option>
-                        </select>
-                    <p>Select one file to upload:</p>
-                    <input type="file" id="fileInput" name="files[]" multiple accept=".pdf,.csv, .xlsx">
-                    <br><br>
-                    <button type="submit" id="uploadBtn">Upload</button>
-                </form>
-                <div id="uploadStatus" style="margin-top: 15px; font-weight: bold;"></div>
+            <div id="page1" class="tab-page active" style="height: 550px;">
+                <div class="uploadFiles" style="display:flex; flex-direction: row; justify-content: center; align-items: stretch;">
+                    <div class="upload-container" style="width: 25%; padding-left: 10px;">
+                        <br>
+                        <h2>Upload Files</h2>
+                        <br>
+                        <div id="uploadFormContent">
+                            <form id="fileUploadForm" enctype="multipart/form-data">
+                                <p>Select a state:</p>
+                                <select id="stateSelect" style="width: 90%; padding: 8px; margin-bottom: 15px;">
+                                    <option value="" disabled selected>Select State</option>
+                                    <option value="Georgia">Georgia (.pdf)</option>
+                                    <option value="NC">North Carolina (.xlsx)</option>
+                                    <option value="OhioP">Ohio (.pdf)</option>
+                                    <option value="OhioX">Ohio (.xlsx)</option>
+                                </select>
+                                <br>
+                                <br>
+                                <p>Select one file to upload:</p>
+                                <input type="file" id="fileInput" style="width: 90%;" name="files[]" multiple accept=".pdf,.doc,.docx,.txt,.csv, .xlsx">
+                                <button type="submit" id="uploadBtn">Upload</button>
+                            </form>
+                            <div id="uploadStatus" style="margin-top: 15px; font-weight: bold;"></div>
+                        </div>
+                    </div>
+
+                    <div class="fileTypes" style="width: 75%; padding-left: 10px; border-left: 1px solid #ddd; height: 550px;">
+                        <div style="padding: 10px;">
+                            <h2>File Examples</h2>
+                            <div class="table-file-example">
+                                <!-- baseado no tipo de seleção do dropdown, mostrar uma tabela diferente -->
+                                <div id="GeorgiaPDF" class="container hidden">
+                                    <p>This is an example of how Georgia.pdf should look like:</p>
+                                    <br>
+                                    <!-- mostrar imagem Georgia_sample -->
+                                    <img src="Georgia_Sample.png" alt="Georgia Sample" style="max-width: 100%;">
+                                    <button class="sample_button" style="height: 35px;">Georgia Sample</button>
+                                </div>
+
+                                <div id="NCXlsx" class="container hidden">
+                                    <p>This is an example of how NC.xlsx should look like:</p>
+                                    <br>
+                                    <table class="table-file-example">
+                                        <thead>
+                                            <tr>
+                                                <th>Dept</th>
+                                                <th>ReportNumber</th>
+                                                <th>Jurisdiction</th>
+                                                <th>CrashDate</th>
+                                                <th>FirstName</th>
+                                                <th>LastName</th>
+                                                <th>Address</th>
+                                                <th>City</th>
+                                                <th>State</th>
+                                                <th>Zip</th>
+                                                <th>PDFLINK</th>
+                                                <th>Insurance Company</th>
+                                                <th>Phone-1</th>
+                                                <th>Phone-2</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td>FORSYTH</td>
+                                                <td>2518211</td>
+                                                <td>WS</td>
+                                                <td>27/05/2025 18:26</td>
+                                                <td>CARRIE</td>
+                                                <td>CHANDLER</td>
+                                                <td>8835 BROAD ST</td>
+                                                <td>RURAL HALL</td>
+                                                <td>NC</td>
+                                                <td>27045-9506</td>
+                                                <td><a href="http://20.242.33.227/nc-reports/506853_2518211_20250528102413.pdf" target="_blank">PDF</a></td>
+                                                <td>PROGRESSIVE</td>
+                                                <td>(336) 409-7926</td>
+                                                <td></td>
+                                            </tr>
+                                            <tr>
+                                                <td>FORSYTH</td>
+                                                <td>2518243</td>
+                                                <td>WS</td>
+                                                <td>28/05/2025 00:05</td>
+                                                <td>JESSICA</td>
+                                                <td>ROBINSON</td>
+                                                <td>1510 E SEDGEFIELD DR</td>
+                                                <td>WINSTON SALEM</td>
+                                                <td>NC</td>
+                                                <td>27107</td>
+                                                <td><a href="http://20.242.33.227/nc-reports/506852_2518243_20250528101628.pdf" target="_blank">PDF</a></td>
+                                                <td>INTEGON</td>
+                                                <td>(336) 624-9698</td>
+                                                <td>(336) 893-6186</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+
+                                    <br>
+                                    <button class="sample_button" style="height: 35px;">Ohio Sample</button>
+                                </div>
+
+                                <div id="OhioPDF" class="container hidden">
+                                    <p>This is an example of how Ohio.pdf should look like:</p>
+                                    <br>
+                                    <img src="Ohio_Sample.png" alt="Ohio Sample" style="max-width: 100%;">
+                                    <button class="sample_button" style="height: 35px;">Ohio Sample</button>
+                                </div>
+
+                                <div id="OhioXlsx" class="container hidden">
+                                    <p>This is an example of how Ohio.xlsx should look like:</p>
+                                    <br>
+                                    <table class="table-file-example">
+                                        <thead>
+                                            <tr>
+                                                <th>input_Reporting_number</th>
+                                                <th>input_firstName</th>
+                                                <th>input_lastName</th>
+                                                <th>input_DOB</th>
+                                                <th>Phone1</th>
+                                                <th>Phone2</th>
+                                                <th>Phone3</th>
+                                                <th>Crash_Date</th>
+                                                <th>At_Fault_Insurance</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td>25-1355</td>
+                                                <td>NATALIA</td>
+                                                <td>TALLEY</td>
+                                                <td>02/11/1976</td>
+                                                <td>5135463363</td>
+                                                <td>5132642242</td>
+                                                <td>5132644224</td>
+                                                <td>18/06/2025</td>
+                                                <td>USAA</td>
+                                            </tr>
+                                            <tr>
+                                                <td>255006862</td>
+                                                <td>TALLEY</td>
+                                                <td>MINIHAN</td>
+                                                <td>28/08/1990</td>
+                                                <td>5138614589</td>
+                                                <td>5138465646</td>
+                                                <td>5137214443</td>
+                                                <td>15/06/2025</td>
+                                                <td>PROGRESSIVE</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                    <br>
+                                    <button class="sample_button" style="height: 35px;">NC Sample</button>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
             </div>
             
             <!-- modal page for upload status -->
-            <div id="page2" class="tab-page">
+            <div id="page2" class="tab-page" style="height: 550px"">
                 <br>
                 <h2>Upload Status</h2>
                 <p>Check the status of your uploads here.</p>
                 <div id="statusContent">
-                    <div class="file-history" style="overflow: auto;max-height: 450px;">
+                    <div class="file-history" style="overflow: auto;max-height: 400px;">
                         <table style="overflow-y: scroll;">
                             <thead>
                                 <tr>
@@ -2441,7 +2624,34 @@
             if (selectedTab) selectedTab.classList.add('active');
             if (selectedPage) selectedPage.classList.add('active');
         }
-    
+
+        // ====================================================================================================
+        // script for file upload depending on modal dropdown selection
+        document.addEventListener("DOMContentLoaded", function() {
+            const select = document.getElementById("stateSelect");
+            const OhioXlsx = document.getElementById("OhioXlsx");
+            const OhioPDF = document.getElementById("OhioPDF");
+            const GeorgiaPDF = document.getElementById("GeorgiaPDF");
+            const NCXlsx = document.getElementById("NCXlsx");
+
+            select.addEventListener("change", function() {
+                OhioXlsx.style.display = "none";
+                OhioPDF.style.display = "none";
+                GeorgiaPDF.style.display = "none";
+                NCXlsx.style.display = "none";
+                
+                if (this.value === "OhioX") {
+                    OhioXlsx.style.display = "block";
+                } else if (this.value === "OhioP") {
+                    OhioPDF.style.display = "block";
+                } else if (this.value === "Georgia") {
+                    GeorgiaPDF.style.display = "block";
+                } else if (this.value === "NC") {
+                    NCXlsx.style.display = "block";
+                }
+            });
+        });
+
         // ====================================================================================================
         // script for upload status table 
         document.addEventListener('DOMContentLoaded', function() {
