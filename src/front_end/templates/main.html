@@ -1342,10 +1342,11 @@
         // boolean filter states
         let booleanFilterStates = {
             hotlead: false,
-            hasphone: false,
-            hasinsurance_details: false,
+            hasphone: true,
+            hasinsurance_details: true,
             hasname: false,
-            over18: false
+            over18: true,
+            is_external: false
         };
 
         /* --- :::::::::::::::::::::::::::::::: Functions :::::::::::::::::::::::::::::::: --- */
@@ -1498,6 +1499,20 @@
 
             currentPage = 1;
             fetchData(); // load data with all filters reset
+        }
+
+
+        // ====================================================================================================
+        // Function to initialize the state of the filter checkboxes
+
+        function initializeFilterCheckboxes() {
+            for (const filterName in booleanFilterStates) {
+                const toggleElement = document.getElementById(`toggle-${filterName}`);
+                if (toggleElement) {
+                    // define "checked" on HTML
+                    toggleElement.checked = booleanFilterStates[filterName];
+                }
+            }
         }
 
         // =====================================================================================================
@@ -2700,6 +2715,16 @@
             if (document.getElementById('page2').classList.contains('active')) {
                 loadUploadHistory();
             }
+        });
+
+        // ====================================================================================================
+        // after page is ready, load filters and table
+        document.addEventListener('DOMContentLoaded', function() {
+            //checkbox state initialization
+            // This function initializes the state of the filter checkboxes based on the booleanFilterStates object
+            initializeFilterCheckboxes();
+            // Fetch user info and data
+            fetchData();
         });
 
         // ====================================================================================================
