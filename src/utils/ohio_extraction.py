@@ -212,13 +212,13 @@ def _process_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     df = df[df['TYPE'].str.strip() != '']
     df = df[~df['Unit at Fault'].isin(['98', '99', 98, 99])]
 
-    df_processed = df.groupby('Accident Report Number', group_keys=False).apply(preencher_policy_company)
+    df_clean = df.groupby('Accident Report Number', group_keys=False).apply(preencher_policy_company)
 
     # take off lines without 'Unit at Fault Policy' or 'Unit at Fault Policy'=N/A
-    df_processed = df_processed.dropna(subset=['Unit at Fault Policy'])
-    df_processed = df_processed[df_processed['Unit at Fault Policy'].str.strip() != 'N/A']
+    df_clean = df_clean.dropna(subset=['Unit at Fault Policy'])
+    df_clean = df_clean[df_clean['Unit at Fault Policy'].str.strip() != 'N/A']
 
-    return df_processed
+    return df_clean
 
 
 pd.set_option('display.max_rows', None)
