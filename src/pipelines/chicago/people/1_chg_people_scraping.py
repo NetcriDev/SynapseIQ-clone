@@ -3,7 +3,8 @@
 import os
 import sys
 
-PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))  # Ajusta según nivel
+# Obtener la ruta absoluta del directorio SynapseIQ
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..', '..'))
 os.chdir(PROJECT_ROOT)
 
 if PROJECT_ROOT not in sys.path:

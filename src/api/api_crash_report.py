@@ -26,6 +26,7 @@ from src.database.loaderGeorgia import loader_df_to_db
 from src.utils.triggers_airflow import trigger_airflow_dag
 from src.connectors.downloaderNC import download_pdfs_from_excel
 from src.database.loaderNC import loader_df_to_db
+from src.parsers.loaderOhio_xlsx import load_ohio_data
 from passlib.context import CryptContext
 from fastapi import (FastAPI, 
                      Query,
@@ -1540,6 +1541,134 @@ async def upload_xml(files: List[UploadFile] = File(...)):
         pass
 
     return {"results": results}
+
+
+
+
+
+OHIO_DIR_XLSX = os.getenv("OHIO_XLSX_PATH")
+if not OHIO_DIR_XLSX:
+    raise RuntimeError("Dont Define OHIO_XLSX_PATH in the .env")
+os.makedirs(OHIO_DIR_XLSX, exist_ok=True)
+
+
+@app.post("/upload-multiple-xlsx-ohio", tags=["upload_xlsx"])
+async def upload_multiple_xlsx_ohio(files: list[UploadFile] = File(...)):
+    results = []
+
+    for file in files:
+        try:
+            if not file.filename.lower().endswith(".xlsx"):
+                save_result = save_estatus_pdf(
+                    file_name=file.filename.lower(),
+                    report_number="",
+                    number_passagers=0,
+                    status="uploaded file does not have an xlsx extension",
+                    agency="ohio",
+                    website="",
+                    state="OH",
+                    city=None,
+                    created_by="frontend"
+                )
+                results.append({
+                    "upload_id": save_result.get("upload_id"),
+                    "report_number": " ",
+                    "status": "invalid_extension",
+                    "message": "The file must be a .xlsx file"
+                })
+                continue
+
+            clean_name = re.sub(r"[^a-zA-Z0-9_.-]", "_", file.filename).lower()
+            temp_xlsx_path = os.path.join(OHIO_DIR_XLSX, f"temp_{clean_name}")
+
+            if os.path.exists(temp_xlsx_path):
+                os.remove(temp_xlsx_path)
+
+            with open(temp_xlsx_path, "wb") as buffer:
+                shutil.copyfileobj(file.file, buffer)
+
+            # Leer y procesar DataFrame
+            df = pd.read_excel(temp_xlsx_path)
+
+            if df.empty:
+                save_result = save_estatus_pdf(
+                    file_name=file.filename.lower(),
+                    report_number="",
+                    number_passagers=0,
+                    status="xlsx file is empty",
+                    agency="ohio",
+                    website="ohio",
+                    state="OH",
+                    city=None,
+                    created_by="frontend"
+                )
+                os.remove(temp_xlsx_path)
+                results.append({
+                    "upload_id": save_result.get("upload_id"),
+                    "report_number": "",
+                    "status": "Excel empty",
+                    "message": "Empty xlsx file"
+                })
+                continue
+
+            insert_ok = load_ohio_data(df, temp_xlsx_path)
+            status = "saved" if insert_ok else "error_inserting"
+
+            # Guardar CSV con mismo nombre base
+            csv_filename = f"{Path(temp_xlsx_path).stem}.csv"
+            csv_path = os.path.join(OHIO_DIR_XLSX, csv_filename)
+            df.to_csv(csv_path, index=False)
+
+            save_result = save_estatus_pdf(
+                file_name=file.filename.lower(),
+                report_number="several reports",
+                number_passagers=len(df),
+                status=status,
+                agency="ohio",
+                website="",
+                state="OH",
+                city=None,
+                created_by="frontend"
+            )
+
+            results.append({
+                "upload_id": save_result.get("upload_id"),
+                "report_number": save_result.get("report_number"),
+                "status": status,
+                "message": f"{len(df)} rows processed"
+            })
+
+        except Exception as e:
+            save_result = save_estatus_pdf(
+                file_name=file.filename.lower(),
+                report_number="",
+                number_passagers=0,
+                status="error",
+                agency="ohio",
+                website="",
+                state="OH",
+                city=None,
+                created_by="frontend"
+            )
+
+            results.append({
+                "upload_id": save_result.get("upload_id"),
+                "report_number": "",
+                "status": "error",
+                "message": f"Error: {str(e)}"
+            })
+
+        finally:
+            if os.path.exists(temp_xlsx_path):
+                os.remove(temp_xlsx_path)
+
+    try:
+        trigger_response = trigger_airflow_dag("incident_services_common", conf={"source": "FastAPI", "date": str(datetime.now())})
+    except Exception as e:
+        pass
+    
+    return JSONResponse(status_code=207, content={"results": results})
+
 
 # @app.websocket("/ws/notifications")
 # async def websocket_notifications(websocket: WebSocket):

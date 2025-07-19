@@ -5,8 +5,6 @@ import os
 from typing import Dict, List, Union
 import logging
 from pathlib import Path
-#from src.parsers.loaderGeorgia import loader_df_to_db
-
 
 # Configurar logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -18,26 +16,49 @@ class PDFToCsvProcessor:
     """
     
     def __init__(self):
-        self.blacklist_words = {"BIKE", "ADDRESS", "PED", "UNKNOWN"}
+        # Expandida blacklist con más palabras de ruido
+        self.blacklist_words = {
+            "BIKE", "ADDRESS", "PED", "UNKNOWN", "WAY", "NW", "SW", "SE", "NE", "DR", "ST", "RD", "AVE", "BLVD",
+            "LN", "TRCE", "CT", "PL", "HWY", "BRIDGE", "OFF", "RAMP", "TO", "A", "ON", "IN", "OUT", "OF", "THE",
+            "FROM", "WAS", "FOR", "AND", "AS", "BY", "WITH", "NO", "RETE", "H", "GY", "N", "W", "DO", "UD", "NY", 
+            "OG", "OA", "DB", "YL", "E", "GD", "AR", "S", "AL", "CE", "WT", "OR",
+            "SCAR", "CL", "OE", "VT", "IT", "TR", "O", "NS", 
+            "RIVE", "RR", "SC", "WL", "EI", "LF", "GR", 
+            "T", "TA", "REK", "AE", "TN", "M", "F", "EO", "NR", "TREATMENT",
+            "AUTO"
+        }
     
     def clean_value(self, value: Union[str, None]) -> Union[str, None]:
-        """Limpia valores eliminando palabras de la blacklist"""
+        """Limpia valores eliminando palabras de la blacklist - versión mejorada"""
         if isinstance(value, str):
             value = value.strip()
             if not value:
                 return None
+            # Unir números separados por espacios
+            value = re.sub(r'(\d)\s+(\d)', r'\1\2', value) 
             words = value.split()
-            cleaned = [w for w in words if w.upper() not in self.blacklist_words]
-            return " ".join(cleaned) if cleaned else None
+            cleaned = []
+            for w in words:
+                if w.isdigit():
+                    cleaned.append(w)
+                elif w.upper() not in self.blacklist_words:
+                    # Remover caracteres especiales excepto espacios y letras/números
+                    cleaned_word = re.sub(r'[^\w\s]', '', w)
+                    if cleaned_word:
+                        cleaned.append(cleaned_word)
+            return " ".join([w for w in cleaned if w]).strip() if cleaned else None
         return value
     
     def extract_report_details(self, pdf_text: str) -> Dict:
-        """Extrae detalles básicos del reporte"""
+        """Extrae detalles básicos del reporte - con regex mejoradas"""
         report_data = {}
         
-        # Número de caso
-        agency_case_match = re.search(r"Agency Case Number.*?(\bGP\d+\b)", pdf_text, re.DOTALL)
-        report_data['agency_case_number'] = agency_case_match.group(1) if agency_case_match else None
+        # Número de caso - regex mejorada para capturar más formatos
+        agency_case_match = re.search(r"Agency Case Number.*?(\b(?:\d{10}|GP\d+)\b)", pdf_text, re.DOTALL)
+        if agency_case_match:
+            report_data['agency_case_number'] = agency_case_match.group(1).strip()
+        else:
+            report_data['agency_case_number'] = None
         
         # Fecha y hora del accidente
         estimated_crash_block_match = re.search(
@@ -50,28 +71,56 @@ class PDFToCsvProcessor:
         else:
             report_data['estimated_crash_date_time'] = None
         
-        # Narrativa
-        narrative_match = re.search(
-            r"NARRATIVE\s*\n(.*?)(?=\nDIAGRAM|\nADMINISTRATIVE|\nSUPPLEMENT|\nGDOT-523|\Z)",
+        # Narrativa - mejorada para capturar continuaciones
+        narrative_sections = []
+        end_of_narrative_patterns = [
+            r"\nDIAGRAM", r"\nADMINISTRATIVE", r"\nSUPPLEMENT", r"\nGDOT-523",
+            r"\nADDITIONAL CITATION INFORMATION", r"\nPROPERTY DAMAGE INFORMATION", r"\Z"
+        ]
+        end_of_narrative_regex = "(?:" + "|".join(end_of_narrative_patterns) + ")"
+
+        # Narrativa inicial
+        initial_narrative_match = re.search(
+            r"NARRATIVE\s*\n(.*?){}".format(end_of_narrative_regex),
             pdf_text, re.DOTALL
         )
-        if narrative_match:
-            narrative_text = narrative_match.group(1).strip()
-            narrative_text = re.sub(r"Page _\d+__ of _\d+__\s*", "", narrative_text).strip()
-            narrative_text = re.sub(r"\n\s*\n", "\n", narrative_text).strip()
-            report_data['narrative'] = narrative_text
+        if initial_narrative_match:
+            narrative_sections.append(initial_narrative_match.group(1).strip())
+
+        # Narrativas continuadas
+        continued_narrative_matches = re.finditer(
+            r"(?:.*?\* \* Continued \* \*\s*\n)?NARRATIVE CONTINUED\s*\n(.*?){}".format(end_of_narrative_regex),
+            pdf_text, re.DOTALL
+        )
+        for match in continued_narrative_matches:
+            narrative_sections.append(match.group(1).strip())
+        
+        full_narrative = "\n".join(narrative_sections)
+        
+        if full_narrative:
+            # Limpieza mejorada de la narrativa
+            full_narrative = re.sub(r"PAGE\s*__\d+____\s*of\s*__\d+____\s*", "", full_narrative).strip()
+            full_narrative = re.sub(r"Page _\d+__ of _\d+__\s*", "", full_narrative).strip()
+            full_narrative = re.sub(r"\n\s*\n", "\n", full_narrative).strip()
+            full_narrative = re.sub(r"\* \* Continued \* \*\s*", "", full_narrative).strip()
+            full_narrative = re.sub(r"Ofc\. #\d+\s*", "", full_narrative).strip()
+            full_narrative = re.sub(r"\* \* E N D \* \*\s*", "", full_narrative).strip()
+            full_narrative = re.sub(r"ADDITIONAL CITATION INFORMATION.*", "", full_narrative, flags=re.DOTALL).strip()
+            full_narrative = re.sub(r"victim rights pamphlet with a case number\.\s*", "", full_narrative).strip()
+            report_data['narrative'] = full_narrative
         else:
             report_data['narrative'] = None
             
         return report_data
     
     def extract_drivers(self, pdf_text: str) -> List[Dict]:
-        """Extrae información de conductores"""
+        """Extrae información de conductores - con regex mejoradas"""
         drivers = []
         drivers_dict = {}
         
+        # Patrón mejorado que incluye X?Driver para manejar variaciones
         unit_block_pattern = re.compile(
-            r"(Unit # Driver LAST NAME FIRST MIDDLE\s*(?:Unit # Driver LAST NAME FIRST MIDDLE\s*)?\n.*?)" +
+            r"(Unit # X?Driver LAST NAME FIRST MIDDLE\s*(?:Unit # X?Driver LAST NAME FIRST MIDDLE\s*)?\n.*?)" +
             r"(?=\n*COMMERCIAL MOTOR VEHICLES ONLY|\n*OCCUPANT INFORMATION|ADMINISTRATIVE|SUPPLEMENT|GDOT-523|\Z)",
             re.DOTALL
         )
@@ -79,10 +128,11 @@ class PDFToCsvProcessor:
         for block_match in unit_block_pattern.finditer(pdf_text):
             current_block_text = block_match.group(1)
             
+            # Regex mejorada para nombres con mejor manejo de middle names
             name_line_match = re.search(
-                r"Unit # Driver LAST NAME FIRST MIDDLE\s*\n"
-                r"(?P<left_unit_num>\d+)\s+Ped\s+(?P<left_last>\S+)\s+(?P<left_first>\S+)(?:\s+(?P<left_middle>(?!\d+\s+Ped)\S+))?"
-                r"(?:\s+(?P<right_unit_num>\d+)\s+Ped\s+(?P<right_last>\S+)\s+(?P<right_first>\S+)(?:\s+(?P<right_middle>\S+))?)?",
+                r"Unit # X?Driver LAST NAME FIRST MIDDLE\s*(?:Unit # X?Driver LAST NAME FIRST MIDDLE\s*)?\n"
+                r"(?P<left_unit_num>\d+)\s+Ped\s+(?P<left_last>\S+)\s+(?P<left_first>\S+)(?:\s+(?P<left_middle>(?!Ped|\d+)\S+))?\s*"
+                r"(?P<right_unit_full>(?P<right_unit_num>\d+)\s+Ped\s+(?P<right_last>\S+)\s+(?P<right_first>\S+)(?:\s+(?P<right_middle>(?!Ped|\d+)\S+))?)?",
                 current_block_text
             )
             
@@ -94,20 +144,20 @@ class PDFToCsvProcessor:
                     "unit_number": ul,
                     "last_name": self.clean_value(name_line_match.group("left_last")),
                     "first_name": self.clean_value(name_line_match.group("left_first")),
-                    "middle_name": self.clean_value(name_line_match.group("left_middle")) if name_line_match.group("left_middle") and name_line_match.group("left_middle").istitle() else ""
+                    "middle_name": self.clean_value(name_line_match.group("left_middle")) if name_line_match.group("left_middle") else None
                 }
                 drivers_dict[ul] = left_driver
                 drivers.append(left_driver)
                 current_block_unit_numbers.append(ul)
                 
                 # Conductor derecho (si existe)
-                if name_line_match.group("right_unit_num"):
+                if name_line_match.group("right_unit_full"):
                     ur = name_line_match.group("right_unit_num")
                     right_driver = {
                         "unit_number": ur,
                         "last_name": self.clean_value(name_line_match.group("right_last")),
                         "first_name": self.clean_value(name_line_match.group("right_first")),
-                        "middle_name": self.clean_value(name_line_match.group("right_middle")) if name_line_match.group("right_middle") and name_line_match.group("right_middle").istitle() else ""
+                        "middle_name": self.clean_value(name_line_match.group("right_middle")) if name_line_match.group("right_middle") else None
                     }
                     drivers_dict[ur] = right_driver
                     drivers.append(right_driver)
@@ -119,18 +169,23 @@ class PDFToCsvProcessor:
         return sorted(drivers_dict.values(), key=lambda x: int(x['unit_number']))
     
     def _extract_additional_driver_info(self, block_text: str, drivers_dict: Dict, unit_numbers: List[str]):
-        """Extrae información adicional de conductores"""
-        # Dirección
-        addr_match = re.search(
-            r"Bike Address\s*(\d+)\s*(.+?)(?:Bike Address\s*(\d+)\s*(.+?))?\s*\n",
+        """Extrae información adicional de conductores - con regex mejoradas"""
+        # Dirección - regex mejorada para Bike Address
+        bike_address_matches = re.findall(
+            r"Bike Address\s*(\d+)\s*(.+?)(?=\nCity State Zip DOB|Bike Address|\Z)",
             block_text, re.DOTALL
         )
-        if addr_match:
-            g1, g2, g3, g4 = addr_match.group(1), addr_match.group(2), addr_match.group(3), addr_match.group(4)
-            if g1 in drivers_dict: 
-                drivers_dict[g1]['address'] = self.clean_value(g2)
-            if g3 and g3 in drivers_dict: 
-                drivers_dict[g3]['address'] = self.clean_value(g4)
+        
+        for match in bike_address_matches:
+            unit_num = match[0]
+            address = match[1].strip()
+            # Limpieza mejorada de direcciones
+            address = re.sub(r"Susp At Fault.*", "", address, flags=re.DOTALL).strip()
+            address = re.sub(r"City State Zip DOB.*", "", address, flags=re.DOTALL).strip()
+            address = address.replace('\n', ' ').strip()
+            address = re.sub(r'(\d)\s+(\d)', r'\1\2', address) 
+            if unit_num in drivers_dict:
+                drivers_dict[unit_num]['address'] = self.clean_value(address)
         
         # Ciudad, estado, zip, fecha de nacimiento
         city_dob_match = re.search(
@@ -140,20 +195,22 @@ class PDFToCsvProcessor:
         )
         if city_dob_match and unit_numbers:
             ul = unit_numbers[0]
-            drivers_dict[ul].update({
-                'city': self.clean_value(city_dob_match.group(1)),
-                'state': city_dob_match.group(2),
-                'zip': city_dob_match.group(3),
-                'dob': city_dob_match.group(4)
-            })
+            if ul in drivers_dict:
+                drivers_dict[ul].update({
+                    'city': self.clean_value(city_dob_match.group(1)),
+                    'state': city_dob_match.group(2),
+                    'zip': city_dob_match.group(3),
+                    'dob': city_dob_match.group(4)
+                })
             if len(unit_numbers) > 1 and city_dob_match.group(5):
                 ur = unit_numbers[1]
-                drivers_dict[ur].update({
-                    'city': self.clean_value(city_dob_match.group(5)),
-                    'state': city_dob_match.group(6),
-                    'zip': city_dob_match.group(7),
-                    'dob': city_dob_match.group(8)
-                })
+                if ur in drivers_dict:
+                    drivers_dict[ur].update({
+                        'city': self.clean_value(city_dob_match.group(5)),
+                        'state': city_dob_match.group(6),
+                        'zip': city_dob_match.group(7),
+                        'dob': city_dob_match.group(8)
+                    })
         
         # Licencia de conducir
         dl_match = re.search(
@@ -163,34 +220,59 @@ class PDFToCsvProcessor:
         )
         if dl_match and unit_numbers:
             ul = unit_numbers[0]
-            drivers_dict[ul]['driver_license_no'] = dl_match.group(1)
+            if ul in drivers_dict:
+                drivers_dict[ul]['driver_license_no'] = dl_match.group(1)
             if len(unit_numbers) > 1 and dl_match.group(2):
                 ur = unit_numbers[1]
-                drivers_dict[ur]['driver_license_no'] = dl_match.group(2)
+                if ur in drivers_dict:
+                    drivers_dict[ur]['driver_license_no'] = dl_match.group(2)
         
-        # Información del seguro
+        # Información del seguro - regex mejorada
         ins_match = re.search(
-            r"Insurance Co\. Policy No\. Telephone No\.\s*\n\s*(.+?)\s+(\S+)\s+\((\d{3})\)\s*(\d{3}-\d{4})"
-            r"(?:\s+(.+?)\s+(\S+)\s+\((\d{3})\)\s*(\d{3}-\d{4}))?",
-            block_text
+            r"Insurance Co\. Policy No\. Telephone No\.\s*\n"
+            r"(?P<ins_comp_left>.+?)\s+(?P<policy_left>[A-Z0-9]+)\s+(?P<phone_left>\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4})"
+            r"(?:\s+(?P<ins_comp_right>.+?)\s+(?P<policy_right>[A-Z0-9]+)\s+(?P<phone_right>\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}))?",
+            block_text, re.DOTALL
         )
+        
         if ins_match and unit_numbers:
             ul = unit_numbers[0]
-            drivers_dict[ul].update({
-                'insurance_company': self.clean_value(ins_match.group(1)),
-                'policy_no': ins_match.group(2),
-                'telephone_no': f"({ins_match.group(3)}) {ins_match.group(4)}"
-            })
-            if len(unit_numbers) > 1 and ins_match.group(5):
-                ur = unit_numbers[1]
-                drivers_dict[ur].update({
-                    'insurance_company': self.clean_value(ins_match.group(5)),
-                    'policy_no': ins_match.group(6),
-                    'telephone_no': f"({ins_match.group(7)}) {ins_match.group(8)}"
+            if ul in drivers_dict:
+                ins_comp_left = re.sub(r'\s*AUTO$', '', ins_match.group('ins_comp_left').strip())
+                drivers_dict[ul].update({
+                    'insurance_company': self.clean_value(ins_comp_left),
+                    'policy_no': ins_match.group('policy_left').strip(),
+                    'telephone_no': ins_match.group('phone_left')
                 })
+            if len(unit_numbers) > 1 and ins_match.group('ins_comp_right'):
+                ur = unit_numbers[1]
+                if ur in drivers_dict:
+                    ins_comp_right = re.sub(r'\s*AUTO$', '', ins_match.group('ins_comp_right').strip())
+                    drivers_dict[ur].update({
+                        'insurance_company': self.clean_value(ins_comp_right),
+                        'policy_no': ins_match.group('policy_right').strip(),
+                        'telephone_no': ins_match.group('phone_right')
+                    })
+        
+        # Post-procesamiento: separar insurance_company y policy_no si están unidos
+        for unit_num in unit_numbers:
+            if unit_num in drivers_dict:
+                driver = drivers_dict[unit_num]
+                raw = driver.get("insurance_company", "")
+                if raw:
+                    raw = raw.strip()
+                    num_match = re.search(r"\d", raw)
+                    if num_match:
+                        split_idx = num_match.start()
+                        driver["insurance_company"] = self.clean_value(raw[:split_idx].strip())
+                        driver["policy_no"] = raw[split_idx:].strip()
+                    else:
+                        driver["insurance_company"] = self.clean_value(raw)
+                        if not driver.get("policy_no"):
+                            driver["policy_no"] = ""
     
     def extract_occupants(self, pdf_text: str) -> List[Dict]:
-        """Extrae información de ocupantes"""
+        """Extrae información de ocupantes - con regex mejoradas"""
         occupants = []
         
         occupant_sections_matches = re.finditer(
@@ -198,10 +280,11 @@ class PDFToCsvProcessor:
             pdf_text, re.DOTALL
         )
         
+        # Patrón mejorado y más flexible para ocupantes
         occupant_entry_pattern = re.compile(
-            r"Name \(Last, First\):\s*(?P<full_name>[^\n]+?)\s*Address:\s*(?P<address>[^\n]+)\s*\n"
-            r"Age:\s*(?P<age>\d+)\s+Sex:\s*(?P<sex>\S+)\s+Unit\s+#\s*(?P<unit_num>\d+)\s+Position:\s*(?P<position>\S+)\s+Safety\s+Eq:\s*(?P<safety_eq>\S+)\s+Ejected:(?P<ejected>\S+)\s+Extricated:\s*(?P<extricated>\S+)\s+Air\s+Bag:(?P<air_bag>\S+)\s+Injury:(?P<injury>\S+)\s+Taken\s+for\s*(?P<taken_for>[^\n]+?)\s*\n"
-            r"(?P<treatment_line>.*?)(?=(?:Name \(Last, First\):|Injured Taken To:|Injured Taken To: By:|Age:|\Z))",
+            r"Name \(Last, First\):\s*(?P<full_name>[^\n]*)\s*Address(?::)?\s*(?P<address>[^\n]*)\n"
+            r"(?P<rest>.*?)"
+            r"(?:Injured Taken To:|ADMINISTRATIVE|ADDITIONAL OCCUPANT INFORMATION|Name \(Last, First\):|$)",
             re.DOTALL
         )
         
@@ -212,34 +295,69 @@ class PDFToCsvProcessor:
                 occupant_details = {}
                 full_name_str = occupant_match.group('full_name').strip()
                 
-                if ',' in full_name_str:
-                    parts = [s.strip() for s in full_name_str.split(',', 1)]
-                    occupant_details['last_name'] = self.clean_value(parts[0])
-                    occupant_details['first_name'] = self.clean_value(parts[1])
-                else:
-                    name_parts = full_name_str.split()
-                    if len(name_parts) > 1:
-                        occupant_details['last_name'] = self.clean_value(name_parts[-1])
-                        occupant_details['first_name'] = self.clean_value(' '.join(name_parts[:-1]))
+                # Manejo mejorado de nombres
+                if full_name_str:
+                    if ',' in full_name_str:
+                        parts = [s.strip() for s in full_name_str.split(',', 1)]
+                        occupant_details['last_name'] = self.clean_value(parts[0])
+                        # Separar first y middle del segundo part
+                        first_middle_parts = parts[1].split()
+                        if len(first_middle_parts) > 1:
+                            occupant_details['first_name'] = self.clean_value(first_middle_parts[0])
+                            occupant_details['middle_name'] = self.clean_value(' '.join(first_middle_parts[1:]))
+                        else:
+                            occupant_details['first_name'] = self.clean_value(first_middle_parts[0]) if first_middle_parts else None
+                            occupant_details['middle_name'] = None
                     else:
-                        occupant_details['last_name'] = None
-                        occupant_details['first_name'] = self.clean_value(full_name_str)
+                        name_parts = full_name_str.split()
+                        if len(name_parts) > 2:
+                            occupant_details['last_name'] = self.clean_value(name_parts[-1])
+                            occupant_details['first_name'] = self.clean_value(name_parts[0])
+                            occupant_details['middle_name'] = self.clean_value(' '.join(name_parts[1:-1]))
+                        elif len(name_parts) == 2:
+                            occupant_details['last_name'] = self.clean_value(name_parts[-1])
+                            occupant_details['first_name'] = self.clean_value(name_parts[0])
+                            occupant_details['middle_name'] = None
+                        else:
+                            occupant_details['last_name'] = None
+                            occupant_details['first_name'] = self.clean_value(full_name_str)
+                            occupant_details['middle_name'] = None
+                else:
+                    occupant_details['last_name'] = None
+                    occupant_details['first_name'] = None
+                    occupant_details['middle_name'] = None
+                
+                occupant_details['address'] = self.clean_value(occupant_match.group('address').replace('\n', ' ').strip()) if occupant_match.group('address') else None
+                
+                # Extraer otros campos del bloque restante
+                rest = occupant_match.group('rest')
+                age_match = re.search(r'Age:\s*(\d+)', rest)
+                sex_match = re.search(r'Sex:\s*([MF])', rest)
+                unit_match = re.search(r'Unit\s*#\s*(\d+)', rest)
+                position_match = re.search(r'Position:\s*(\S+)', rest)
+                safety_eq_match = re.search(r'Safety Eq:\s*(\S+)', rest)
+                ejected_match = re.search(r'Ejected:\s*(\S+)', rest)
+                extricated_match = re.search(r'Extricat(?:ed|e 2d):\s*(\S+)', rest)
+                air_bag_match = re.search(r'Air Bag:\s*(\S+)', rest)
+                injury_match = re.search(r'Injury:\s*(\S+)', rest)
+                taken_for_match = re.search(r'Taken\s+for\s*(\S+)', rest)
                 
                 occupant_details.update({
-                    'address': self.clean_value(occupant_match.group('address')),
-                    'age': int(occupant_match.group('age')),
-                    'sex': occupant_match.group('sex'),
-                    'unit_number': occupant_match.group('unit_num'),
-                    'position': occupant_match.group('position'),
-                    'safety_equipment': occupant_match.group('safety_eq'),
-                    'ejected': occupant_match.group('ejected'),
-                    'extricated': occupant_match.group('extricated'),
-                    'air_bag': occupant_match.group('air_bag'),
-                    'injury': occupant_match.group('injury'),
-                    'taken_for_treatment': occupant_match.group('taken_for').strip().split(' ')[0] if occupant_match.group('taken_for').strip() else None
+                    'age': int(age_match.group(1)) if age_match else None,
+                    'sex': sex_match.group(1) if sex_match else None,
+                    'unit_number': unit_match.group(1) if unit_match else None,
+                    'position': position_match.group(1) if position_match else None,
+                    'safety_equipment': safety_eq_match.group(1) if safety_eq_match else None,
+                    'ejected': ejected_match.group(1) if ejected_match else None,
+                    'extricated': extricated_match.group(1) if extricated_match else None,
+                    'air_bag': air_bag_match.group(1) if air_bag_match else None,
+                    'injury': injury_match.group(1) if injury_match else None,
+                    'taken_for_treatment': taken_for_match.group(1) if taken_for_match else None
                 })
                 
-                occupants.append(occupant_details)
+                # Solo agregar si tiene información válida
+                if occupant_details['first_name'] or occupant_details['address']:
+                    occupants.append(occupant_details)
         
         return occupants
     
@@ -254,7 +372,7 @@ class PDFToCsvProcessor:
             pd.DataFrame: DataFrame con toda la información del reporte
         """
         try:
-            logger.info(f"...Procesando PDF: {pdf_path}")
+            logger.info(f"Procesando PDF: {pdf_path}")
             
             # Extraer texto del PDF
             all_text = ""
@@ -268,7 +386,7 @@ class PDFToCsvProcessor:
                 logger.warning(f"No se pudo extraer texto del PDF: {pdf_path}")
                 return pd.DataFrame()
             
-            # Extraer información
+            # Extraer información usando métodos mejorados
             report_details = self.extract_report_details(all_text)
             drivers = self.extract_drivers(all_text)
             occupants = self.extract_occupants(all_text)
@@ -300,7 +418,7 @@ class PDFToCsvProcessor:
                     'insurance_company': driver.get('insurance_company'),
                     'policy_no': driver.get('policy_no'),
                     'telephone_no': driver.get('telephone_no'),
-                    'age': None,
+                    'age': None,  # Mantener como None para drivers como en el original
                     'sex': None,
                     'position': None,
                     'safety_equipment': None,
@@ -323,7 +441,7 @@ class PDFToCsvProcessor:
                     'unit_number': occupant.get('unit_number'),
                     'last_name': occupant.get('last_name'),
                     'first_name': occupant.get('first_name'),
-                    'middle_name': None,
+                    'middle_name': occupant.get('middle_name'),
                     'address': occupant.get('address'),
                     'city': None,
                     'state': None,
@@ -350,7 +468,7 @@ class PDFToCsvProcessor:
             return df
             
         except Exception as e:
-            logger.error(f"Exception - Error procesando PDF {pdf_path}: {str(e)}")
+            logger.error(f"Error procesando PDF {pdf_path}: {str(e)}")
             return pd.DataFrame()
 
 def convert_pdf_to_csv(pdf_path: str, csv_output_path: str) -> bool:
@@ -398,6 +516,7 @@ def convert_pdf_to_csv(pdf_path: str, csv_output_path: str) -> bool:
     except Exception as e:
         logger.error(f"Error convirtiendo PDF a CSV: {str(e)}")
         return False
+
 
 
 def consolidar_driver_occupant(df: pd.DataFrame) -> pd.DataFrame:
@@ -482,3 +601,4 @@ def extract_df_from_georgia(outdata_file: str) -> pd.DataFrame:
     #     print(f" Conversión exitosa: {csv_file}")
     # else:
     #     print(" Error en la conversión")
+

@@ -229,7 +229,7 @@ class DatabaseManager:
         self._insert_passenger_if_not_exists(
             cur, vehicle_id, name, gender, phone1, age, year_birth, 
             passenger_notes, first_name, middle_name, last_name,
-            state, city, street, person_type
+            state, city, street, person_type, insurance_company
         )
     
     def _get_or_create_incident(self, cur, report_number, crash_date, city, street, 
@@ -302,7 +302,7 @@ class DatabaseManager:
     
     def _insert_passenger_if_not_exists(self, cur, vehicle_id, name, gender, phone1, age,
                                        year_birth, passenger_notes, first_name, middle_name, last_name,
-                                       state, city, street, person_type):
+                                       state, city, street, person_type, insurance_company):
         """Inserta pasajero si no existe"""
         # Verificar si ya existe
         cur.execute("""
@@ -315,10 +315,16 @@ class DatabaseManager:
             cur.execute("""
                 INSERT INTO passengers (
                     vehicle_id, name, gender, phone1, age, year_birth, notes,
-                    first_name, middle_name, last_name, state, city, street, role, website
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    first_name, middle_name, last_name, 
+                    state, city, street, role, website, hasinsurance_details, hasname, over18
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """, (vehicle_id, name, gender, phone1, age, year_birth, passenger_notes,
-                  first_name, middle_name, last_name, state, city, street, person_type, "georgia"))
+                  first_name, middle_name, last_name, state, city, 
+                  street, person_type, "georgia", 
+                  str(bool(insurance_company)), 
+                  str(bool(name) and name.upper() not in {"", "N/A", "KNOWN", "UNKNOWN"}), 
+                  str((age_value := (int(age) if str(age).isdigit() else None)) is not None and age_value > 17)
+                  ))
             logger.debug(f"Nuevo pasajero creado para vehículo: {vehicle_id}")
         else:
             logger.debug(f"Pasajero existente encontrado: {passenger[0]}")

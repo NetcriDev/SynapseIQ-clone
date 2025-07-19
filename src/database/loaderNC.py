@@ -8,6 +8,7 @@ from datetime import datetime
 from typing import Optional, List
 from urllib.parse import urlparse
 from src.utils.status_pdf_utils import save_estatus_pdf
+import re
 
 # Configurar logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -217,6 +218,9 @@ class DatabaseManager:
         phone1 = DataProcessor.clean_str(row.get("Phone-1"))  # Phone-1 → phone1
         phone2 = DataProcessor.clean_str(row.get("Phone-2"))  # Phone-2 → phone2
         
+        # Elimina decimales y limpia el formato, pero preserva los números de teléfono
+        phone1 = re.sub(r'(\.0+)$', '', str(phone1))  # Quita el ".0" si lo tiene
+        phone2 = re.sub(r'(\.0+)$', '', str(phone2))  # Quita el ".0" si lo tiene
         # Información de seguro
         insurance_company = DataProcessor.clean_str(row.get("Insurance Company"))
         
@@ -388,11 +392,19 @@ class DatabaseManager:
                 INSERT INTO passengers (
                     vehicle_id, name, gender, phone1, phone2, age, year_birth, notes,
                     first_name, middle_name, last_name, state, city, street, role, 
-                    number_occupant, report_number, insurance_company
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    number_occupant, report_number, insurance_company,
+                    hasinsurance_details, hasname, over18
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """, (vehicle_id, name, gender, phone1, phone2, age, year_birth, passenger_notes,
-                first_name, middle_name, last_name, state, city, street, person_type, 
-                number_occupant, report_number, insurance_company))
+                first_name, middle_name, last_name, state, city, street, 
+                person_type, 
+                number_occupant, 
+                report_number, 
+                insurance_company,
+                str(bool(insurance_company)),  # hasinsurance_details
+                str(bool(name) and name.upper() not in {"", "N/A", "KNOWN", "UNKNOWN"}),  # hasname
+                str((age_value := (int(age) if str(age).isdigit() else None)) is not None and age_value > 17)
+                ))
             logger.debug(f"Nuevo pasajero creado para vehículo: {vehicle_id}")
         else:
             logger.debug(f"Pasajero existente encontrado: {passenger[0]}")
