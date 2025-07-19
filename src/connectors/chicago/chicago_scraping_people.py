@@ -5,14 +5,19 @@ from psycopg2 import sql, extras
 from datetime import datetime
 import os
 from dotenv import load_dotenv
+import ibm_boto3
+from ibm_botocore.client import Config
 
 # === Cargar variables desde archivo .env ===
 load_dotenv()
 
-
 API_URL_PEOPLE = os.getenv('API_URL_PEOPLE')
 TABLE_NAME_PEOPLE = os.getenv('TABLE_NAME_PEOPLE')
-# CSV_BASE_PATH = os.getenv('CSV_BASE_PATH')
+# Configuración de IBM COS desde variables de entorno
+COS_BUCKET = os.getenv('COS_BUCKET')
+COS_APIKEY = os.getenv('COS_APIKEY')
+COS_RESOURCE_INSTANCE_ID = os.getenv('COS_RESOURCE_INSTANCE_ID')
+COS_ENDPOINT = os.getenv('COS_ENDPOINT')
 
 
 def obtener_datos():
@@ -89,7 +94,21 @@ def guardar_csv(df, path, fecha):
     except Exception as e:
         print(f"Error al guardar CSV: {e}")
         return None
-""""""
+
+def subir_a_cos(ruta_archivo, nombre_objeto):
+    try:
+        print("Intentando subir a COS...")
+        cos = ibm_boto3.client("s3",
+            ibm_api_key_id=COS_APIKEY,
+            ibm_service_instance_id=COS_RESOURCE_INSTANCE_ID,
+            config=Config(signature_version="oauth"),
+            endpoint_url=COS_ENDPOINT
+        )
+        with open(ruta_archivo, "rb") as archivo:
+            cos.upload_fileobj(archivo, COS_BUCKET, nombre_objeto)
+        print(f"Archivo subido a COS: {nombre_objeto}")
+    except Exception as e:
+        print(f"Problemas al subir a COS: {e}")
 
 def pipeline_chicago_people(path: str):
     """Ejecuta el flujo principal: descarga de datos, inserción en la base, y guardado como CSV si hay nuevos registros.
@@ -108,6 +127,9 @@ def pipeline_chicago_people(path: str):
             with open(ruta_txt, 'w') as f:
                 f.write(ruta_csv + '\n')
                 print("Ruta de csv guardado en text.")
+            # Subir a COS
+            nombre_objeto = os.path.basename(ruta_csv)
+            subir_a_cos(ruta_csv, nombre_objeto)
         else:
             print("No hay datos nuevos para guardar en CSV.")
     else:
@@ -115,5 +137,7 @@ def pipeline_chicago_people(path: str):
 
 # Punto de entrada si se ejecuta como script
 if __name__ == "__main__":
-    #   main(path="/Users/imac/Software/SynapseIQ-dev/src/connectors/chicago")
-    pipeline_chicago_people(path="/home/data/chicago/people")
+    # Usar la ruta actual del proyecto
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    storage_path = os.path.join(current_dir, "storage")
+    pipeline_chicago_people(path=storage_path)
