@@ -1,0 +1,46 @@
+# Ignora entornos virtuales
+venv/
+venv39/
+.venv/
+
+# Ignora archivos de caché de Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Ignora archivos de configuración de entorno
+.env
+.env.*
+
+# Ignora notebooks y datos temporales
+docs/
+notebooks/
+*.ipynb
+
+# Ignora archivos de datos y resultados
+storage/
+*.csv
+*.tsv
+*.xls
+*.xlsx
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.pdf
+
+# Ignora logs y archivos temporales
+*.log
+nohup.out
+
+# Ignora archivos de sistema
+.DS_Store
+Thumbs.db
+
+# Ignora backups
+*.bak
+*.swp
+
+# Ignora archivos de salida de pruebas
+tests/ 
