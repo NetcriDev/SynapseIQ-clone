@@ -17,6 +17,7 @@ build/
 .venv/
 env/
 venv/
+venv39/
 
 # --- IDE and editor configuration files ---
 .vscode/
@@ -91,3 +92,4 @@ wandb/
 .DS_Store
 Thumbs.db
 *.prv
+venv39/
