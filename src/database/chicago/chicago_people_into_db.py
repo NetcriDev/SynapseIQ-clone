@@ -8,7 +8,7 @@ from config.config import get_connection
 load_dotenv()
 
 # --- Configuración dinámica desde entorno 
-# Esta es la configuración de la base de datos de Chicago Crashes Traffic.
+# Esta es la configuración de la base de datos de Chicago Crashes People.
 conn = get_connection()
 cur = conn.cursor()
 # Tipos específicos por columna en la tabla
@@ -82,13 +82,23 @@ def insert_all_to_database(df, table_name):
         print(f"Error al insertar en la base de datos: {e}")
         return 0
 
-def insert_db_full_crashes(path):
-    ruta_txt = os.path.join(path, "csv_path_people.txt")
-    with open(ruta_txt, "r", encoding="utf-8") as f:
-        primera_linea = f.readline().strip()
-        # Cargar el CSV en un DataFrame
-        df = pd.read_csv(primera_linea, sep=';')
+def insert_db_full_crashes(path_or_csv=None):
+    """
+    Si path_or_csv es un archivo CSV, lo carga directamente. Si es un directorio, busca csv_path_people.txt y carga el CSV desde ahí.
+    """
+    if path_or_csv is None:
+        raise ValueError("Se requiere la ruta del archivo CSV o del directorio.")
+    if os.path.isfile(path_or_csv):
+        # Es un archivo CSV directo
+        df = pd.read_csv(path_or_csv, sep=';')
         insert_all_to_database(df, "chicago_crashes_people")
+    else:
+        # Es un directorio, busca csv_path_people.txt
+        ruta_txt = os.path.join(path_or_csv, "csv_path_people.txt")
+        with open(ruta_txt, "r", encoding="utf-8") as f:
+            primera_linea = f.readline().strip()
+            df = pd.read_csv(primera_linea, sep=';')
+            insert_all_to_database(df, "chicago_crashes_people")
 
 if __name__ == "__main__":
-    insert_db_full_crashes("/home/data/chicago/people")
+    insert_db_full_crashes("/tmp/people.csv")

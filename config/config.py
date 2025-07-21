@@ -1,11 +1,13 @@
+import os
 import psycopg2
 import psycopg2.extras
 # DB config
 def get_connection():
     return psycopg2.connect(
-        dbname="crash_records_001",
-        user="synapseiq",
-        password="SynapseIQ$2025",
-        host="localhost",
-        port="5432"
+        host=os.getenv("DB_HOST"),
+        port=os.getenv("DB_PORT"),
+        dbname=os.getenv("DB_NAME"),
+        user=os.getenv("DB_USER"),
+        password=os.getenv("DB_PASSWORD")
     )
+    
