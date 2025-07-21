@@ -2,7 +2,8 @@ pandas==2.2.3
 beautifulsoup4==4.13.3
 pdfplumber==0.11.5
 selenium==4.29.0
-requests==2.32.3
+requests==2.31.0
+urllib3==1.26.18
 weasyprint==65.0
 bs4==0.0.2
 pdfplumber==0.11.5
@@ -22,7 +23,7 @@ httpx==0.28.1
 asyncio==3.4.3
 redis==5.2.1
 geopy==2.4.1
-ibm-cos-sdk
+ibm-cos-sdk==2.13.0
 docling==2.31.1
 python-dotenv
 rapidocr_onnxruntime==1.2.3
